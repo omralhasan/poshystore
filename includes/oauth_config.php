@@ -9,11 +9,19 @@
  * - Apple: https://developer.apple.com/
  */
 
+// Use central config for SITE_URL
+if (!defined('POSHY_CONFIG_LOADED')) {
+    require_once __DIR__ . '/../config.php';
+}
+
+$site = defined('SITE_URL') ? SITE_URL : 'http://159.223.180.154';
+$bp   = defined('BASE_PATH') ? BASE_PATH : '';
+
 return [
     'google' => [
         'client_id' => '110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com',
         'client_secret' => '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',
-        'redirect_uri' => 'http://localhost/poshy_store/oauth_callback.php',
+        'redirect_uri' => $site . $bp . '/oauth_callback.php',
         'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
         'token_url' => 'https://oauth2.googleapis.com/token',
         'user_info_url' => 'https://www.googleapis.com/oauth2/v2/userinfo',
@@ -23,7 +31,7 @@ return [
     'facebook' => [
         'app_id' => '1257016736289462',
         'app_secret' => '9754bc68520be46d248623117a3bb854',
-        'redirect_uri' => 'http://localhost/poshy_store/oauth_callback.php',
+        'redirect_uri' => $site . $bp . '/oauth_callback.php',
         'auth_url' => 'https://www.facebook.com/v12.0/dialog/oauth',
         'token_url' => 'https://graph.facebook.com/v12.0/oauth/access_token',
         'user_info_url' => 'https://graph.facebook.com/me',
@@ -35,7 +43,7 @@ return [
         'team_id' => 'YOUR_APPLE_TEAM_ID',
         'key_id' => 'YOUR_APPLE_KEY_ID',
         'private_key_path' => __DIR__ . '/apple_private_key.p8',
-        'redirect_uri' => 'http://localhost/poshy_store/oauth_callback.php',
+        'redirect_uri' => $site . $bp . '/oauth_callback.php',
         'auth_url' => 'https://appleid.apple.com/auth/authorize',
         'token_url' => 'https://appleid.apple.com/auth/token',
         'scope' => 'name email'

@@ -3,7 +3,7 @@
 session_start();
 require_once __DIR__ . '/../../includes/language.php';
 if (isset($_SESSION['user_id'])) {
-    header('Location: /poshy_store/index.php');
+    header('Location: ' . BASE_PATH . '/index.php');
     exit();
 }
 ?>
