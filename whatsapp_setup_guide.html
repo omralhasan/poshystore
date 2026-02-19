@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot Setup - Poshy Lifestyle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: none;
+            margin-bottom: 30px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 25px;
+            border: none;
+        }
+        .step-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .cmd {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .success-box {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+        }
+        h1 { font-size: 2rem; font-weight: bold; margin-bottom: 10px; }
+        h2 { font-size: 1.5rem; color: #667eea; margin-top: 30px; }
+        h3 { font-size: 1.2rem; color: #764ba2; margin-top: 20px; }
+        .badge-custom {
+            background: #10b981;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header text-center">
+                <h1><i class="fab fa-whatsapp"></i> WhatsApp Bot Setup</h1>
+                <p class="mb-0">FREE Order Confirmation System - No API Costs!</p>
+            </div>
+            <div class="card-body p-4">
+                
+                <div class="success-box">
+                    <h3><i class="fas fa-check-circle"></i> ✅ Installation Complete!</h3>
+                    <p class="mb-0">All files have been created successfully. Follow the steps below to activate your bot.</p>
+                </div>
+
+                <h2><i class="fas fa-rocket"></i> Features</h2>
+                <div class="feature-item">
+                    <strong><i class="fas fa-dollar-sign text-success"></i> 100% FREE</strong> - No Twilio, no Cloud API, no monthly costs
+                </div>
+                <div class="feature-item">
+                    <strong><i class="fas fa-bolt text-warning"></i> Automatic</strong> - Sends WhatsApp confirmations instantly on order
+                </div>
+                <div class="feature-item">
+                    <strong><i class="fas fa-moon text-info"></i> Ramadan Theme</strong> - Beautiful Arabic messages with blessings
+                </div>
+                <div class="feature-item">
+                    <strong><i class="fas fa-infinity text-primary"></i> Persistent</strong> - Runs 24/7 with PM2 process manager
+                </div>
+
+                <h2><i class="fas fa-terminal"></i> Quick Setup (5 Minutes)</h2>
+                
+                <div class="step-box">
+                    <h3>Step 1️⃣: Run Setup Script</h3>
+                    <p>Open terminal and run:</p>
+                    <div class="cmd">cd /var/www/html/poshy_store/whatsapp_bot<br>sudo bash setup_whatsapp.sh</div>
+                    <small class="text-muted">This installs Node.js, PM2, dependencies, and starts the bot.</small>
+                </div>
+
+                <div class="step-box">
+                    <h3>Step 2️⃣: View QR Code</h3>
+                    <p>View the WhatsApp QR code:</p>
+                    <div class="cmd">pm2 logs poshy-whatsapp</div>
+                    <p class="mt-3">You'll see a QR code in the terminal.</p>
+                </div>
+
+                <div class="step-box">
+                    <h3>Step 3️⃣: Scan QR Code</h3>
+                    <ol>
+                        <li>Open WhatsApp on your phone</li>
+                        <li>Go to: <strong>Settings → Linked Devices</strong></li>
+                        <li>Tap: <strong>Link a Device</strong></li>
+                        <li>Scan the QR code from the terminal</li>
+                    </ol>
+                </div>
+
+                <div class="success-box">
+                    <h3><i class="fas fa-check-double"></i> Done!</h3>
+                    <p class="mb-0">Once scanned, you'll see: <code>✅ WhatsApp Bot is READY and connected!</code></p>
+                    <p class="mt-2 mb-0"><strong>Your bot is now running 24/7!</strong></p>
+                </div>
+
+                <h2><i class="fas fa-vial"></i> Test Your Bot</h2>
+                
+                <div class="step-box">
+                    <p>Send a test message to your phone:</p>
+                    <div class="cmd">cd /var/www/html/poshy_store/whatsapp_bot<br>bash test_whatsapp.sh +962791234567</div>
+                    <small class="text-muted">Replace with your actual phone number (include country code)</small>
+                </div>
+
+                <h2><i class="fas fa-laptop-code"></i> Useful Commands</h2>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="step-box">
+                            <strong>Check Status</strong>
+                            <div class="cmd">pm2 status</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="step-box">
+                            <strong>View Logs</strong>
+                            <div class="cmd">pm2 logs poshy-whatsapp</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="step-box">
+                            <strong>Restart Bot</strong>
+                            <div class="cmd">pm2 restart poshy-whatsapp</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="step-box">
+                            <strong>Monitor</strong>
+                            <div class="cmd">pm2 monit</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2><i class="fas fa-comment-dots"></i> Message Preview</h2>
+                
+                <div class="step-box" style="background: #f0f9ff;">
+                    <pre style="white-space: pre-wrap; font-family: Arial;">🌙 ═══ Poshy Lifestyle ═══ 🌙
+
+مساء الخير والبركة 🌙
+رمضان كريم من عائلة بوشي 💜
+
+✅ تم تأكيد طلبك بنجاح!
+
+━━━━━━━━━━━━━━━━━━━━
+📦 تفاصيل الطلب:
+• رقم الطلب: #157
+• العميل: أحمد محمد
+• المبلغ الإجمالي: 125.500 JOD
+
+🛍️ المنتجات:
+   1. عطر فاخر × 1
+   2. كريم ترطيب × 2
+
+━━━━━━━━━━━━━━━━━━━━
+🎁 مكافأة النقاط:
+لقد حصلت على 377 نقطة! 🎉
+
+📋 الحالة: قيد المعالجة
+
+🚚 سيتم التواصل معك قريباً
+
+━━━━━━━━━━━━━━━━━━━━
+📞 للاستفسار:
+• واتساب: رد على هذه الرسالة
+
+✨ تقبل الله صيامكم وقيامكم ✨
+🌙 رمضان كريم 🌙
+
+مع حبنا،
+فريق Poshy Lifestyle 💜</pre>
+                </div>
+
+                <div class="warning-box">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Important Notes</h3>
+                    <ul class="mb-0">
+                        <li>Keep your phone online during initial QR scan</li>
+                        <li>After linking, bot runs independently</li>
+                        <li>Session saved - no need to re-scan after restart</li>
+                        <li>Bot auto-starts on server reboot</li>
+                        <li>All messages appear in your WhatsApp</li>
+                    </ul>
+                </div>
+
+                <h2><i class="fas fa-book"></i> Documentation</h2>
+                <p>For detailed documentation, see:</p>
+                <div class="cmd">/var/www/html/poshy_store/whatsapp_bot/README.md</div>
+
+                <div class="text-center mt-4">
+                    <span class="badge-custom">🌙 Ramadan Kareem from Poshy Lifestyle 💜</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

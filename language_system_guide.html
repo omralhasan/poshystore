@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language System - Poshy Lifestyle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: none;
+            margin-bottom: 30px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 25px;
+        }
+        .feature-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #10b981;
+        }
+        .code-box {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .success-box {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .lang-demo {
+            padding: 30px;
+            border-radius: 15px;
+            background: white;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 900px;">
+        <div class="card">
+            <div class="card-header text-center">
+                <h1><i class="fas fa-language"></i> Bilingual System Installed!</h1>
+                <p class="mb-0">Arabic & English Support ✨</p>
+            </div>
+            <div class="card-body p-4">
+                
+                <div class="success-box">
+                    <h3><i class="fas fa-check-circle"></i> ✅ Installation Complete!</h3>
+                    <p class="mb-0">Your website now supports both Arabic and English languages with automatic RTL support.</p>
+                </div>
+
+                <h2><i class="fas fa-star"></i> Features</h2>
+                <div class="feature-box">
+                    <strong><i class="fas fa-globe text-primary"></i> Language Switcher</strong> - Beautiful button in navbar to switch languages
+                </div>
+                <div class="feature-box">
+                    <strong><i class="fas fa-exchange-alt text-success"></i> RTL Support</strong> - Automatic right-to-left layout for Arabic
+                </div>
+                <div class="feature-box">
+                    <strong><i class="fas fa-cookie text-warning"></i> Session Storage</strong> - Language preference saved in session
+                </div>
+                <div class="feature-box">
+                    <strong><i class="fas fa-font text-info"></i> Arabic Fonts</strong> - Beautiful Tajawal font for Arabic text
+                </div>
+                <div class="feature-box">
+                    <strong><i class="fas fa-code text-danger"></i> Easy Integration</strong> - Simple t() function for translations
+                </div>
+
+                <h2><i class="fas fa-eye"></i> See It In Action</h2>
+                <div class="lang-demo">
+                    <h3>🎉 Visit Your Homepage Now!</h3>
+                    <p>The language switcher is already working. Click the button below:</p>
+                    <a href="/poshy_store/index.php" class="btn btn-lg" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold;">
+                        <i class="fas fa-home me-2"></i>Go to Homepage
+                    </a>
+                    <p class="mt-3 text-muted"><small>Look for 🌐 button in the navigation bar</small></p>
+                </div>
+
+                <h2><i class="fas fa-code"></i> How It Works</h2>
+                
+                <h3>1. Language System</h3>
+                <p>Created in: <code>/var/www/html/poshy_store/includes/language.php</code></p>
+                <div class="code-box">
+// Get translation<br>
+echo t('home'); // Outputs: "الرئيسية" or "Home"<br>
+<br>
+// Check if RTL<br>
+if (isRTL()) { /* Arabic mode */ }<br>
+<br>
+// Get current language<br>
+$current_lang // 'ar' or 'en'
+                </div>
+
+                <h3>2. Language Switcher Component</h3>
+                <p>Created in: <code>/var/www/html/poshy_store/includes/language_switcher.php</code></p>
+                <div class="code-box">
+// Add to any page:<br>
+&lt;?php include './includes/language_switcher.php'; ?&gt;
+                </div>
+
+                <h3>3. Translations Available</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="feature-box">
+                            <strong>Navigation</strong><br>
+                            <small>home, shop, cart, my_account, rewards, login, logout</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-box">
+                            <strong>Products</strong><br>
+                            <small>add_to_cart, buy_now, in_stock, out_of_stock, price</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-box">
+                            <strong>Cart & Checkout</strong><br>
+                            <small>shopping_cart, checkout, place_order, shipping_address</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-box">
+                            <strong>Orders & Status</strong><br>
+                            <small>order_details, pending, shipped, delivered</small>
+                        </div>
+                    </div>
+                </div>
+
+                <h2><i class="fas fa-plus"></i> Add to Other Pages</h2>
+                <p>To add language support to any page:</p>
+                
+                <div class="code-box">
+&lt;?php<br>
+// 1. Include at top of file<br>
+require_once 'includes/language.php';<br>
+<br>
+// 2. Set HTML lang and dir<br>
+&lt;html lang="&lt;?= $current_lang ?&gt;" dir="&lt;?= isRTL() ? 'rtl' : 'ltr' ?&gt;"&gt;<br>
+<br>
+// 3. Add language switcher to navbar<br>
+&lt;?php include 'includes/language_switcher.php'; ?&gt;<br>
+<br>
+// 4. Use translations<br>
+&lt;h1&gt;&lt;?= t('welcome') ?&gt;&lt;/h1&gt;<br>
+?&gt;
+                </div>
+
+                <h2><i class="fas fa-plus-circle"></i> Add More Translations</h2>
+                <p>Edit: <code>/var/www/html/poshy_store/includes/language.php</code></p>
+                <div class="code-box">
+$translations = [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'ar' => [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'your_key' => 'النص بالعربي',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'en' => [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'your_key' => 'Text in English',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;]<br>
+];
+                </div>
+
+                <h2><i class="fas fa-th-list"></i> What Pages Are Updated</h2>
+                <ul class="list-group">
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> <strong>Homepage (index.php)</strong> - Full bilingual support</li>
+                    <li class="list-group-item"><i class="fas fa-info-circle text-info"></i> Other pages need manual integration (see guide above)</li>
+                </ul>
+
+                <div class="alert alert-warning mt-4">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Next Steps</h4>
+                    <ol class="mb-0">
+                        <li>Visit homepage and test language switcher</li>
+                        <li>Add language support to cart.php, checkout.php pages</li>
+                        <li>Add more translations as needed</li>
+                        <li>Customize AR/EN product names in database</li>
+                    </ol>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="/poshy_store/" class="btn btn-lg" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 40px; border-radius: 30px; text-decoration: none; font-weight: bold;">
+                        <i class="fas fa-rocket me-2"></i>Try It Now!
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

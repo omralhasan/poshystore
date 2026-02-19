@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import pandas as pd; import openpyxl; df = pd.read_excel('images/Store_Ready_42_Products_ShortDesc.xlsx'); print(df.to_csv(index=False))
+    ^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'pandas'

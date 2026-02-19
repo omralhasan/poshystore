@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poshy Store - Elegant Logo Collection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Montserrat:wght@200;300;400;600&family=Cormorant+Garamond:wght@300;400;500;600;700&family=Great+Vibes&family=Cinzel:wght@400;500;600;700;800&family=Tangerine:wght@400;700&family=Dancing+Script:wght@400;500;600;700&family=Italiana&family=Bodoni+Moda:wght@400;600;700;900&family=Mrs+Saint+Delafield&family=Allura&family=Pinyon+Script&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #48366e 0%, #1a1333 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #c9a86a;
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 4px 15px rgba(201, 168, 106, 0.4);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #e8d5b5;
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+        
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .logo-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .logo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 50px rgba(201, 168, 106, 0.4);
+        }
+        
+        .logo-container {
+            background: linear-gradient(135deg, #f8f5f0 0%, #fff 100%);
+            border-radius: 15px;
+            padding: 3rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .logo-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #48366e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        /* Logo 1: Elegant Serif with Badge */
+        .logo1 {
+            text-align: center;
+        }
+        
+        .logo1-badge {
+            display: inline-block;
+            border: 3px solid #48366e;
+            border-radius: 50%;
+            padding: 2rem;
+            background: white;
+        }
+        
+        .logo1-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #48366e;
+            line-height: 1.1;
+        }
+        
+        .logo1-store {
+            font-size: 0.8rem;
+            letter-spacing: 4px;
+            color: #c9a86a;
+            font-weight: 400;
+        }
+        
+        /* Logo 2: Script with Shopping Bag */
+        .logo2 {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo2-icon {
+            font-size: 3rem;
+        }
+        
+        .logo2-text {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.8rem;
+            background: linear-gradient(135deg, #c9a86a 0%, #e8d5b5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+        
+        .logo2-subtitle {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: #48366e;
+            text-transform: uppercase;
+        }
+        
+        /* Logo 3: Bold Modern */
+        .logo3 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 3.5rem;
+            color: #48366e;
+            letter-spacing: 3px;
+            text-align: center;
+            line-height: 0.9;
+        }
+        
+        .logo3-store {
+            font-size: 1.8rem;
+            color: #c9a86a;
+            letter-spacing: 8px;
+        }
+        
+        /* Logo 4: Minimalist Line Art */
+        .logo4-container {
+            text-align: center;
+        }
+        
+        .logo4-icon {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #c9a86a;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.8rem;
+            transform: rotate(45deg);
+        }
+        
+        .logo4-letter {
+            transform: rotate(-45deg);
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: #48366e;
+            font-weight: 700;
+        }
+        
+        .logo4-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4rem;
+            color: #48366e;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        
+        .logo4-store {
+            font-size: 0.7rem;
+            color: #c9a86a;
+            letter-spacing: 4px;
+        }
+        
+        /* Logo 5: Vintage Badge */
+        .logo5 {
+            text-align: center;
+        }
+        
+        .logo5-badge {
+            border: 4px double #48366e;
+            padding: 1.5rem 2.5rem;
+            display: inline-block;
+            background: white;
+        }
+        
+        .logo5-text {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: #48366e;
+            font-weight: 700;
+            letter-spacing: 3px;
+        }
+        
+        .logo5-store {
+            font-size: 0.65rem;
+            letter-spacing: 6px;
+            color: #c9a86a;
+            font-weight: 400;
+            border-top: 1px solid #c9a86a;
+            padding-top: 0.5rem;
+            margin-top: 0.3rem;
+        }
+        
+        /* Logo 6: Playful Rounded */
+        .logo6 {
+            font-family: 'Pacifico', cursive;
+            font-size: 3rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .logo6-poshy {
+            background: linear-gradient(135deg, #48366e 0%, #6b4fa3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo6-store {
+            font-size: 1.5rem;
+            color: #c9a86a;
+        }
+        
+        /* Logo 7: Hexagon Shape */
+        .logo7 {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo7-hex {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #48366e 0%, #c9a86a 100%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo7-letter {
+            color: white;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .logo7-text {
+            font-family: 'Raleway', sans-serif;
+            font-size: 1.8rem;
+            color: #48366e;
+            font-weight: 800;
+            line-height: 1;
+        }
+        
+        .logo7-store {
+            font-size: 0.7rem;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: #c9a86a;
+        }
+        
+        /* Logo 8: Elegant Stack */
+        .logo8 {
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .logo8-poshy {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #48366e;
+            letter-spacing: 8px;
+        }
+        
+        .logo8-divider {
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #c9a86a, transparent);
+            margin: 0.5rem auto;
+        }
+        
+        .logo8-store {
+            font-size: 1rem;
+            letter-spacing: 6px;
+            color: #c9a86a;
+            font-weight: 400;
+        }
+        
+        /* Logo 9: Modern Stacked */
+        .logo9 {
+            font-family: 'Montserrat', sans-serif;
+            text-align: center;
+        }
+        
+        .logo9-poshy {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #48366e 0%, #6b4fa3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+        
+        .logo9-store {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: #c9a86a;
+            letter-spacing: 8px;
+        }
+        
+        /* Logo 10: Handwritten Signature */
+        .logo10 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3.5rem;
+            color: #48366e;
+            text-align: center;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+        
+        .logo10-store {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 5px;
+            color: #c9a86a;
+            font-weight: 300;
+        }
+        
+        /* Logo 11: Art Deco */
+        .logo11 {
+            text-align: center;
+        }
+        
+        .logo11-frame {
+            border: 3px solid #c9a86a;
+            border-radius: 5px;
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #48366e 0%, #3d2958 100%);
+        }
+        
+        .logo11-text {
+            font-family: 'Abril Fatface', cursive;
+            font-size: 2.2rem;
+            color: #e8d5b5;
+            letter-spacing: 4px;
+        }
+        
+        .logo11-store {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 6px;
+            color: #c9a86a;
+            font-weight: 300;
+        }
+        
+        /* Logo 12: Circular Badge */
+        .logo12 {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+        
+        .logo12-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid #48366e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f8f5f0 0%, white 100%);
+        }
+        
+        .logo12-inner {
+            text-align: center;
+        }
+        
+        .logo12-letter {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: #48366e;
+            font-weight: 700;
+        }
+        
+        .logo12-text {
+            font-family: 'Montserrat', sans-serif;
+            color: #48366e;
+            font-weight: 600;
+        }
+        
+        .logo12-poshy {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+        
+        .logo12-store {
+            font-size: 0.8rem;
+            color: #c9a86a;
+            letter-spacing: 4px;
+        }
+        
+        /* Logo 13: 3D Shadow Effect */
+        .logo13 {
+            font-family: 'Righteous', cursive;
+            font-size: 3rem;
+            color: #48366e;
+            text-align: center;
+            text-shadow: 3px 3px 0 #c9a86a;
+            line-height: 1;
+        }
+        
+        .logo13-store {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 6px;
+            text-shadow: 2px 2px 0 rgba(201, 168, 106, 0.5);
+        }
+        
+        /* Logo 14: Split Color */
+        .logo14 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 3.5rem;
+            text-align: center;
+            line-height: 0.9;
+            font-weight: 700;
+        }
+        
+        .logo14-po {
+            color: #48366e;
+        }
+        
+        .logo14-shy {
+            color: #c9a86a;
+        }
+        
+        .logo14-store {
+            font-size: 1.2rem;
+            color: #666;
+            letter-spacing: 8px;
+        }
+        
+        /* Logo 15: Crown & Text */
+        .logo15 {
+            text-align: center;
+        }
+        
+        .logo15-crown {
+            font-size: 3rem;
+            color: #c9a86a;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo15-text {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: #48366e;
+            font-weight: 700;
+            letter-spacing: 3px;
+        }
+        
+        .logo15-store {
+            font-size: 0.7rem;
+            color: #c9a86a;
+            letter-spacing: 5px;
+            font-weight: 400;
+        }
+        
+        .download-note {
+            text-align: center;
+            color: #e8d5b5;
+            margin-top: 3rem;
+            padding: 2.5rem;
+            background: rgba(72, 54, 112, 0.3);
+            border-radius: 20px;
+            border: 2px solid rgba(201, 168, 106, 0.3);
+        }
+        
+        .download-note h3 {
+            color: #c9a86a;
+            margin-bottom: 1rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+        }
+        
+        .download-note p {
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .logo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛍️ Poshy Store Logo Design Examples 🛍️</h1>
+        <p class="subtitle">15 unique logo concepts for your cosmetics store</p>
+        
+        <div class="logo-grid">
+            <!-- Logo 1: Elegant Badge -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo1">
+                        <div class="logo1-badge">
+                            <div class="logo1-text">POSHY</div>
+                            <div class="logo1-store">STORE</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Elegant Circular Badge</div>
+                <div class="logo-description">Classic circular design with clean typography. Perfect for a professional, timeless look.</div>
+            </div>
+            
+            <!-- Logo 2: Script with Icon -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo2">
+                        <div class="logo2-icon">🛍️</div>
+                        <div>
+                            <div class="logo2-text">Poshy</div>
+                            <div class="logo2-subtitle">STORE</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Luxury Script with Shopping Bag</div>
+                <div class="logo-description">Elegant handwritten style with gold gradient. Sophisticated and feminine.</div>
+            </div>
+            
+            <!-- Logo 3: Bold Modern -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo3">
+                        POSHY<br>
+                        <span class="logo3-store">STORE</span>
+                    </div>
+                </div>
+                <div class="logo-name">Bold Stacked Type</div>
+                <div class="logo-description">Strong, modern typography that commands attention. Great for signage and marketing.</div>
+            </div>
+            
+            <!-- Logo 4: Minimalist Diamond -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo4-container">
+                        <div class="logo4-icon">
+                            <div class="logo4-letter">P</div>
+                        </div>
+                        <div class="logo4-text">
+                            POSHY<br>
+                            <span class="logo4-store">STORE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Minimalist Diamond Icon</div>
+                <div class="logo-description">Clean geometric shape with monogram. Modern and versatile for all platforms.</div>
+            </div>
+            
+            <!-- Logo 5: Vintage Frame -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo5">
+                        <div class="logo5-badge">
+                            <div class="logo5-text">POSHY</div>
+                            <div class="logo5-store">• STORE •</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Vintage Double Border</div>
+                <div class="logo-description">Classic vintage aesthetic with ornate framing. Timeless and elegant.</div>
+            </div>
+            
+            <!-- Logo 6: Playful Script -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo6">
+                        <div class="logo6-poshy">Poshy</div>
+                        <div class="logo6-store">Store</div>
+                    </div>
+                </div>
+                <div class="logo-name">Playful Handwritten</div>
+                <div class="logo-description">Friendly and approachable cursive style. Perfect for a welcoming brand personality.</div>
+            </div>
+            
+            <!-- Logo 7: Hexagon Badge -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo7">
+                        <div class="logo7-hex">
+                            <div class="logo7-letter">P</div>
+                        </div>
+                        <div class="logo7-text">
+                            POSHY<br>
+                            <span class="logo7-store">STORE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Hexagon Icon + Text</div>
+                <div class="logo-description">Geometric hexagon with gradient fill. Modern and eye-catching.</div>
+            </div>
+            
+            <!-- Logo 8: Elegant Stacked -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo8">
+                        <div class="logo8-poshy">POSHY</div>
+                        <div class="logo8-divider"></div>
+                        <div class="logo8-store">STORE</div>
+                    </div>
+                </div>
+                <div class="logo-name">Elegant Stacked Serif</div>
+                <div class="logo-description">Sophisticated serif typography with decorative divider. High-end luxury feel.</div>
+            </div>
+            
+            <!-- Logo 9: Sans-Serif Gradient -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo9">
+                        <div class="logo9-poshy">POSHY</div>
+                        <div class="logo9-store">STORE</div>
+                    </div>
+                </div>
+                <div class="logo-name">Modern Gradient Sans</div>
+                <div class="logo-description">Clean sans-serif with purple gradient. Contemporary and professional.</div>
+            </div>
+            
+            <!-- Logo 10: Signature Style -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo10">
+                        <div>Poshy</div>
+                        <div class="logo10-store">STORE</div>
+                    </div>
+                </div>
+                <div class="logo-name">Handwritten Signature</div>
+                <div class="logo-description">Personal signature style script. Adds a human touch and authenticity.</div>
+            </div>
+            
+            <!-- Logo 11: Art Deco Frame -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo11">
+                        <div class="logo11-frame">
+                            <div class="logo11-text">POSHY</div>
+                            <div class="logo11-store">STORE</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Art Deco Framed</div>
+                <div class="logo-description">Vintage 1920s inspired design with gold border. Luxurious and glamorous.</div>
+            </div>
+            
+            <!-- Logo 12: Circle + Text -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo12">
+                        <div class="logo12-circle">
+                            <div class="logo12-inner">
+                                <div class="logo12-letter">P</div>
+                            </div>
+                        </div>
+                        <div class="logo12-text">
+                            <div class="logo12-poshy">POSHY</div>
+                            <div class="logo12-store">STORE</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="logo-name">Circle Badge Combo</div>
+                <div class="logo-description">Circular monogram paired with text. Balanced and versatile design.</div>
+            </div>
+            
+            <!-- Logo 13: 3D Shadow -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo13">
+                        <div>POSHY</div>
+                        <div class="logo13-store">STORE</div>
+                    </div>
+                </div>
+                <div class="logo-name">3D Shadow Effect</div>
+                <div class="logo-description">Bold text with shadow creating depth. Retro and playful aesthetic.</div>
+            </div>
+            
+            <!-- Logo 14: Split Color -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo14">
+                        <div>
+                            <span class="logo14-po">PO</span><span class="logo14-shy">SHY</span>
+                        </div>
+                        <div class="logo14-store">STORE</div>
+                    </div>
+                </div>
+                <div class="logo-name">Two-Tone Split</div>
+                <div class="logo-description">Creative split color treatment. Memorable and unique visual identity.</div>
+            </div>
+            
+            <!-- Logo 15: Crown Emblem -->
+            <div class="logo-card">
+                <div class="logo-container">
+                    <div class="logo15">
+                        <div class="logo15-crown">👑</div>
+                        <div class="logo15-text">POSHY</div>
+                        <div class="logo15-store">STORE</div>
+                    </div>
+                </div>
+                <div class="logo-name">Royal Crown Emblem</div>
+                <div class="logo-description">Crown symbol representing luxury and quality. Premium brand positioning.</div>
+            </div>
+        </div>
+        
+        <div class="download-note">
+            <h3>💡 How to Use These Logos</h3>
+            <p>
+                These designs are visual concepts to inspire your brand identity!<br><br>
+                <strong>Next Steps:</strong><br>
+                • Screenshot your favorite designs from above<br>
+                • Hire a designer on Fiverr or Upwork ($10-100) to recreate as vector files<br>
+                • Use Canva Pro to create similar designs with their templates<br>
+                • Or contact a local graphic designer for custom work<br><br>
+                <strong>Pro Tip:</strong> You can mix elements from different logos! For example, use the script from #2 with the badge from #1.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

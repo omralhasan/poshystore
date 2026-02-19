@@ -1,0 +1,21 @@
+{
+  "name": "poshy-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp order confirmation bot for Poshy Lifestyle",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": ["whatsapp", "automation", "ecommerce"],
+  "author": "Poshy Lifestyle",
+  "license": "MIT",
+  "dependencies": {
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0",
+    "chokidar": "^3.5.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

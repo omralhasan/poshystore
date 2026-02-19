@@ -1,0 +1,684 @@
+<?php
+require_once __DIR__ . '/auth_functions.php';
+require_once __DIR__ . '/checkout.php';
+require_once __DIR__ . '/db_connect.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: signin.php');
+    exit;
+}
+
+// Get user information
+$user_id = $_SESSION['user_id'];
+$user_sql = "SELECT firstname, lastname, email, phonenumber FROM users WHERE id = ?";
+$user_stmt = $conn->prepare($user_sql);
+$user_stmt->bind_param('i', $user_id);
+$user_stmt->execute();
+$user_info = $user_stmt->get_result()->fetch_assoc();
+$user_stmt->close();
+
+$orders_result = getUserOrders($user_id, 50);
+$orders = $orders_result['orders'] ?? [];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Poshy Lifestyle</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .orders-list {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .order-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 0;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+        
+        .order-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .order-card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8f9ff, #ffffff);
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .order-card-body {
+            padding: 1.5rem;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .order-id {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .order-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .order-status {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-processing {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .order-total {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #28a745;
+            text-align: right;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .order-items {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .order-items-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            padding: 0.8rem;
+            background: #f9f9f9;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.2rem;
+        }
+        
+        .item-name-ar {
+            font-size: 0.9rem;
+            color: #666;
+            direction: rtl;
+            margin-bottom: 0.3rem;
+        }
+        
+        .item-quantity {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .item-price {
+            text-align: right;
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .item-price-unit {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 0.2rem;
+        }
+        
+        .customer-info {
+            background: #f0f4ff;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+        
+        .customer-info-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .customer-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .order-tracking {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .tracking-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        
+        .tracking-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+        }
+        
+        .tracking-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        
+        .tracking-step::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            right: -50%;
+            height: 2px;
+            background: #ddd;
+            z-index: 0;
+        }
+        
+        .tracking-step:last-child::before {
+            display: none;
+        }
+        
+        .tracking-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ddd;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tracking-step.completed .tracking-icon {
+            background: #28a745;
+        }
+        
+        .tracking-step.active .tracking-icon {
+            background: #667eea;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .tracking-step.completed::before {
+            background: #28a745;
+        }
+        
+        .tracking-label {
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .tracking-step.completed .tracking-label,
+        .tracking-step.active .tracking-label {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .action-btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-reorder {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-reorder:hover {
+            background: #5568d3;
+        }
+        
+        .btn-cancel {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #c82333;
+        }
+        
+        .btn-details {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-details:hover {
+            background: #5a6268;
+        }
+        
+        .order-summary {
+            background: #fff8e1;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.95rem;
+        }
+        
+        .summary-row.total {
+            border-top: 2px solid #ddd;
+            margin-top: 0.5rem;
+            padding-top: 0.8rem;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #28a745;
+        }
+        
+        .item-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            background: #f9f9f9;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .items-summary {
+            background: #e7f3ff;
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        
+        .empty-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state h2 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state p {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .shop-btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .shop-btn:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.php" class="logo">🛍️ Poshy Lifestyle</a>
+            <div class="nav-links">
+                <a href="index.php">Home</a>
+                <a href="shop.php">Shop</a>
+                <a href="my_orders.php" style="color: #667eea; font-weight: bold;">My Orders</a>
+                <a href="cart.php">Cart</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>📦 My Orders</h1>
+            <p>Track and manage your orders</p>
+        </div>
+
+        <?php if ($user_info): ?>
+        <div class="orders-list">
+            <div class="customer-info">
+                <div class="customer-info-title">👤 Customer Information</div>
+                <div class="customer-details">
+                    <div><strong>Name:</strong> <?= htmlspecialchars($user_info['firstname'] . ' ' . $user_info['lastname']) ?></div>
+                    <div><strong>Email:</strong> <?= htmlspecialchars($user_info['email']) ?></div>
+                    <div><strong>Phone:</strong> <?= htmlspecialchars($user_info['phonenumber']) ?></div>
+                    <div><strong>Total Orders:</strong> <?= count($orders) ?></div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="orders-list">
+            <?php if (empty($orders)): ?>
+                <div class="empty-state">
+                    <div class="empty-icon">📦</div>
+                    <h2>No orders yet</h2>
+                    <p>Start shopping to place your first order!</p>
+                    <a href="index.php" class="shop-btn">Start Shopping</a>
+                </div>
+            <?php else: ?>
+                <?php foreach ($orders as $order): ?>
+                    <div class="order-card">
+                        <div class="order-card-header">
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-id">Order #<?= $order['order_id'] ?></div>
+                                    <div class="order-date">
+                                        📅 <?= date('F j, Y, g:i a', strtotime($order['created_at'])) ?>
+                                    </div>
+                                </div>
+                                <div class="order-status status-<?= $order['status'] ?>">
+                                    <?= htmlspecialchars($order['status']) ?>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-card-body">
+                            <!-- Order Tracking Timeline -->
+                            <div class="order-tracking">
+                                <div class="tracking-title">📍 Order Tracking</div>
+                                <div class="tracking-steps">
+                                    <?php 
+                                    $statuses = ['pending' => 'Pending', 'shipped' => 'Shipped', 'delivered' => 'Delivered'];
+                                    $cancelled = $order['status'] === 'cancelled';
+                                    $current_status = $order['status'];
+                                    $status_order = ['pending', 'shipped', 'delivered'];
+                                    $current_index = array_search($current_status, $status_order);
+                                    
+                                    if (!$cancelled) {
+                                        foreach ($statuses as $key => $label):
+                                            $step_index = array_search($key, $status_order);
+                                            $class = '';
+                                            if ($step_index < $current_index || ($step_index == $current_index && $current_status != 'pending')) {
+                                                $class = 'completed';
+                                            } elseif ($step_index == $current_index) {
+                                                $class = 'active';
+                                            }
+                                    ?>
+                                        <div class="tracking-step <?= $class ?>">
+                                            <div class="tracking-icon">
+                                                <?php 
+                                                if ($class == 'completed') echo '✓';
+                                                elseif ($class == 'active') echo '●';
+                                                else echo '○';
+                                                ?>
+                                            </div>
+                                            <div class="tracking-label"><?= $label ?></div>
+                                        </div>
+                                    <?php 
+                                        endforeach;
+                                    } else {
+                                        echo '<div style="text-align: center; color: #dc3545; font-weight: 600;">❌ Order Cancelled</div>';
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                            
+                            <?php if (!empty($order['items'])): ?>
+            if (!confirm('Are you sure you want to cancel this order?')) {
+                return;
+            }
+            
+            fetch('cancel_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'order_id=' + orderId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Order cancelled successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to cancel order'));
+                }
+            })
+            .catch(error => {
+                alert('Network error. Please try again.');
+            });
+        }
+    </script>
+                                        endforeach;
+                                    } else {
+                                        echo '<div style="text-align: center; color: #dc3545; font-weight: 600;">❌ Order Cancelled</div>';
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                            
+                            <?php if (!empty($order['items'])): ?>
+                                <div class="order-items">
+                                    <div class="order-items-header">📦 Order Items (<?= $order['items_count'] ?> items)</div>
+                                    
+                                    <?php 
+                                    $icons = ['🛍️', '👜', '⌚', '🕶️', '👔', '💼', '👞', '🎩', '💍', '🎁'];
+                                    foreach ($order['items'] as $idx => $item): 
+                                    ?>
+                                        <div class="order-item">
+                                            <div class="item-icon">
+                                                <?= $icons[$item['product_id'] % count($icons)] ?>
+                                            </div>
+                                            <div class="item-info">
+                                                <div class="item-name"><?= htmlspecialchars($item['product_name_en']) ?></div>
+                                                <div class="item-name-ar"><?= htmlspecialchars($item['product_name_ar']) ?></div>
+                                                <div class="item-quantity">Quantity: <?= $item['quantity'] ?> × <?= $item['price_formatted'] ?></div>
+                                            </div>
+                                            <div class="item-price">
+                                                <div><?= $item['subtotal_formatted'] ?></div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <!-- Order Summary -->
+                            <div class="order-summary">
+                                <div class="summary-row">
+                                    <span>Subtotal (<?= count($order['items']) ?> products):</span>
+                                    <span><?= $order['total_amount_formatted'] ?></span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Shipping:</span>
+                                    <span>FREE</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Tax:</span>
+                                    <span>Included</span>
+                                </div>
+                                <div class="summary-row total">
+                                    <span>Total Amount:</span>
+                                    <span><?= $order['total_amount_formatted'] ?></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Order Actions -->
+                            <div class="order-actions">
+                                <a href="product_detail.php?id=<?= $order['items'][0]['product_id'] ?? 1 ?>" class="action-btn btn-details">
+                                    📄 View Products
+                                </a>
+                                <?php if ($order['status'] === 'pending'): ?>
+                                    <button class="action-btn btn-cancel" onclick="cancelOrder(<?= $order['order_id'] ?>)">
+                                        ❌ Cancel Order
+                                    </button>
+                                <?php endif; ?>
+                                <a href="index.php" class="action-btn btn-reorder">
+                                    🔄 Shop Again
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✓ Coupon Fixed - Test Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .test-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        .success-icon {
+            font-size: 4rem;
+            color: #10b981;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1f2937;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .coupon-box {
+            background: #f3f4f6;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .coupon-code {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+        }
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        .result-box.success {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            display: block;
+        }
+        .result-box.error {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            display: block;
+        }
+        .fix-list {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .fix-list li {
+            margin: 10px 0;
+            color: #374151;
+        }
+        .fix-list i {
+            color: #10b981;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h1>Coupon System Fixed! ✨</h1>
+        
+        <div class="fix-list">
+            <h4><i class="fas fa-wrench"></i> What Was Fixed:</h4>
+            <ul>
+                <li><i class="fas fa-check"></i> <strong>SQL Syntax Error:</strong> Changed reserved word 'current_time' to 'current_db_time'</li>
+                <li><i class="fas fa-check"></i> <strong>Output Buffering:</strong> Added to prevent warnings from corrupting JSON response</li>
+                <li><i class="fas fa-check"></i> <strong>Session Handling:</strong> Fixed duplicate session_start() warnings</li>
+            </ul>
+        </div>
+
+        <div class="coupon-box">
+            <div style="color: #6b7280; margin-bottom: 10px;">Test with this coupon:</div>
+            <div class="coupon-code">POSH</div>
+            <div style="color: #6b7280; margin-top: 10px; font-size: 0.9rem;">
+                10% discount • Min purchase: 10 JOD
+            </div>
+        </div>
+
+        <div>
+            <label style="display: block; margin-bottom: 5px; color: #6b7280;">Cart Total (JOD):</label>
+            <input type="number" id="cartTotal" class="form-control" value="100" step="0.001" style="font-size: 1.2rem; padding: 15px;">
+        </div>
+
+        <button onclick="testCoupon()" class="test-btn" id="testBtn">
+            <i class="fas fa-tag"></i> Test Coupon Now
+        </button>
+
+        <div id="result" class="result-box"></div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #fffbeb; border-radius: 10px; border-left: 4px solid #f59e0b;">
+            <h5 style="color: #92400e;"><i class="fas fa-info-circle"></i> Available Coupons:</h5>
+            <ul style="color: #78350f; margin-top: 10px;">
+                <li><strong>POSH</strong> - 10% off (min 10 JOD)</li>
+                <li><strong>WELCOME10</strong> - 10% off (min 50 JOD)</li>
+                <li><strong>SAVE20</strong> - 20% off (min 100 JOD)</li>
+                <li><strong>FLAT15</strong> - 15 JOD off (min 75 JOD)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testCoupon() {
+            const total = document.getElementById('cartTotal').value;
+            const resultDiv = document.getElementById('result');
+            const testBtn = document.getElementById('testBtn');
+            
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            
+            fetch('/poshy_store/api/apply_coupon.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=apply_coupon&code=POSH&cart_total=${total}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.className = 'result-box success';
+                    resultDiv.innerHTML = `
+                        <h4 style="color: #065f46; margin-bottom: 15px;">
+                            <i class="fas fa-check-circle"></i> Success!
+                        </h4>
+                        <div style="color: #047857;">
+                            <strong>Original Total:</strong> ${total} JOD<br>
+                            <strong>Discount:</strong> ${data.discount}<br>
+                            <strong>New Total:</strong> ${data.new_total}<br>
+                            <div style="margin-top: 15px; padding: 10px; background: #a7f3d0; border-radius: 5px;">
+                                <strong>✓ The coupon system is working perfectly!</strong>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.className = 'result-box error';
+                    resultDiv.innerHTML = `
+                        <h4 style="color: #991b1b;">
+                            <i class="fas fa-exclamation-circle"></i> Error
+                        </h4>
+                        <div style="color: #b91c1c;">
+                            ${data.error}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                resultDiv.className = 'result-box error';
+                resultDiv.innerHTML = `
+                    <h4 style="color: #991b1b;">
+                        <i class="fas fa-times-circle"></i> Network Error
+                    </h4>
+                    <div style="color: #b91c1c;">
+                        ${error.message}<br>
+                        <small>If you see this, the fix didn't work. Please check browser console for details.</small>
+                    </div>
+                `;
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                testBtn.disabled = false;
+                testBtn.innerHTML = '<i class="fas fa-tag"></i> Test Coupon Again';
+            });
+        }
+    </script>
+</body>
+</html>

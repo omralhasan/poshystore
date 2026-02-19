@@ -1,0 +1,156 @@
+2026-02-09 17:24:03 - Token Exchange Debug
+Provider: google
+HTTP Code: 0
+POST Data: {
+    "code": "4\/0ASc3gC2WXnN7Tc1h_W9pcD0jIX9pxKtFObJbGcyRvfQu6LOurysKhnHXj-fmeErL3eqVcA",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: 
+CURL Error: Failed to connect to oauth2.googleapis.com port 443 after 23 ms: Could not connect to server
+--------------------------------------------------------------------------------
+
+2026-02-09 17:26:38 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 0
+CURL errno: 7
+POST Data: {
+    "code": "4\/0ASc3gC2hSMJXi7KXRBgzg9LuSTMrVQ9IoLHs1uWDpxXVxS9NaqELplGGQTKWmHM_-7mwbQ",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: 
+CURL Error: Failed to connect to oauth2.googleapis.com port 443 after 1 ms: Could not connect to server
+--------------------------------------------------------------------------------
+
+2026-02-09 17:29:52 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 0
+CURL errno: 7
+POST Data: {
+    "code": "4\/0ASc3gC0urpoME16-b5ZwmD3eTHUcOFedJR6o2xjhrJ8xPt0295fSvxNTGkRPuRT8EEEg3w",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: 
+CURL Error: file_get_contents(https://oauth2.googleapis.com/token): Failed to open stream: Permission denied
+--------------------------------------------------------------------------------
+
+2026-02-09 17:31:37 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 0
+CURL errno: 7
+POST Data: {
+    "code": "4\/0ASc3gC067kQvWti7BNxLsCRx3BRUyqgBL_HNroTXuz_JczJBm6olBSwREAyOBLCz8IvXTg",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: 
+CURL Error: file_get_contents(https://oauth2.googleapis.com/token): Failed to open stream: Permission denied
+--------------------------------------------------------------------------------
+
+2026-02-09 17:34:52 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 0
+CURL errno: 7
+POST Data: {
+    "code": "4\/0ASc3gC0URdalb3cyBfWaKYUJKsBeBp1O1NBtFu4EQJQalVOquhXZzObrErRpECvcuNUMxw",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: 
+CURL Error: file_get_contents(https://oauth2.googleapis.com/token): Failed to open stream: Permission denied
+--------------------------------------------------------------------------------
+
+2026-02-09 17:37:16 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 0
+CURL errno: 7
+POST Data: {
+    "code": "4\/0ASc3gC2RpTQjz0H_PvHBZ2y0CPdfLG4UArSiW2Mi2GmMbsRlNnYdCVrkfloEpp44OGV-7g",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: 
+CURL Error: file_get_contents(https://oauth2.googleapis.com/token): Failed to open stream: Permission denied
+--------------------------------------------------------------------------------
+
+2026-02-09 17:42:15 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 200
+CURL errno: 0
+POST Data: {
+    "code": "4\/0ASc3gC2wIivXqqphZD_bhuvFq7x6FgU593FnIyD5KUnGxkLiPi5hVKsWe25gXsGUqmsb1g",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: {
+  "access_token": "ya29.a0AUMWg_JGLE90E9lA_49ZglpMkGBPGsuzyNnj3wT7pK92cZsxgm1562diVJOOIYnLtX5w_E_J3Gd80lYK7iNhXl7hUYr38yJV9ZkDEQUm1knATT-ixoOMvBhgpQ0qnbG2MX3XQG5xDVnc0Lk_6pgQNY_qanzq79Y8gNvOpqeQ4OQF_GxmlbuwNX4uIPMqoHSPD2E-LyEaCgYKATYSARISFQHGX2MiIE1BVmgfWAAtlAMCQ-zRMQ0206",
+  "expires_in": 3599,
+  "refresh_token": "1//03X3AJf9zO40DCgYIARAAGAMSNwF-L9Ir3n7hl6KCxShWH56AxS-ClDBz55E8i3CUaLKNmrB9DB_WWXucYSiMm12UxuUq6oxbY4g",
+  "scope": "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid",
+  "token_type": "Bearer",
+  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImMyN2JhNDBiMDk1MjlhZDRmMTY4MjJjZTgzMTY3YzFiYzM5MTAxMjIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIxMTA3NDkzNDMyNzMtOXEydXZkc2Y2djg2dXFzdXVvZHNtZjZxMGtjY2RkcjAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIxMTA3NDkzNDMyNzMtOXEydXZkc2Y2djg2dXFzdXVvZHNtZjZxMGtjY2RkcjAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDYxNzUxNDE1NjYzMDM3MjgzOTMiLCJlbWFpbCI6Im1hdGU3NzYyc0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6ImhYYW1ldW5kR1B4U01ZN044TFBNelEiLCJuYW1lIjoiT21hciBBYnVkaWFrIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0t4bjBwTm9VeXJMNzJ2UjEzczBzQ1VSMUh4SnZqSFgzRnVvUXQ3ODV2blJzeW9YMEtPPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6Ik9tYXIiLCJmYW1pbHlfbmFtZSI6IkFidWRpYWsiLCJpYXQiOjE3NzA2NTg5MzUsImV4cCI6MTc3MDY2MjUzNX0.rgm-GduWEmjApkJJLLEZlq9X50cR9ZQLM8DVSSIZJ-Qvop4c_NEBvqEhq-lMkyYjG7XGX6uG9aFyIOIhUIO_5-1zOkRv7ih96X9h4G0EAIFNAWEV3ao93ohN5vmgOiNN7FDwrbNrL8c5_tEWmjs8zmr7UgDUwd7r10fEBGsD-z7EkZKMW2tKBxvAAQbMb-yJ2fCmvUrmGQtksxWtt_y6THYdgzPpq8CPNgcxyGup_oFY9ClfYrqUerloe7tmXlqKatk4QwUqEIyBumPk_XE7Nk20-29t15T8mzg_-2aQD9SqcrqvkBsuo5ztfOi0iXARyuuv1BWll8AMeJbAtF68rw"
+}
+CURL Error: 
+--------------------------------------------------------------------------------
+
+2026-02-09 17:42:52 - Token Exchange Debug
+Provider: google
+Token URL: https://oauth2.googleapis.com/token
+HTTP Code: 200
+CURL errno: 0
+POST Data: {
+    "code": "4\/0ASc3gC3MVYc66S8YEx-bRBdyBbte57jZVCkc9ZQmZ73GQuPcHZF1DWUYCjabLBt-J_c9pQ",
+    "grant_type": "authorization_code",
+    "client_id": "110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com",
+    "client_secret": "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",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: {
+  "access_token": "ya29.a0AUMWg_J8fcbAy217NDVuwiyH-WUNFBdLPmO-_jxWBoW05D5QwCbMmf2kvoHpSwIpmxN_iCUsVpO5IHMZ4mpWjFYZHkMsa_Lrh14WXaNoUro9crmaP6qXL23w3q30PMFpNp_x-5Run4xk07hrhzUv0MylMMHdYkNlQL0jH3dx7TEqPkryR48KV_z58gdMXuoGpZt4yQIaCgYKAesSARESFQHGX2MiLmODqFwdo14KzwO5JlhWEQ0206",
+  "expires_in": 3599,
+  "refresh_token": "1//03zz9qCXKBRhbCgYIARAAGAMSNwF-L9Irn_zz0FEWqQVnFKTB6sSni_P5ZMZNb4GaywpN1Ggi3fp2lt10ut3og-svy2g72JKSr-w",
+  "scope": "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
+  "token_type": "Bearer",
+  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImMyN2JhNDBiMDk1MjlhZDRmMTY4MjJjZTgzMTY3YzFiYzM5MTAxMjIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIxMTA3NDkzNDMyNzMtOXEydXZkc2Y2djg2dXFzdXVvZHNtZjZxMGtjY2RkcjAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIxMTA3NDkzNDMyNzMtOXEydXZkc2Y2djg2dXFzdXVvZHNtZjZxMGtjY2RkcjAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTI1MTc1ODYxNTkwNTU0NjIyMTQiLCJlbWFpbCI6Inpja2EwNjJAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJzT3dvQlJORXE2c2hRYi1jdTZleWpRIiwibmFtZSI6Ilpja2EgMSIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NMaGtvcno5ZDRrUGpSWkIzYm9oQmV2MXQ0eTVlYVlTb1l1b0l4VVNMVFJmRXBpS0E9czk2LWMiLCJnaXZlbl9uYW1lIjoiWmNrYSIsImZhbWlseV9uYW1lIjoiMSIsImlhdCI6MTc3MDY1ODk3MiwiZXhwIjoxNzcwNjYyNTcyfQ.uCeUpqWXHjqQVRsEqtSWmcGYn7U7gMLqD0ZY9GlwWE4B7mox1WUo-b-B-KFro3NVdjJEaJBRE96J6ERQBNWN3p9i8xr6kW9c2bElLKd4zePIWtqp_mJpxRGquN7aWHInrS925cFstBnw29v9M01DLI8A_BG1DCTohjXM7HVnC7B0N27EbuAmVpxymxck_Bj78AX4zR7f-prfNKMwjT5SMKbzG1f4rShb-BvWqZqJZ_-TOqh0CxBqWYqtCnlnSlejqUrazUbIGmWC9mWctvKZ2-JT3THzJSUjyR7pJ1d55F8htng5DXaJsmTJzWSRAUyFSxxEpM1Z39TuzvcusjzaEw"
+}
+CURL Error: 
+--------------------------------------------------------------------------------
+
+2026-02-09 18:35:57 - Token Exchange Debug
+Provider: facebook
+Token URL: https://graph.facebook.com/v12.0/oauth/access_token
+HTTP Code: 200
+CURL errno: 0
+POST Data: {
+    "code": "AQAARTxafz9lW8xZOl0oBEka14A6Pb7PnkV6LNXTcQ8jeqqjDv-zBIx7jARi6jTlSvvU_YxZCZQO9V4HqYJdKFsBlSnwPSFckTG3f3bwBVSvzfUoVCDxyEZliTtGLRG2pCLNIllxTbrABvhxtiN8H_uODDVM1jrbCWTCCG6Mb-wPLJR2nnqhr2vK21nxKqXbpOLyhYk9PRjSJPSwbPlUHaentBGOGd-cJESEykYkGa4LdUsQA8hFfKglIV3jqB6YJrzBufd_5YIyywMH74QI3j67XYrndyLuDWbSUzi1WEh21a5dQKeo0hDKoNTYVRD2fqnanYHw9QIoXY-gW1_vBECD2QlkukOaVhOq_apKCV4dvGpwXu7IH6NPXizFdz_zqg_j6qmBOlcu8oZ_ir-dz0UtaQLghL1vfB1KBON3ajmmivoeFm750lt39exKlTDnnHs",
+    "grant_type": "authorization_code",
+    "client_id": "1257016736289462",
+    "client_secret": "9754bc68520be46d248623117a3bb854",
+    "redirect_uri": "http:\/\/localhost\/poshy_store\/oauth_callback.php"
+}
+Response: {"access_token":"EAAR3QAQLErYBQnw0hNF88N15fiBj4ZCOadPjCn2fPvW9W2yDCcrcrDpr6SFCNfWLTOBzSSRQmNXZAZB2WhZBcFCt8sRR6EcJSuarOZBsXZACm5wsI0h3Jo3rpZBsAbgoE9czgZAC1agPDm9rkuhOEvZC26Ifr9VZCZAmR8CpXacXdkwHB4gBhLSHwZBF2vZBl1BUE9oZCDg0YmU92UDnfLx05tgu8M3W9fUpd85vA4WhIz5qhddBSZA62NpVx1TTPjrZAtvbRbSt7h4eeELHDyMDQHGAQscBODXbweoLKjG3ZB3k3NMX309LVGsCAgoB7","token_type":"bearer","expires_in":5183999}
+CURL Error: 
+--------------------------------------------------------------------------------
+

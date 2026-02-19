@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Verification - Poshy Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        .section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        .stock-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+        .btn-refresh {
+            background: #28a745;
+        }
+        .btn-refresh:hover {
+            background: #218838;
+        }
+        .status {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .instructions {
+            background: #e7f3ff;
+            padding: 1rem;
+            border-left: 4px solid #2196F3;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
+        }
+        .instructions ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Real-Time Stock Verification</h1>
+        <p class="subtitle">Verify that stock quantities change when orders are placed and cancelled</p>
+
+        <div class="instructions">
+            <strong>🔍 How to test stock management:</strong>
+            <ol>
+                <li>Note the current stock numbers below</li>
+                <li>Go to the shop page and <strong>add a product to cart and checkout</strong></li>
+                <li>Come back here and click "Refresh Stock" - stock should be <span class="highlight">reduced</span></li>
+                <li>Go to "My Orders" and <strong>cancel the order</strong></li>
+                <li>Come back here and click "Refresh Stock" - stock should be <span class="highlight">restored</span></li>
+            </ol>
+        </div>
+        
+        <div class="section">
+            <h2>📦 Current Product Stock Levels</h2>
+            <div style="margin-bottom: 1rem;">
+                <button class="btn btn-refresh" onclick="refreshStock()">🔄 Refresh Stock</button>
+                <span id="last-updated" style="margin-left: 1rem; color: #666;"></span>
+            </div>
+            <div id="stock-table">Loading stock data...</div>
+        </div>
+
+        <div class="section">
+            <h2>📋 Recent Stock Changes (Order Activity)</h2>
+            <div id="order-activity">Loading order activity...</div>
+        </div>
+
+        <div id="status-message"></div>
+
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e0e0e0; text-align: center;">
+            <a href="admin_panel.php" class="btn">← Back to Admin Panel</a>
+            <a href="shop.php" class="btn" style="margin-left: 1rem; background: #ff6b35;">Go to Shop</a>
+        </div>
+    </div>
+
+    <script>
+        let previousStockData = null;
+
+        async function refreshStock() {
+            try {
+                document.getElementById('stock-table').innerHTML = 'Loading...';
+                const response = await fetch('get_stock_status.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayStockTable(data.products);
+                    displayOrderActivity(data.recent_orders);
+                    document.getElementById('last-updated').textContent = 
+                        'Last updated: ' + new Date().toLocaleTimeString();
+                } else {
+                    document.getElementById('stock-table').innerHTML = 
+                        '<p style="color: red;">Error loading stock data</p>';
+                }
+            } catch (error) {
+                document.getElementById('stock-table').innerHTML = 
+                    '<p style="color: red;">Network error: ' + error.message + '</p>';
+            }
+        }
+
+        function displayStockTable(products) {
+            let html = '<table><thead><tr>' +
+                       '<th>Product ID</th>' +
+                       '<th>Product Name</th>' +
+                       '<th>Stock Quantity</th>' +
+                       '<th>Status</th>' +
+                       '</tr></thead><tbody>';
+            
+            products.forEach(product => {
+                let stockClass = '';
+                let changeIndicator = '';
+                
+                // Check if stock changed
+                if (previousStockData) {
+                    const prevProduct = previousStockData.find(p => p.id === product.id);
+                    if (prevProduct) {
+                        if (product.stock_quantity > prevProduct.stock_quantity) {
+                            changeIndicator = ' <span style="color: #28a745;">↑ +' + 
+                                (product.stock_quantity - prevProduct.stock_quantity) + '</span>';
+                        } else if (product.stock_quantity < prevProduct.stock_quantity) {
+                            changeIndicator = ' <span style="color: #dc3545;">↓ -' + 
+                                (prevProduct.stock_quantity - product.stock_quantity) + '</span>';
+                        }
+                    }
+                }
+                
+                html += `<tr>
+                    <td>${product.id}</td>
+                    <td>${product.name_en}</td>
+                    <td><span class="stock-number">${product.stock_quantity}</span> units${changeIndicator}</td>
+                    <td>${product.stock_quantity > 0 ? 
+                        '<span style="color: #28a745;">✓ In Stock</span>' : 
+                        '<span style="color: #dc3545;">✗ Out of Stock</span>'}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('stock-table').innerHTML = html;
+            
+            // Save current data for comparison
+            previousStockData = products;
+        }
+
+        function displayOrderActivity(orders) {
+            if (!orders || orders.length === 0) {
+                document.getElementById('order-activity').innerHTML = 
+                    '<p style="color: #666;">No recent orders</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr>' +
+                       '<th>Order ID</th>' +
+                       '<th>User</th>' +
+                       '<th>Status</th>' +
+                       '<th>Total Amount</th>' +
+                       '<th>Date</th>' +
+                       '</tr></thead><tbody>';
+            
+            orders.forEach(order => {
+                let statusClass = '';
+                let statusIcon = '';
+                switch(order.status) {
+                    case 'pending':
+                        statusClass = 'background: #fff3cd; color: #856404;';
+                        statusIcon = '⏳';
+                        break;
+                    case 'cancelled':
+                        statusClass = 'background: #f8d7da; color: #721c24;';
+                        statusIcon = '❌';
+                        break;
+                    case 'shipped':
+                        statusClass = 'background: #d1ecf1; color: #0c5460;';
+                        statusIcon = '🚚';
+                        break;
+                    case 'delivered':
+                        statusClass = 'background: #d4edda; color: #155724;';
+                        statusIcon = '✅';
+                        break;
+                }
+                
+                html += `<tr>
+                    <td>#${order.order_id}</td>
+                    <td>User ${order.user_id}</td>
+                    <td><span style="padding: 0.3rem 0.6rem; border-radius: 4px; ${statusClass}">${statusIcon} ${order.status}</span></td>
+                    <td>${order.total_amount} JOD</td>
+                    <td>${new Date(order.order_date).toLocaleString()}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('order-activity').innerHTML = html;
+        }
+
+        // Auto-refresh every 10 seconds
+        setInterval(refreshStock, 10000);
+        
+        // Initial load
+        refreshStock();
+    </script>
+</body>
+</html>
