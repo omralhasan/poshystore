@@ -1,12 +1,11 @@
 <?php
-// Ensure language functions are available
-if (!function_exists('isRTL') && file_exists(__DIR__ . '/language.php')) {
-    require_once __DIR__ . '/language.php';
-}
-$_is_rtl = function_exists('isRTL') && isRTL();
+// Ensure session is running and language is loaded
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
+// Always read directly from session - no caching
 ?>
 <!-- Bootstrap 5 CSS (RTL for Arabic, LTR for English) -->
-<?php if ($_is_rtl): ?>
+<?php if (($_SESSION['language'] ?? 'en') === 'ar'): ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 <?php else: ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -16,7 +15,7 @@ $_is_rtl = function_exists('isRTL') && isRTL();
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <!-- Google Fonts -->
-<?php if ($_is_rtl): ?>
+<?php if (($_SESSION['language'] ?? 'en') === 'ar'): ?>
 <!-- Arabic Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 <?php else: ?>
@@ -40,7 +39,7 @@ $_is_rtl = function_exists('isRTL') && isRTL();
     }
     
     body {
-        font-family: <?php echo $_is_rtl ? "'Tajawal', 'Cairo', sans-serif" : "'Montserrat', 'Tajawal', sans-serif"; ?>;
+        font-family: <?php echo (($_SESSION['language'] ?? 'en') === 'ar') ? "'Tajawal', 'Cairo', sans-serif" : "'Montserrat', 'Tajawal', sans-serif"; ?>;
         background-color: var(--creamy-white);
         color: var(--deep-purple);
         overflow-x: hidden;
