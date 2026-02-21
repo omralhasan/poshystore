@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/checkout.php';
 require_once __DIR__ . '/../../includes/points_wallet_handler.php';
+require_once __DIR__ . '/../../includes/product_image_helper.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -268,19 +269,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         /* Responsive Improvements */
         @media (max-width: 768px) {
             .section-title-ramadan {
-                font-size: 2rem !important;
+                font-size: 1.6rem !important;
             }
             
             .order-item {
-                flex-direction: column;
-                align-items: flex-start !important;
-                text-align: left;
+                flex-direction: row;
+                align-items: center;
+                gap: 0.75rem;
             }
             
             .order-item img {
                 width: 100%;
                 height: auto;
                 aspect-ratio: 1;
+            }
+            
+            /* Checkout progress steps - smaller */
+            .container .py-5 > div:first-child {
+                margin-bottom: 1.5rem !important;
+            }
+            
+            /* Tabs - stack on very small screens */
+            .nav-pills {
+                flex-direction: column !important;
+            }
+            .nav-pills .nav-item {
+                margin-left: 0 !important;
+                margin-bottom: 0.25rem;
+            }
+            
+            /* Order summary card - fill width */
+            .card-ramadan {
+                padding: 1.25rem !important;
             }
         }
         
@@ -412,13 +432,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                         <div class="tab-content" style="margin-top: 2rem;">
                             <!-- Shipping Details Tab -->
                             <div class="tab-pane fade show active" id="shipping-content" role="tabpanel" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 2px solid rgba(201, 168, 106, 0.15);">
-                                <div style="background: linear-gradient(135deg, #e8f4f8 0%, #f0f8ff 100%); border-left: 5px solid var(--purple-color); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(72, 54, 110, 0.1);">
-                                    <strong style="color: var(--purple-color); font-size: 1.15rem;"><i class="fas fa-truck me-2"></i><?= t('standard_delivery') ?></strong>
-                                    <p style="color: #555; margin: 0.5rem 0 0 0; font-size: 0.95rem;"><?= t('provide_shipping_details') ?></p>
+                                <div style="background: linear-gradient(135deg, #f0e6ff 0%, #f5f0ff 100%); border-left: 5px solid #6c3fa0; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(108, 63, 160, 0.15);">
+                                    <strong style="color: #6c3fa0; font-size: 1.15rem;"><i class="fas fa-truck me-2"></i><?= t('standard_delivery') ?></strong>
+                                    <p style="color: #444; margin: 0.5rem 0 0 0; font-size: 0.95rem;"><?= t('provide_shipping_details') ?></p>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label" style="color: var(--gold-color); font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
-                                        <i class="fas fa-phone me-2" style="color: var(--purple-color);"></i><?= t('phone_number') ?> <span style="color: #dc3545;">*</span>
+                                    <label class="form-label" style="color: #4a2d7a; font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
+                                        <i class="fas fa-phone me-2" style="color: #6c3fa0;"></i><?= t('phone_number') ?> <span style="color: #dc3545;">*</span>
                                     </label>
                                     <input 
                                         type="tel" 
@@ -437,8 +457,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                     </small>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label" style="color: var(--gold-color); font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
-                                        <i class="fas fa-city me-2" style="color: var(--purple-color);"></i><?= t('city') ?> <span style="color: #dc3545;">*</span>
+                                    <label class="form-label" style="color: #4a2d7a; font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
+                                        <i class="fas fa-city me-2" style="color: #6c3fa0;"></i><?= t('city') ?> <span style="color: #dc3545;">*</span>
                                     </label>
                                     <input 
                                         type="text" 
@@ -456,8 +476,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                     </small>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label" style="color: var(--gold-color); font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
-                                        <i class="fas fa-map-marked-alt me-2" style="color: var(--purple-color);"></i><?= t('shipping_address') ?> <span style="color: #dc3545;">*</span>
+                                    <label class="form-label" style="color: #4a2d7a; font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
+                                        <i class="fas fa-map-marked-alt me-2" style="color: #6c3fa0;"></i><?= t('shipping_address') ?> <span style="color: #dc3545;">*</span>
                                     </label>
                                     <textarea 
                                         name="shipping_address" 
@@ -473,8 +493,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                     </small>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label" style="color: var(--gold-color); font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
-                                        <i class="fas fa-comment-dots me-2" style="color: var(--purple-color);"></i><?= t('order_notes') ?> <span style="color: #888; font-weight: 400; font-size: 0.9rem;">(<?= t('optional') ?>)</span>
+                                    <label class="form-label" style="color: #4a2d7a; font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; display: block;">
+                                        <i class="fas fa-comment-dots me-2" style="color: #6c3fa0;"></i><?= t('order_notes') ?> <span style="color: #888; font-weight: 400; font-size: 0.9rem;">(<?= t('optional') ?>)</span>
                                     </label>
                                     <textarea 
                                         name="notes" 
@@ -698,11 +718,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                             <?php foreach ($cart['cart_items'] as $item): ?>
                                 <div class="order-item" style="display: flex; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 2px solid rgba(201, 168, 106, 0.15); align-items: center;">
                                     <!-- Product Image -->
-                                    <div style="flex-shrink: 0; width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 2px solid var(--gold-color); box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
-                                        <?php if (!empty($item['image_url'])): ?>
-                                            <img src="<?= htmlspecialchars($item['image_url']) ?>" 
+                                    <div style="flex-shrink: 0; width: 80px; height: 80px; border-radius: 12px; overflow: hidden; border: 2px solid var(--gold-color); box-shadow: 0 3px 12px rgba(0,0,0,0.12);">
+                                        <?php 
+                                        $img_url = '';
+                                        if (!empty($item['image_url'])) {
+                                            $img_url = $item['image_url'];
+                                        }
+                                        // Fallback: use product_image_helper to find image
+                                        if (empty($img_url) || !file_exists(__DIR__ . '/../../' . $img_url)) {
+                                            $img_url = get_product_thumbnail(
+                                                $item['name_en'] ?? '',
+                                                $item['image_url'] ?? '',
+                                                __DIR__ . '/../..'
+                                            );
+                                        }
+                                        ?>
+                                        <?php if (!empty($img_url)): ?>
+                                            <img src="<?= htmlspecialchars($img_url) ?>" 
                                                  alt="<?= htmlspecialchars($item['name_en']) ?>"
-                                                 style="width: 100%; height: 100%; object-fit: cover;">
+                                                 style="width: 100%; height: 100%; object-fit: cover;"
+                                                 onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;background:linear-gradient(135deg,#6c3fa0,#c9a86a);display:flex;align-items:center;justify-content:center\'><i class=\'fas fa-shopping-bag\' style=\'color:white;font-size:1.5rem\'></i></div>'">
                                         <?php else: ?>
                                             <div style="width: 100%; height: 100%; background: linear-gradient(135deg, var(--purple-color), var(--gold-color)); display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-image" style="color: white; font-size: 1.5rem;"></i>

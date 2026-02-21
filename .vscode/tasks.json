@@ -1,0 +1,65 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Deploy to VPS",
+			"type": "shell",
+			"command": "bash /home/omar/poshystore/deploy.sh 2>&1 | tee /home/omar/poshystore/deploy_log.txt"
+		},
+		{
+			"label": "Deploy to VPS v2",
+			"type": "shell",
+			"command": "bash /home/omar/poshystore/deploy.sh 2>&1"
+		},
+		{
+			"label": "Deploy to VPS v3",
+			"type": "shell",
+			"command": "bash /home/omar/poshystore/deploy.sh 2>&1"
+		},
+		{
+			"label": "Check Server Environment",
+			"type": "shell",
+			"command": "echo 'Hostname:' $(hostname) && echo 'Docker:' $(which docker 2>/dev/null || echo 'not found') && echo 'Podman:' $(which podman 2>/dev/null || echo 'not found') && docker ps 2>&1 | head -10 && echo '---' && curl -s -o /dev/null -w '%{http_code}' http://localhost/ 2>&1 && echo '' && echo '---' && ls -la /var/www/html/ 2>/dev/null | head -5 || echo 'No /var/www/html'"
+		},
+		{
+			"label": "Deploy to /var/www/html",
+			"type": "shell",
+			"command": "echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/pages/admin/add_product.php /var/www/html/pages/admin/ && echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/pages/admin/manage_podcasts.php /var/www/html/pages/admin/ && echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/pages/shop/podcasts_list.php /var/www/html/pages/shop/ && echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/podcast.php /var/www/html/ && echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/.htaccess /var/www/html/ && echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/pages/admin/admin_panel.php /var/www/html/pages/admin/ && echo '=== All files deployed ===' && ls -la /var/www/html/pages/admin/add_product.php /var/www/html/pages/admin/manage_podcasts.php /var/www/html/pages/shop/podcasts_list.php /var/www/html/podcast.php"
+		},
+		{
+			"label": "Verify HTTP Status",
+			"type": "shell",
+			"command": "echo 'add_product:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/add_product.php) && echo 'manage_podcasts:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/manage_podcasts.php) && echo 'podcasts_list:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/shop/podcasts_list.php) && echo 'podcast:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/podcast.php) && echo 'homepage:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/) && echo 'admin_panel:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/admin_panel.php)"
+		},
+		{
+			"label": "Check 500 errors",
+			"type": "shell",
+			"command": "curl -s http://localhost/podcast.php 2>&1 | tail -20 && echo '===SEPARATOR===' && curl -s http://localhost/pages/shop/podcasts_list.php 2>&1 | tail -20"
+		},
+		{
+			"label": "Check PHP errors",
+			"type": "shell",
+			"command": "echo 'Zzcckkaa11oommaarr.' | sudo -S tail -30 /var/log/apache2/error.log 2>/dev/null || echo 'Zzcckkaa11oommaarr.' | sudo -S tail -30 /var/log/httpd/error_log 2>/dev/null || echo 'No error log found' && echo '===' && echo 'Zzcckkaa11oommaarr.' | sudo -S find /var/log -name '*.log' -newer /var/www/html/podcast.php 2>/dev/null | head -10"
+		},
+		{
+			"label": "Check PHP-FPM errors and SELinux",
+			"type": "shell",
+			"command": "echo 'Zzcckkaa11oommaarr.' | sudo -S tail -30 /var/log/php-fpm/www-error.log 2>&1 && echo '===SELINUX===' && ls -laZ /var/www/html/pages/admin/admin_panel.php /var/www/html/pages/admin/add_product.php /var/www/html/podcast.php /var/www/html/index.php 2>&1"
+		},
+		{
+			"label": "Deploy fix and verify",
+			"type": "shell",
+			"command": "echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/pages/shop/podcasts_list.php /var/www/html/pages/shop/ && echo 'Zzcckkaa11oommaarr.' | sudo -S cp /home/omar/poshystore/podcast.php /var/www/html/ && echo 'Files deployed' && echo 'podcasts_list:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/shop/podcasts_list.php) && echo 'podcast:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/podcast.php) && echo 'add_product:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/add_product.php) && echo 'manage_podcasts:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/manage_podcasts.php) && echo 'homepage:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/) && echo 'admin_panel:' $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/admin_panel.php)"
+		},
+		{
+			"label": "Git Status Check",
+			"type": "shell",
+			"command": "cd /home/omar/poshystore && git --no-pager log --oneline -3 && echo '===' && git --no-pager remote -v && echo '===' && git --no-pager status --short | head -5"
+		},
+		{
+			"label": "Git State Fresh",
+			"type": "shell",
+			"command": "cd /home/omar/poshystore && git log --oneline -3 && git remote -v && git status --short | head -5; git diff --stat HEAD~1 HEAD 2>&1 | head -10"
+		}
+	]
+}

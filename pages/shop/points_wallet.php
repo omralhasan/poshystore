@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../includes/points_wallet_handler.php';
 // Check if user is logged in
 $user_id = getCurrentUserId();
 if (!$user_id) {
-    header('Location: /poshy_store/signin.php');
+    header('Location: ' . BASE_PATH . '/signin.php');
     exit;
 }
 
@@ -283,6 +283,33 @@ $referral_stats = getReferralStats($user_id);
             .conversion-section {
                 padding: 1.5rem;
             }
+            
+            /* Referral code section - stack on mobile */
+            .rewards-card .row.align-items-center .col-md-5 {
+                margin-top: 1.5rem;
+            }
+            
+            .rewards-card .row.align-items-center .col-md-5 > div {
+                padding: 1.25rem !important;
+            }
+            
+            .rewards-card .row.align-items-center .col-md-5 input.form-control {
+                font-size: 1.2rem !important;
+            }
+            
+            /* Convert form - stack button */
+            .conversion-section .row.align-items-end {
+                flex-direction: column;
+            }
+            .conversion-section .row.align-items-end .col-md-4 {
+                margin-top: 1rem;
+            }
+            
+            /* Tab nav - smaller */
+            .nav-tabs .nav-link {
+                padding: 0.7rem 1rem;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -373,7 +400,7 @@ $referral_stats = getReferralStats($user_id);
                                            id="referralCodeInput" 
                                            value="<?php echo htmlspecialchars($referral_stats['referral_code']); ?>" 
                                            readonly 
-                                           style="font-size: 1.5rem; font-weight: bold; text-align: center; font-family: 'Courier New', monospace; color: var(--deep-purple); border: 2px solid var(--royal-gold);">
+                                           style="font-size: 1.5rem; font-weight: bold; text-align: center; font-family: 'Courier New', monospace; color: #d4af37; background: linear-gradient(135deg, #2d132c, #1a0a18); border: 2px solid var(--royal-gold); text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
                                     <button type="button" 
                                             class="btn btn-convert" 
                                             onclick="copyReferralCode()" 
@@ -547,7 +574,7 @@ $referral_stats = getReferralStats($user_id);
             // Show loading
             messageDiv.innerHTML = '<div class="alert alert-info text-center"><i class="fas fa-spinner fa-spin"></i> <?= t("processing_conversion") ?></div>';
             
-            fetch('/poshy_store/api/convert_points.php', {
+            fetch('<?= BASE_PATH ?>/api/convert_points.php', {
                 method: 'POST',
                 body: formData
             })

@@ -488,7 +488,7 @@ function updateOrderStatus($order_id, $new_status) {
     $old_status = $result->fetch_assoc()['status'];
     $check_stmt->close();
     
-    // If changing to cancelled from a non-cancelled status, restore stock
+    // If changing to cancelled from a non-cancelled status, restore stock AND reverse points
     if ($new_status === 'cancelled' && $old_status !== 'cancelled') {
         // Get all order items
         $items_sql = "SELECT product_id, quantity FROM order_items WHERE order_id = ?";
@@ -512,6 +512,58 @@ function updateOrderStatus($order_id, $new_status) {
             ];
         }
         $items_stmt->close();
+        
+        // Reverse points earned from this order
+        $points_sql = "SELECT pt.id, pt.user_id, pt.points_change 
+                       FROM points_transactions pt 
+                       WHERE pt.reference_id = ? AND pt.transaction_type = 'earned_purchase'";
+        $points_stmt = $conn->prepare($points_sql);
+        if ($points_stmt) {
+            $points_stmt->bind_param('i', $order_id);
+            $points_stmt->execute();
+            $points_result = $points_stmt->get_result();
+            
+            while ($pt = $points_result->fetch_assoc()) {
+                $points_to_deduct = $pt['points_change'];
+                $pt_user_id = $pt['user_id'];
+                
+                if ($points_to_deduct > 0) {
+                    // Get current user points
+                    $user_pts_sql = "SELECT points FROM users WHERE id = ?";
+                    $user_pts_stmt = $conn->prepare($user_pts_sql);
+                    $user_pts_stmt->bind_param('i', $pt_user_id);
+                    $user_pts_stmt->execute();
+                    $user_pts_result = $user_pts_stmt->get_result();
+                    $current_points = 0;
+                    if ($urow = $user_pts_result->fetch_assoc()) {
+                        $current_points = (int)$urow['points'];
+                    }
+                    $user_pts_stmt->close();
+                    
+                    // Deduct the points (don't go below 0)
+                    $actual_deduct = min($points_to_deduct, $current_points);
+                    $points_after = $current_points - $actual_deduct;
+                    
+                    $deduct_sql = "UPDATE users SET points = ? WHERE id = ?";
+                    $deduct_stmt = $conn->prepare($deduct_sql);
+                    $deduct_stmt->bind_param('ii', $points_after, $pt_user_id);
+                    $deduct_stmt->execute();
+                    $deduct_stmt->close();
+                    
+                    // Record the reversal transaction
+                    $neg_points = -$actual_deduct;
+                    $reversal_desc = "Points reversed for cancelled order #$order_id";
+                    $rev_sql = "INSERT INTO points_transactions 
+                                (user_id, points_change, transaction_type, reference_id, description, points_before, points_after) 
+                                VALUES (?, ?, 'cancelled_order', ?, ?, ?, ?)";
+                    $rev_stmt = $conn->prepare($rev_sql);
+                    $rev_stmt->bind_param('iiisii', $pt_user_id, $neg_points, $order_id, $reversal_desc, $current_points, $points_after);
+                    $rev_stmt->execute();
+                    $rev_stmt->close();
+                }
+            }
+            $points_stmt->close();
+        }
     }
     
     // Update orders table

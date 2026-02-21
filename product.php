@@ -9,6 +9,9 @@
  * existing product_detail.php template, keeping all logic in one place.
  */
 
+if (!defined('SITE_URL')) {
+    require_once __DIR__ . '/config.php';
+}
 require_once __DIR__ . '/includes/db_connect.php';
 require_once __DIR__ . '/includes/product_manager.php';
 

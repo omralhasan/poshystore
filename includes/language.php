@@ -4,9 +4,9 @@
  * Supports Arabic and English
  */
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Load central config (DB, SITE_URL, error logging, session)
+if (!defined('POSHY_CONFIG_LOADED')) {
+    require_once __DIR__ . '/../config.php';
 }
 
 // Set default language

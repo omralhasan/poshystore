@@ -9,6 +9,32 @@ require_once __DIR__ . '/../../includes/db_connect.php';
 $page_title = 'Podcasts';
 $page_description = 'Browse our latest podcasts from Poshy Lifestyle Store';
 
+// Ensure tables exist
+$conn->query("CREATE TABLE IF NOT EXISTS podcasts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    url_path VARCHAR(255) NOT NULL,
+    main_photo VARCHAR(500),
+    status ENUM('draft','published') DEFAULT 'draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE INDEX idx_url_path (url_path),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+$conn->query("CREATE TABLE IF NOT EXISTS podcast_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    podcast_id INT NOT NULL,
+    image_path VARCHAR(500) NOT NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (podcast_id) REFERENCES podcasts(id) ON DELETE CASCADE,
+    INDEX idx_podcast_id (podcast_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
 // Get all published podcasts
 $podcasts = [];
 $result = $conn->query("SELECT p.*, 

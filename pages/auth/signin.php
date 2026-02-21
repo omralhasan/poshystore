@@ -17,7 +17,7 @@ if (isset($_POST['logout'])) {
 
 // If user is already logged in, redirect to home page
 if (isset($_SESSION['user_id'])) {
-    header('Location: /poshy_store/index.php');
+    header('Location: ' . BASE_PATH . '/index.php');
     exit();
 }
 
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
             $conn->close();
             
             // Redirect based on user role - use absolute paths from root
-            $redirect = ($user['role'] === 'admin') ? '/poshy_store/pages/admin/admin_panel.php' : '/poshy_store/index.php';
+            $redirect = ($user['role'] === 'admin') ? BASE_PATH . '/pages/admin/admin_panel.php' : BASE_PATH . '/index.php';
             header('Location: ' . $redirect);
             exit();
         } else {

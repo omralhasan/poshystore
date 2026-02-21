@@ -199,7 +199,7 @@ if ($selected_product_id) {
                 <button type="submit" name="update_product" class="btn-save">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
-                <a href="/poshy_store/<?= htmlspecialchars($product['slug']) ?>" class="btn btn-info" target="_blank">
+                <a href="<?= BASE_PATH ?>/<?= htmlspecialchars($product['slug']) ?>" class="btn btn-info" target="_blank">
                     <i class="fas fa-eye"></i> Preview Product Page
                 </a>
             </div>

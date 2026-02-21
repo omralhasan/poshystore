@@ -10,6 +10,7 @@ session_start();
 require_once __DIR__ . '/../includes/db_connect.php';
 require_once __DIR__ . '/../includes/product_manager.php';
 require_once __DIR__ . '/../includes/cart_handler.php';
+require_once __DIR__ . '/../includes/product_image_helper.php';
 
 if (!isset($_GET['product_id'])) {
     echo json_encode(['success' => false, 'error' => 'Product ID required']);
@@ -123,6 +124,26 @@ if ($added_product['has_discount'] && $added_product['original_price'] > 0) {
     $final_price_formatted = formatJOD($discounted_price);
 }
 
+// Generate proper image paths using image helper
+$site_root = realpath(__DIR__ . '/..');
+$images_dir = $site_root . '/images';
+
+$added_image = get_product_thumbnail(
+    trim($added_product['name_en']),
+    $added_product['image_link'] ?? '',
+    $site_root
+);
+
+// Add image paths to recommended products
+foreach ($recommended_products as &$rec) {
+    $rec['image_path'] = get_product_thumbnail(
+        trim($rec['name_en'] ?? ''),
+        $rec['image_url'] ?? '',
+        $site_root
+    );
+}
+unset($rec);
+
 echo json_encode([
     'success' => true,
     'added_product' => [
@@ -130,6 +151,7 @@ echo json_encode([
         'name_en' => $added_product['name_en'],
         'name_ar' => $added_product['name_ar'],
         'image_url' => $added_product['image_link'],
+        'image_path' => '/' . $added_image,
         'price' => $final_price_formatted,
         'quantity' => $cart_quantity
     ],

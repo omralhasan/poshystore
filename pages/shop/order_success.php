@@ -99,6 +99,32 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
             font-weight: bold;
             font-size: 1.3rem;
         }
+        
+        /* Mobile improvements for order success */
+        @media (max-width: 768px) {
+            .success-card {
+                padding: 1.5rem;
+                margin: 0 0.5rem;
+                border-radius: 14px;
+            }
+            .success-icon {
+                font-size: 3.5rem;
+            }
+            .order-row {
+                flex-direction: column;
+                gap: 0.25rem;
+                text-align: center;
+            }
+            /* Referral code - responsive */
+            #referralCodeSuccess {
+                font-size: 1.3rem !important;
+                max-width: 160px !important;
+            }
+            /* Buttons stack */
+            .row.g-3 .col-md-6 {
+                margin-bottom: 0.5rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -209,7 +235,7 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
                                        id="referralCodeSuccess" 
                                        value="<?php echo htmlspecialchars($referral_stats['referral_code']); ?>" 
                                        readonly 
-                                       style="font-size: 1.8rem; font-weight: bold; text-align: center; font-family: 'Courier New', monospace; color: var(--purple-color); border: 2px solid var(--gold-color); max-width: 200px;">
+                                       style="font-size: 1.8rem; font-weight: bold; text-align: center; font-family: 'Courier New', monospace; color: #d4af37; background: linear-gradient(135deg, #2d132c, #1a0a18); border: 2px solid var(--gold-color); max-width: 200px; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
                                 <button type="button" 
                                         class="btn" 
                                         onclick="copyReferralCodeSuccess()" 

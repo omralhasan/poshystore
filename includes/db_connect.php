@@ -5,9 +5,7 @@
  * This file establishes a secure connection to the MySQL database
  * using mysqli with prepared statement support.
  * 
- * Database: poshy_lifestyle
- * User: poshy_user
- * Password: Poshy_Lifestyle_2026!
+ * Credentials loaded from .env via config.php → db_config.php
  */
 
 // Load database configuration

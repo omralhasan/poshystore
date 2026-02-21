@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 
-// Base URL for absolute paths (works from both direct access and clean URL routing)
-$base_url = '/poshy_store';
+// Base URL for absolute paths – uses central config constant
+$base_url = BASE_PATH;
 
 // Check if product ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -1649,7 +1650,17 @@ if ($is_logged_in) {
             indicators[currentSlide].classList.add('active');
             if (thumbs[currentSlide]) {
                 thumbs[currentSlide].classList.add('active');
-                thumbs[currentSlide].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                // Scroll only the thumbnail strip, not the page
+                const thumbContainer = thumbs[currentSlide].parentElement;
+                if (thumbContainer) {
+                    const thumbLeft = thumbs[currentSlide].offsetLeft;
+                    const thumbWidth = thumbs[currentSlide].offsetWidth;
+                    const containerWidth = thumbContainer.offsetWidth;
+                    thumbContainer.scrollTo({
+                        left: thumbLeft - (containerWidth / 2) + (thumbWidth / 2),
+                        behavior: 'smooth'
+                    });
+                }
             }
         }
         
@@ -1661,8 +1672,23 @@ if ($is_logged_in) {
             showSlide(index);
         }
         
-        // Auto-advance carousel every 3 seconds (pause on lightbox)
+        // Auto-advance carousel every 3 seconds (pause on lightbox or when not visible)
         let carouselTimer = setInterval(nextSlide, 3000);
+        
+        // Pause auto-advance when carousel is not visible (user scrolled past it)
+        const carouselEl = document.getElementById('productCarousel');
+        if (carouselEl && typeof IntersectionObserver !== 'undefined') {
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        if (!carouselTimer) carouselTimer = setInterval(nextSlide, 3000);
+                    } else {
+                        if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+                    }
+                });
+            }, { threshold: 0.1 });
+            observer.observe(carouselEl);
+        }
         
         // Click main image to open lightbox
         document.getElementById('productCarousel').addEventListener('click', function(e) {
@@ -1947,7 +1973,12 @@ if ($is_logged_in) {
             window.currentModalProductId = product.id;
             
             // Update added product section
-            document.getElementById('addedProductImage').textContent = '📦';
+            const addedImgEl = document.getElementById('addedProductImage');
+            if (product.image_path) {
+                addedImgEl.innerHTML = `<img src="${product.image_path}" alt="${product.name_en}" style="width:100%;height:100%;object-fit:contain;" onerror="this.onerror=null;this.parentElement.textContent='📦';">`;
+            } else {
+                addedImgEl.textContent = '📦';
+            }
             document.getElementById('addedProductName').textContent = product.name_en;
             if (product.name_ar) {
                 document.getElementById('addedProductName').innerHTML += ` <small style="color: #888;">(${product.name_ar})</small>`;
@@ -1971,15 +2002,16 @@ if ($is_logged_in) {
                         ? `<span class="recommended-original-price">${rec.price_formatted}</span><span class="recommended-item-price">${rec.discounted_price_formatted}</span>`
                         : `<div class="recommended-item-price">${rec.price_formatted}</div>`;
                     
+                    const recImgSrc = rec.image_path ? rec.image_path : '/images/placeholder-cosmetics.svg';
                     recItem.innerHTML = `
-                        <div class="recommended-item-image">✨</div>
+                        <div class="recommended-item-image"><img src="${recImgSrc}" alt="${rec.name_en}" style="width:100%;height:100%;object-fit:contain;" onerror="this.onerror=null;this.parentElement.textContent='✨';"></div>
                         <div class="recommended-item-name">${rec.name_en}</div>
                         ${priceHtml}
                         <div class="recommended-item-actions">
                             <button class="recommended-btn recommended-btn-add" onclick="addRecommendedToCart(${rec.id}, '${rec.name_en.replace(/'/g, "\\'")}')">
                                 <i class="fas fa-cart-plus"></i> <?= t('add_button') ?>
                             </button>
-                            <a href="/poshy_store/${rec.slug}" class="recommended-btn recommended-btn-view">
+                            <a href="<?= BASE_PATH ?>/${rec.slug}" class="recommended-btn recommended-btn-view">
                                 <i class="fas fa-eye"></i> <?= t('view_button') ?>
                             </a>
                         </div>

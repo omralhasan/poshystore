@@ -355,4 +355,317 @@
         background: rgba(201, 168, 106, 0.1);
         color: var(--deep-purple);
     }
+    
+    /* ============================================
+       MOBILE HAMBURGER MENU & MODERN RESPONSIVE
+       ============================================ */
+    
+    /* Hamburger Button */
+    .mobile-menu-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        z-index: 1100;
+        border-radius: 8px;
+        transition: background 0.3s;
+    }
+    
+    .mobile-menu-toggle:hover,
+    .mobile-menu-toggle:focus {
+        background: rgba(201, 168, 106, 0.15);
+        outline: none;
+    }
+    
+    .hamburger-line {
+        display: block;
+        width: 24px;
+        height: 2.5px;
+        background: var(--royal-gold);
+        border-radius: 3px;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: center;
+    }
+    
+    .mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+        transform: translateY(7.5px) rotate(45deg);
+    }
+    .mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    .mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+        transform: translateY(-7.5px) rotate(-45deg);
+    }
+    
+    /* Mobile Menu Overlay */
+    .mobile-menu-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+    .mobile-menu-overlay.open {
+        display: block;
+        opacity: 1;
+    }
+    
+    /* Mobile Slide-out Menu */
+    .mobile-menu {
+        position: fixed;
+        top: 0;
+        right: -300px;
+        width: 280px;
+        height: 100vh;
+        background: linear-gradient(180deg, var(--deep-purple) 0%, #1a0a18 100%);
+        z-index: 1050;
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -5px 0 30px rgba(0, 0, 0, 0.4);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    [dir="rtl"] .mobile-menu {
+        right: auto;
+        left: -300px;
+        transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .mobile-menu.open {
+        right: 0;
+    }
+    [dir="rtl"] .mobile-menu.open {
+        left: 0;
+    }
+    
+    .mobile-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(201, 168, 106, 0.2);
+    }
+    
+    .mobile-menu-brand {
+        font-family: 'Dancing Script', cursive;
+        font-size: 1.8rem;
+        background: linear-gradient(135deg, #d4af37 0%, #f8e5a0 50%, #d4af37 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+    }
+    .mobile-menu-brand small {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.5rem;
+        letter-spacing: 4px;
+        display: block;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, #c9a86a 0%, #e8d5b5 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .mobile-menu-close {
+        background: rgba(201, 168, 106, 0.15);
+        border: none;
+        color: var(--royal-gold);
+        font-size: 1.3rem;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .mobile-menu-close:hover {
+        background: rgba(201, 168, 106, 0.3);
+        transform: rotate(90deg);
+    }
+    
+    .mobile-menu-links {
+        padding: 1rem 0;
+    }
+    
+    .mobile-menu-link {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: var(--creamy-white);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 1.05rem;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+    }
+    [dir="rtl"] .mobile-menu-link {
+        border-left: none;
+        border-right: 3px solid transparent;
+    }
+    
+    .mobile-menu-link:hover,
+    .mobile-menu-link:focus {
+        background: rgba(201, 168, 106, 0.1);
+        color: var(--royal-gold);
+        border-left-color: var(--royal-gold);
+    }
+    [dir="rtl"] .mobile-menu-link:hover,
+    [dir="rtl"] .mobile-menu-link:focus {
+        border-right-color: var(--royal-gold);
+    }
+    
+    .mobile-menu-link i {
+        font-size: 1.2rem;
+        width: 28px;
+        text-align: center;
+        color: var(--royal-gold);
+        transition: transform 0.3s;
+    }
+    .mobile-menu-link:hover i {
+        transform: scale(1.15);
+    }
+    
+    .mobile-menu-link-danger {
+        color: #ff6b6b;
+    }
+    .mobile-menu-link-danger i {
+        color: #ff6b6b;
+    }
+    .mobile-menu-link-danger:hover {
+        color: #ff4757;
+        border-left-color: #ff4757;
+    }
+    
+    .mobile-menu-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(201, 168, 106, 0.3), transparent);
+        margin: 0.75rem 1.5rem;
+    }
+    
+    .mobile-cart-count {
+        background: linear-gradient(135deg, #ff4757, #dc3545);
+        color: white;
+        border-radius: 12px;
+        padding: 1px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-left: 0.5rem;
+    }
+    
+    /* ============================================
+       GLOBAL MOBILE RESPONSIVE IMPROVEMENTS
+       ============================================ */
+    
+    @media (max-width: 768px) {
+        /* Navbar mobile tweaks */
+        .ramadan-navbar {
+            padding: 0.6rem 0;
+        }
+        .navbar-brand-ramadan {
+            font-size: 2rem !important;
+        }
+        .navbar-brand-ramadan .logo-subtitle {
+            font-size: 0.55rem !important;
+            letter-spacing: 3px !important;
+        }
+        
+        /* Nav icons - more touch-friendly */
+        .nav-icon-ramadan {
+            font-size: 1.15rem;
+            padding: 6px;
+            margin-left: 0.4rem;
+            border-radius: 8px;
+            min-width: 36px;
+            min-height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .nav-icon-ramadan:active {
+            transform: scale(0.92);
+            background: rgba(201, 168, 106, 0.15);
+        }
+        
+        .cart-badge {
+            width: 20px;
+            height: 20px;
+            font-size: 0.65rem;
+            top: -6px;
+            right: -6px;
+        }
+        
+        /* Page container */
+        .page-container {
+            padding: 1rem 0;
+        }
+        
+        /* Section titles */
+        .section-title-ramadan {
+            font-size: 1.5rem !important;
+        }
+        
+        /* Cards - more compact on mobile */
+        .card-ramadan {
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        .card-ramadan:hover {
+            transform: none;
+        }
+        
+        /* Buttons - full width on mobile */
+        .btn-ramadan, .btn-ramadan-secondary {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            border-radius: 20px;
+        }
+        
+        /* Forms - better on mobile */
+        .form-control-ramadan {
+            font-size: 16px !important; /* Prevents iOS zoom on input focus */
+            padding: 0.9rem !important;
+        }
+        
+        /* Footer */
+        .footer-ramadan {
+            margin-top: 2rem;
+            padding: 1.5rem 0 1rem;
+        }
+        .footer-ramadan h5 {
+            font-size: 1.8rem !important;
+        }
+        
+        /* Floating decorations - hide on mobile for performance */
+        .floating-decorations {
+            display: none;
+        }
+        
+        /* Smooth scrolling for all */
+        html {
+            scroll-behavior: smooth;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .navbar-brand-ramadan {
+            font-size: 1.6rem !important;
+        }
+        .nav-icon-ramadan {
+            font-size: 1.05rem;
+            margin-left: 0.25rem;
+            min-width: 32px;
+            min-height: 32px;
+        }
+    }
 </style>

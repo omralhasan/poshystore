@@ -4,11 +4,28 @@
  * Clean, responsive design with category filtering
  */
 
-// Error handling - log errors, don't show to users
-error_reporting(E_ALL);
-ini_set('display_errors', '0');
-ini_set('log_errors', '1');
-ini_set('error_log', __DIR__ . '/logs/app_errors.log');
+// Central config (DB credentials, SITE_URL, error logging)
+require_once __DIR__ . '/config.php';
+
+// ── Slug Router ──────────────────────────────────────────────
+// nginx sends all unknown URLs to index.php via try_files.
+// Detect product slug URLs and hand off to product.php.
+$request_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+$request_path = rtrim($request_path, '/');
+
+// A slug looks like /some-product-name (lowercase, digits, hyphens only)
+// Exclude known paths: /index.php, /pages/..., /api/..., /images/..., etc.
+if (
+    $request_path !== '' &&
+    $request_path !== '/' &&
+    preg_match('#^/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $request_path, $m) &&
+    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts)#i', $request_path)
+) {
+    $_GET['slug'] = $m[1];
+    require __DIR__ . '/product.php';
+    exit;
+}
+// ─────────────────────────────────────────────────────────────
 
 require_once __DIR__ . '/includes/language.php';
 require_once __DIR__ . '/includes/auth_functions.php';
@@ -1027,13 +1044,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <!-- Categories -->
             <?php if (!$is_search_mode && !empty($all_categories)): ?>
             <div class="category-chips">
-                <a href="index.php#products" class="cat-chip <?= ($active_subcategory === 0 && $active_category === 0) ? 'active' : '' ?>">
+                <a href="javascript:void(0)" onclick="filterByCategory(0, this)" class="cat-chip <?= ($active_subcategory === 0 && $active_category === 0 && !$show_all) ? 'active' : '' ?>">
                     <i class="fas fa-th-large"></i>
                     <?= $lang === 'ar' ? 'الكل' : 'All' ?>
                 </a>
                 <?php foreach ($all_categories as $cat): ?>
                     <?php foreach ($cat['subcategories'] as $sub): ?>
-                        <a href="index.php?subcategory=<?= $sub['id'] ?>#products" 
+                        <a href="javascript:void(0)" onclick="filterByCategory(<?= $sub['id'] ?>, this)"
                            class="cat-chip <?= $active_subcategory === (int)$sub['id'] ? 'active' : '' ?>">
                             <?php if (!empty($sub['icon'])): ?>
                                 <i class="<?= htmlspecialchars($sub['icon']) ?>"></i>
@@ -1091,7 +1108,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             </h2>
 
             <?php if (!$is_search_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
-                <a href="index.php?show_all=1#products" class="view-all-link">
+                <a href="javascript:void(0)" onclick="showAllProducts(this)" class="view-all-link">
                     <?= t('view_all') ?> (<?= $total_products_count ?>)
                     <i class="fas fa-arrow-right"></i>
                 </a>
@@ -1177,7 +1194,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
             <?php if (!$is_search_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
             <div style="text-align: center; margin-top: 2rem;">
-                <a href="index.php?show_all=1#products" class="hero-cta" style="font-size: 0.9rem; padding: 0.7rem 1.75rem;">
+                <a href="javascript:void(0)" onclick="showAllProducts(this)" class="hero-cta" style="font-size: 0.9rem; padding: 0.7rem 1.75rem;">
                     <i class="fas fa-th-large"></i> <?= t('view_all_products') ?> (<?= $total_products_count ?>)
                 </a>
             </div>
@@ -1189,6 +1206,195 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <?php require_once __DIR__ . '/includes/ramadan_footer.php'; ?>
 
     <script>
+    // Current language for translations
+    const CURRENT_LANG = '<?= $lang ?>';
+    const IS_LOGGED_IN = <?= $is_logged_in ? 'true' : 'false' ?>;
+    const CURRENCY_TEXT = '<?= addslashes(t("currency")) ?>';
+    const ADD_TO_CART_TEXT = '<?= addslashes(t("add_to_cart")) ?>';
+    const LOGIN_TEXT = '<?= addslashes(t("login")) ?>';
+    const DETAILS_TEXT = '<?= addslashes(t("details")) ?>';
+    const FEATURED_TEXT = '<?= addslashes(t("featured_products")) ?>';
+    const VIEW_ALL_TEXT = '<?= addslashes(t("view_all_products")) ?>';
+    const VIEW_ALL_LINK_TEXT = '<?= addslashes(t("view_all")) ?>';
+    const NO_PRODUCTS_TEXT = '<?= addslashes(t("no_products_found")) ?>';
+    const TRY_SEARCHING_TEXT = '<?= addslashes(t("try_searching_else")) ?>';
+    
+    // ==========================================
+    // AJAX Category Filter (no page refresh)
+    // ==========================================
+    let currentFilter = { subcategory: <?= $active_subcategory ?>, show_all: <?= $show_all ? 'true' : 'false' ?> };
+    
+    function filterByCategory(subcategoryId, chipEl) {
+        // Update active chip
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        if (chipEl) chipEl.classList.add('active');
+        
+        currentFilter.subcategory = subcategoryId;
+        currentFilter.show_all = false;
+        
+        // Build URL
+        let apiUrl = 'api/get_products.php?';
+        if (subcategoryId > 0) {
+            apiUrl += 'subcategory=' + subcategoryId;
+        }
+        
+        // Show loading
+        const grid = document.querySelector('.product-grid');
+        if (grid) {
+            grid.style.opacity = '0.5';
+            grid.style.pointerEvents = 'none';
+        }
+        
+        fetch(apiUrl)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    renderProducts(data.products, data.filter_name, data.total_count, data.show_all, subcategoryId);
+                    // Update URL without reload
+                    let newUrl = subcategoryId > 0 ? 'index.php?subcategory=' + subcategoryId : 'index.php';
+                    history.pushState({ subcategory: subcategoryId }, '', newUrl);
+                }
+            })
+            .catch(err => {
+                console.error('Filter error:', err);
+                if (grid) { grid.style.opacity = '1'; grid.style.pointerEvents = ''; }
+            });
+    }
+    
+    function showAllProducts(el) {
+        // Update active chip - remove active from all category chips
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        
+        currentFilter.subcategory = 0;
+        currentFilter.show_all = true;
+        
+        // Show loading
+        const grid = document.querySelector('.product-grid');
+        if (grid) {
+            grid.style.opacity = '0.5';
+            grid.style.pointerEvents = 'none';
+        }
+        
+        fetch('api/get_products.php?show_all=1')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    renderProducts(data.products, '', 0, true, 0);
+                    history.pushState({ show_all: true }, '', 'index.php?show_all=1');
+                }
+            })
+            .catch(err => {
+                console.error('Show all error:', err);
+                if (grid) { grid.style.opacity = '1'; grid.style.pointerEvents = ''; }
+            });
+    }
+    
+    function renderProducts(products, filterName, totalCount, showAll, subcategoryId) {
+        const section = document.querySelector('.products-section');
+        if (!section) return;
+        
+        // Build title
+        let titleText = '';
+        if (filterName) {
+            titleText = filterName;
+        } else if (showAll) {
+            titleText = VIEW_ALL_TEXT;
+        } else {
+            titleText = FEATURED_TEXT;
+        }
+        
+        // Build view-all link
+        let viewAllHtml = '';
+        if (!showAll && subcategoryId === 0 && totalCount > products.length) {
+            viewAllHtml = '<a href="javascript:void(0)" onclick="showAllProducts(this)" class="view-all-link">' +
+                VIEW_ALL_LINK_TEXT + ' (' + totalCount + ') <i class="fas fa-arrow-right"></i></a>';
+        }
+        
+        // Build product cards
+        let cardsHtml = '';
+        if (products.length === 0) {
+            cardsHtml = '<div class="empty-state fade-in">' +
+                '<i class="fas fa-box-open"></i>' +
+                '<h3>' + NO_PRODUCTS_TEXT + '</h3>' +
+                '<p>' + TRY_SEARCHING_TEXT + '</p></div>';
+        } else {
+            cardsHtml = '<div class="product-grid">';
+            products.forEach(function(product, idx) {
+                // Discount tag
+                let discountTag = '';
+                if (product.has_discount && product.discount_percentage > 0) {
+                    discountTag = '<span class="discount-tag">-' + product.discount_percentage + '%</span>';
+                }
+                
+                // Category tag
+                let catTag = '';
+                let subName = CURRENT_LANG === 'ar' ? product.subcategory_ar : product.subcategory_en;
+                if (subName) {
+                    catTag = '<span class="cat-tag">' + subName + '</span>';
+                }
+                
+                // Price
+                let priceHtml = '<span class="price-now">' + product.price_jod + ' ' + CURRENCY_TEXT + '</span>';
+                if (product.has_discount && product.original_price) {
+                    priceHtml += '<span class="price-was">' + product.original_price + '</span>';
+                }
+                
+                // Actions
+                let actionsHtml = '';
+                if (IS_LOGGED_IN) {
+                    actionsHtml = '<button class="btn-cart" onclick="addToCart(' + product.id + ', this)">' +
+                        '<i class="fas fa-cart-plus"></i><span>' + ADD_TO_CART_TEXT + '</span></button>';
+                } else {
+                    actionsHtml = '<a href="pages/auth/signin.php" class="btn-cart">' +
+                        '<i class="fas fa-sign-in-alt"></i><span>' + LOGIN_TEXT + '</span></a>';
+                }
+                actionsHtml += '<a href="' + product.slug + '" class="btn-view" title="' + DETAILS_TEXT + '">' +
+                    '<i class="fas fa-eye"></i></a>';
+                
+                cardsHtml += '<div class="p-card fade-in" style="animation-delay: ' + (idx * 0.05) + 's;">' +
+                    '<div class="p-card-img">' + discountTag + catTag +
+                    '<a href="' + product.slug + '"><img src="' + product.image_src + '" alt="' + product.name_en + '" loading="lazy" ' +
+                    'onerror="this.onerror=null; this.src=\'images/placeholder-cosmetics.svg\';"></a></div>' +
+                    '<div class="p-card-body">' +
+                    '<a href="' + product.slug + '" style="text-decoration:none; color:inherit;">' +
+                    '<div class="p-card-name">' + product.name_en + '</div>' +
+                    '<div class="p-card-name-ar">' + product.name_ar + '</div></a>' +
+                    '<div class="p-card-price">' + priceHtml + '</div>' +
+                    '<div class="p-card-actions">' + actionsHtml + '</div>' +
+                    '</div></div>';
+            });
+            cardsHtml += '</div>';
+            
+            // Bottom view-all button
+            if (!showAll && subcategoryId === 0 && totalCount > products.length) {
+                cardsHtml += '<div style="text-align: center; margin-top: 2rem;">' +
+                    '<a href="javascript:void(0)" onclick="showAllProducts(this)" class="hero-cta" style="font-size: 0.9rem; padding: 0.7rem 1.75rem;">' +
+                    '<i class="fas fa-th-large"></i> ' + VIEW_ALL_TEXT + ' (' + totalCount + ')</a></div>';
+            }
+        }
+        
+        // Update the section
+        section.innerHTML = '<div class="section-header">' +
+            '<h2 class="section-title"><i class="fas fa-sparkles"></i> ' + titleText + '</h2>' +
+            viewAllHtml + '</div>' + cardsHtml;
+        
+        // Smooth scroll to products
+        const offset = 20;
+        const y = section.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    
+    // Handle browser back/forward
+    window.addEventListener('popstate', function(e) {
+        if (e.state) {
+            if (e.state.subcategory !== undefined) {
+                filterByCategory(e.state.subcategory, null);
+            } else if (e.state.show_all) {
+                showAllProducts(null);
+            }
+        }
+    });
+
     // ==========================================
     // Add to Cart (AJAX)
     // ==========================================

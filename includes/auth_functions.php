@@ -6,14 +6,17 @@
  * Connects to: users table (id, firstname, lastname, email, password, role)
  */
 
-// Start session if not already started
+// Load central config (DB, SITE_URL, error logging, session)
+if (!defined('POSHY_CONFIG_LOADED')) {
+    require_once __DIR__ . '/../config.php';
+}
+
+// Configure session cookie parameters for better compatibility
 if (session_status() === PHP_SESSION_NONE) {
-    // Configure session cookie parameters for better compatibility
     ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_secure', '0'); // Set to 1 if using HTTPS
     ini_set('session.use_strict_mode', '1');
-    
     session_start();
 }
 
