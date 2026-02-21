@@ -1,11 +1,28 @@
-<!-- Bootstrap 5 CSS -->
+<?php
+// Ensure language functions are available
+if (!function_exists('isRTL') && file_exists(__DIR__ . '/language.php')) {
+    require_once __DIR__ . '/language.php';
+}
+$_is_rtl = function_exists('isRTL') && isRTL();
+?>
+<!-- Bootstrap 5 CSS (RTL for Arabic, LTR for English) -->
+<?php if ($_is_rtl): ?>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+<?php else: ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<?php endif; ?>
 
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- Google Fonts - Arabic Support -->
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- Google Fonts -->
+<?php if ($_is_rtl): ?>
+<!-- Arabic Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<?php else: ?>
+<!-- English Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<?php endif; ?>
 
 <style>
     :root {
@@ -23,12 +40,40 @@
     }
     
     body {
-        font-family: 'Tajawal', sans-serif;
+        font-family: <?php echo $_is_rtl ? "'Tajawal', 'Cairo', sans-serif" : "'Montserrat', 'Tajawal', sans-serif"; ?>;
         background-color: var(--creamy-white);
         color: var(--deep-purple);
         overflow-x: hidden;
         min-height: 100vh;
     }
+    
+    /* RTL full mirroring for Arabic */
+    [dir="rtl"] {
+        text-align: right;
+        font-family: 'Tajawal', 'Cairo', sans-serif;
+    }
+    [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3,
+    [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
+    [dir="rtl"] p, [dir="rtl"] span, [dir="rtl"] a,
+    [dir="rtl"] label, [dir="rtl"] input, [dir="rtl"] textarea {
+        font-family: 'Tajawal', 'Cairo', sans-serif;
+    }
+    /* Flip icons next to text in RTL */
+    [dir="rtl"] .me-1 { margin-right: 0 !important; margin-left: 0.25rem !important; }
+    [dir="rtl"] .me-2 { margin-right: 0 !important; margin-left: 0.5rem !important; }
+    [dir="rtl"] .me-3 { margin-right: 0 !important; margin-left: 1rem !important; }
+    [dir="rtl"] .ms-1 { margin-left: 0 !important; margin-right: 0.25rem !important; }
+    [dir="rtl"] .ms-2 { margin-left: 0 !important; margin-right: 0.5rem !important; }
+    [dir="rtl"] .ms-3 { margin-left: 0 !important; margin-right: 1rem !important; }
+    [dir="rtl"] .ms-auto { margin-left: unset !important; margin-right: auto !important; }
+    /* Float and flex mirroring */
+    [dir="rtl"] .float-end { float: left !important; }
+    [dir="rtl"] .float-start { float: right !important; }
+    [dir="rtl"] .text-end { text-align: left !important; }
+    [dir="rtl"] .text-start { text-align: right !important; }
+    /* Padding flip */
+    [dir="rtl"] .ps-3 { padding-left: 0 !important; padding-right: 1rem !important; }
+    [dir="rtl"] .pe-3 { padding-right: 0 !important; padding-left: 1rem !important; }
     
     /* Floating Ramadan Elements */
     .floating-decorations {

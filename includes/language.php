@@ -11,7 +11,7 @@ if (!defined('POSHY_CONFIG_LOADED')) {
 
 // Set default language
 if (!isset($_SESSION['language'])) {
-    $_SESSION['language'] = 'ar'; // Default to Arabic
+    $_SESSION['language'] = 'en'; // Default to English
 }
 
 // Handle language change
