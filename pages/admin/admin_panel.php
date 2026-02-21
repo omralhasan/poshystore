@@ -896,9 +896,17 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 <i class="fas fa-tag"></i>
                 <span>Products & Pricing</span>
             </div>
+            <a href="add_product.php" class="nav-item">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add New Product</span>
+            </a>
             <a href="manage_coupons.php" class="nav-item">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Coupon Management</span>
+            </a>
+            <a href="manage_podcasts.php" class="nav-item">
+                <i class="fas fa-podcast"></i>
+                <span>Podcast Management</span>
             </a>
             <a href="daily_reports.php" class="nav-item">
                 <i class="fas fa-chart-line"></i>

@@ -16,15 +16,21 @@ RewriteBase /
     Require all denied
 </Files>
 
-# Block access to includes, database, logs, backups directories directly
-<DirectoryMatch "^/var/www/html/(includes|database|logs|backups|sql|tests|vendor/.*\.(md|txt))">
+# Block access to sensitive file extensions
+<FilesMatch "\.(env|log|bak|sql|csv|md|py|sh|ini)$">
     Require all denied
-</DirectoryMatch>
+</FilesMatch>
 
 # ─── Skip real files and directories ──────────────────────────────────
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+
+# ─── Podcast URLs ────────────────────────────────────────────────────
+# /podcast → podcast.php (listing)
+# /podcast/my-episode-slug → podcast.php?slug=my-episode-slug
+RewriteRule ^podcast/?$ podcast.php [L,QSA]
+RewriteRule ^podcast/([a-z0-9]+(?:-[a-z0-9]+)*)/?$ podcast.php?slug=$1 [L,QSA]
 
 # ─── Clean product URLs ──────────────────────────────────────────────
 # /the-ordinary-retinol → product.php?slug=the-ordinary-retinol
