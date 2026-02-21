@@ -18,21 +18,27 @@ $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
-    $product_id = (int)$_POST['product_id'];
-    $description = trim($_POST['description']);
-    $product_details = trim($_POST['product_details']);
-    $how_to_use = trim($_POST['how_to_use']);
+    $product_id       = (int)$_POST['product_id'];
+    $description      = trim($_POST['description']);
+    $description_ar   = trim($_POST['description_ar']);
+    $product_details    = trim($_POST['product_details']);
+    $product_details_ar = trim($_POST['product_details_ar']);
+    $how_to_use_en    = trim($_POST['how_to_use_en']);
+    $how_to_use_ar    = trim($_POST['how_to_use_ar']);
     $video_review_url = trim($_POST['video_review_url']);
     
     $update_sql = "UPDATE products SET 
-                   description = ?, 
-                   product_details = ?, 
-                   how_to_use = ?,
+                   description = ?,
+                   description_ar = ?,
+                   product_details = ?,
+                   product_details_ar = ?,
+                   how_to_use_en = ?,
+                   how_to_use_ar = ?,
                    video_review_url = ?
                    WHERE id = ?";
     
     $stmt = $conn->prepare($update_sql);
-    $stmt->bind_param('ssssi', $description, $product_details, $how_to_use, $video_review_url, $product_id);
+    $stmt->bind_param('sssssssi', $description, $description_ar, $product_details, $product_details_ar, $how_to_use_en, $how_to_use_ar, $video_review_url, $product_id);
     
     if ($stmt->execute()) {
         $message = "Product information updated successfully!";
@@ -155,30 +161,43 @@ if ($selected_product_id) {
         <form method="POST">
             <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
             
-            <div class="mb-4">
-                <label class="form-label">
-                    <i class="fas fa-align-left"></i> Product Description
-                    <small class="text-muted">(Main product description shown in tab)</small>
-                </label>
-                <textarea name="description" class="form-control" placeholder="Enter product description..."><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+            <!-- Description -->
+            <div class="row g-3 mb-4">
+                <h5 class="fw-bold"><i class="fas fa-align-left"></i> Product Description</h5>
+                <div class="col-md-6">
+                    <label class="form-label">English <span class="badge bg-primary">EN</span></label>
+                    <textarea name="description" class="form-control" rows="6" placeholder="Detailed product description in English..."><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Arabic <span class="badge bg-success">AR</span></label>
+                    <textarea name="description_ar" class="form-control" rows="6" dir="rtl" placeholder="وصف تفصيلي للمنتج بالعربية..."><?= htmlspecialchars($product['description_ar'] ?? '') ?></textarea>
+                </div>
             </div>
-            
-            <div class="mb-4">
-                <label class="form-label">
-                    <i class="fas fa-info-circle"></i> Product Details
-                    <small class="text-muted">(Technical specifications, features, etc.)</small>
-                </label>
-                <textarea name="product_details" class="form-control" placeholder="Enter product details...&#10;Example:&#10;- Brand: Poshy Store&#10;- Type: Premium Product&#10;- Size: Standard&#10;- Suitable for: All types"><?= htmlspecialchars($product['product_details'] ?? '') ?></textarea>
-                <small class="text-muted">Use line breaks to separate items</small>
+
+            <!-- Product Details -->
+            <div class="row g-3 mb-4">
+                <h5 class="fw-bold"><i class="fas fa-info-circle"></i> Product Details / Ingredients</h5>
+                <div class="col-md-6">
+                    <label class="form-label">English <span class="badge bg-primary">EN</span></label>
+                    <textarea name="product_details" class="form-control" rows="6" placeholder="- Brand: ...&#10;- Type: ...&#10;- Size: ..."><?= htmlspecialchars($product['product_details'] ?? '') ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Arabic <span class="badge bg-success">AR</span></label>
+                    <textarea name="product_details_ar" class="form-control" rows="6" dir="rtl" placeholder="- الماركة: ...&#10;- النوع: ...&#10;- الحجم: ..."><?= htmlspecialchars($product['product_details_ar'] ?? '') ?></textarea>
+                </div>
             </div>
-            
-            <div class="mb-4">
-                <label class="form-label">
-                    <i class="fas fa-book-open"></i> How to Use
-                    <small class="text-muted">(Step-by-step usage instructions)</small>
-                </label>
-                <textarea name="how_to_use" class="form-control" placeholder="Enter usage instructions...&#10;Example:&#10;1. Step one&#10;2. Step two&#10;3. Step three"><?= htmlspecialchars($product['how_to_use'] ?? '') ?></textarea>
-                <small class="text-muted">Use numbered lists for clear instructions</small>
+
+            <!-- How to Use -->
+            <div class="row g-3 mb-4">
+                <h5 class="fw-bold"><i class="fas fa-book-open"></i> How to Use</h5>
+                <div class="col-md-6">
+                    <label class="form-label">English <span class="badge bg-primary">EN</span></label>
+                    <textarea name="how_to_use_en" class="form-control" rows="6" placeholder="1. Step one&#10;2. Step two&#10;3. Step three"><?= htmlspecialchars($product['how_to_use_en'] ?? $product['how_to_use'] ?? '') ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Arabic <span class="badge bg-success">AR</span></label>
+                    <textarea name="how_to_use_ar" class="form-control" rows="6" dir="rtl" placeholder="١. الخطوة الأولى&#10;٢. الخطوة الثانية&#10;٣. الخطوة الثالثة"><?= htmlspecialchars($product['how_to_use_ar'] ?? '') ?></textarea>
+                </div>
             </div>
             
             <div class="mb-4">

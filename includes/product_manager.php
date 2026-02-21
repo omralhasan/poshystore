@@ -130,7 +130,7 @@ function getProductById($id) {
     
     // Query products table by ID with category info
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar, 
-                   p.description, p.product_details, p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
+                   p.description, p.description_ar, p.product_details, p.product_details_ar, p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
                    p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id,
                    p.original_price, p.discount_percentage, p.has_discount,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
@@ -191,7 +191,8 @@ function getProductBySlug($slug) {
     }
     
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar, 
-                   p.description, p.product_details, p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
+                   p.description, p.description_ar, p.product_details, p.product_details_ar,
+                   p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
                    p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id,
                    p.original_price, p.discount_percentage, p.has_discount,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,

@@ -58,12 +58,36 @@ foreach ($commands as $cmd) {
 shell_exec("find $web_root -type f -name '*.php' -exec chmod 644 {} \; 2>&1");
 shell_exec("find $web_root -type d -exec chmod 755 {} \; 2>&1");
 
+// ─── Auto-run DB migrations ──────────────────────────────────────────────────
+$db_migration_output = 'skipped';
+$migration_file = $web_root . '/sql/migrate_bilingual_columns.sql';
+if (file_exists($migration_file)) {
+    // Load DB credentials from .env / config
+    $env_file = $web_root . '/.env';
+    $db_host = 'localhost'; $db_user = 'poshy_user';
+    $db_pass = 'Poshy2026secure'; $db_name = 'poshy_db';
+    if (file_exists($env_file)) {
+        foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            if ($line[0] === '#' || strpos($line, '=') === false) continue;
+            [$k, $v] = explode('=', trim($line), 2);
+            if ($k === 'DB_HOST') $db_host = $v;
+            if ($k === 'DB_USER') $db_user = $v;
+            if ($k === 'DB_PASS') $db_pass = $v;
+            if ($k === 'DB_NAME') $db_name = $v;
+        }
+    }
+    $migration_cmd = "mysql -h$db_host -u$db_user -p$db_pass $db_name < $migration_file 2>&1";
+    $db_migration_output = trim(shell_exec($migration_cmd));
+    if (empty($db_migration_output)) $db_migration_output = 'migration ran OK';
+}
+
 // Get current git HEAD info
 $head = trim(shell_exec("git log --oneline -1 2>&1"));
 
 echo json_encode([
-    'success'   => $success,
-    'deployed'  => $head,
-    'timestamp' => date('Y-m-d H:i:s'),
-    'details'   => $all_output,
+    'success'        => $success,
+    'deployed'       => $head,
+    'timestamp'      => date('Y-m-d H:i:s'),
+    'db_migration'   => $db_migration_output,
+    'details'        => $all_output,
 ], JSON_PRETTY_PRINT);
