@@ -12,6 +12,7 @@ if (!function_exists('t')) {
 // Get cart count if user is logged in
 $cart_count = 0;
 $is_logged_in = isset($_SESSION['user_id']);
+$is_admin = ($is_logged_in && ($_SESSION['role'] ?? '') === 'admin');
 if ($is_logged_in) {
     // Try to get cart count if cart_handler is available
     if (file_exists(__DIR__ . '/cart_handler.php')) {
@@ -75,8 +76,13 @@ if (strpos($current_path, '/pages/') !== false) {
                     <?= $current_lang === 'ar' ? '🇬🇧' : '🇯🇴' ?>
                 </a>
                 
+                <?php if ($is_admin): ?>
+                    <a href="<?= $base_path ?>pages/admin/admin_panel.php" class="nav-icon-ramadan d-none d-md-inline" title="Admin Panel" style="color: #ffd700;">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                <?php endif; ?>
                 <?php if ($is_logged_in): ?>
-                    <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="nav-icon-ramadan" title="<?= t('points_wallet') ?>">
+                    <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="nav-icon-ramadan d-none d-md-inline" title="<?= t('points_wallet') ?>">
                         <i class="fas fa-award"></i>
                     </a>
                     <a href="<?= $base_path ?>pages/shop/cart.php" class="nav-icon-ramadan position-relative">
@@ -85,7 +91,7 @@ if (strpos($current_path, '/pages/') !== false) {
                             <span class="cart-badge"><?= $cart_count ?></span>
                         <?php endif; ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/auth/logout.php" class="nav-icon-ramadan">
+                    <a href="<?= $base_path ?>pages/auth/logout.php" class="nav-icon-ramadan d-none d-md-inline">
                         <i class="fas fa-sign-out-alt"></i>
                     </a>
                 <?php else: ?>
@@ -93,7 +99,79 @@ if (strpos($current_path, '/pages/') !== false) {
                         <i class="fas fa-user"></i>
                     </a>
                 <?php endif; ?>
+                
+                <!-- Mobile Hamburger Menu -->
+                <button class="mobile-menu-toggle d-md-none" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
         </div>
     </div>
 </nav>
+
+<!-- Mobile Slide-out Menu -->
+<div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="toggleMobileMenu()"></div>
+<div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-header">
+        <span class="mobile-menu-brand">Poshy <small>STORE</small></span>
+        <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close menu">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="mobile-menu-links">
+        <a href="<?= $base_path ?>index.php" class="mobile-menu-link">
+            <i class="fas fa-home"></i>
+            <span><?= t('home') ?></span>
+        </a>
+        <a href="<?= $base_path ?>pages/shop/shop.php" class="mobile-menu-link">
+            <i class="fas fa-shopping-bag"></i>
+            <span><?= t('shop') ?></span>
+        </a>
+        <?php if ($is_logged_in): ?>
+            <a href="<?= $base_path ?>pages/shop/cart.php" class="mobile-menu-link">
+                <i class="fas fa-shopping-cart"></i>
+                <span><?= $current_lang === 'ar' ? 'السلة' : 'Cart' ?> <?php if ($cart_count > 0): ?><span class="mobile-cart-count"><?= $cart_count ?></span><?php endif; ?></span>
+            </a>
+            <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="mobile-menu-link">
+                <i class="fas fa-award"></i>
+                <span><?= t('rewards') ?></span>
+            </a>
+            <a href="<?= $base_path ?>pages/shop/my_orders.php" class="mobile-menu-link">
+                <i class="fas fa-box"></i>
+                <span><?= $current_lang === 'ar' ? 'طلباتي' : 'My Orders' ?></span>
+            </a>
+            <?php if ($is_admin): ?>
+                <a href="<?= $base_path ?>pages/admin/admin_panel.php" class="mobile-menu-link" style="color: #ffd700;">
+                    <i class="fas fa-cog"></i>
+                    <span><?= $current_lang === 'ar' ? 'لوحة الإدارة' : 'Admin Panel' ?></span>
+                </a>
+            <?php endif; ?>
+            <div class="mobile-menu-divider"></div>
+            <a href="<?= $base_path ?>pages/auth/logout.php" class="mobile-menu-link mobile-menu-link-danger">
+                <i class="fas fa-sign-out-alt"></i>
+                <span><?= $current_lang === 'ar' ? 'تسجيل خروج' : 'Logout' ?></span>
+            </a>
+        <?php else: ?>
+            <a href="<?= $base_path ?>pages/auth/signin.php" class="mobile-menu-link">
+                <i class="fas fa-user"></i>
+                <span><?= $current_lang === 'ar' ? 'تسجيل دخول' : 'Sign In' ?></span>
+            </a>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const btn = document.querySelector('.mobile-menu-toggle');
+    const isOpen = menu.classList.contains('open');
+    
+    menu.classList.toggle('open');
+    overlay.classList.toggle('open');
+    if (btn) btn.classList.toggle('active');
+    document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+</script>
