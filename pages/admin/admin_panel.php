@@ -78,6 +78,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode($result);
         exit();
     }
+
+    if ($action === 'delete_product') {
+        $product_id = intval($_POST['product_id'] ?? 0);
+        if (!$product_id) { echo json_encode(['success' => false, 'error' => 'Invalid ID']); exit(); }
+        // Remove from cart items and order items first to avoid FK issues
+        $conn->query("DELETE FROM cart_items WHERE product_id = $product_id");
+        $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
+        $stmt->bind_param('i', $product_id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => $conn->error]);
+        }
+        $stmt->close();
+        exit();
+    }
     
     echo json_encode(['success' => false, 'error' => 'Invalid action']);
     exit();
@@ -1105,7 +1121,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                 <th>Stock</th>
                                 <th>New Price (JOD)</th>
                                 <th>Discount (%)</th>
-                                <th>Actions</th>
+                                <th>Price / Discount</th>
+                                <th>Edit / Delete</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1170,6 +1187,14 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                                 <i class="fas fa-times"></i> Remove Discount
                                             </button>
                                         <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <a href="edit_product.php?id=<?= $product['id'] ?>" class="btn-update" style="display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;margin-bottom:.4rem;">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button class="btn-remove-discount" onclick="deleteProduct(<?= $product['id'] ?>, this)" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1421,6 +1446,33 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 showAlert('products', '❌ Error: ' + error.message, false);
                 button.disabled = false;
                 button.textContent = 'Remove Discount';
+            }
+        }
+
+        async function deleteProduct(productId, btn) {
+            if (!confirm('Permanently delete this product? This cannot be undone.')) return;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const fd = new FormData();
+                fd.append('action', 'delete_product');
+                fd.append('product_id', productId);
+                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    btn.closest('tr').style.opacity = '0';
+                    btn.closest('tr').style.transition = 'opacity .4s';
+                    setTimeout(() => btn.closest('tr').remove(), 400);
+                    showAlert('products', '✅ Product deleted successfully.', true);
+                } else {
+                    showAlert('products', '❌ ' + (data.error || 'Delete failed'), false);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                }
+            } catch (e) {
+                showAlert('products', '❌ Network error', false);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
             }
         }
     </script>
