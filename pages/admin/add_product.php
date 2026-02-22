@@ -23,7 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $short_en   = trim($_POST['short_description_en'] ?? '');
     $short_ar   = trim($_POST['short_description_ar'] ?? '');
     $desc       = trim($_POST['description'] ?? '');
+    $desc_ar    = trim($_POST['description_ar'] ?? '');
     $details    = trim($_POST['product_details'] ?? '');
+    $details_ar = trim($_POST['product_details_ar'] ?? '');
     $how_en     = trim($_POST['how_to_use_en'] ?? '');
     $how_ar     = trim($_POST['how_to_use_ar'] ?? '');
     $video_url  = trim($_POST['video_review_url'] ?? '');
@@ -39,11 +41,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     // Validation
     if (empty($name_en)) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
-    if (empty($name_ar)) { echo json_encode(['success' => false, 'error' => 'Arabic name is required']); exit(); }
     if ($price <= 0)      { echo json_encode(['success' => false, 'error' => 'Price must be greater than 0']); exit(); }
 
     // Generate unique slug
     $slug = generateUniqueSlug($conn, $name_en);
+
+    // Handle video file upload (if chosen instead of URL)
+    if (!empty($_FILES['video_file']['name']) && $_FILES['video_file']['error'] === UPLOAD_ERR_OK) {
+        $allowed_vid = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/mpeg'];
+        $vid_type    = $_FILES['video_file']['type'];
+        if (in_array($vid_type, $allowed_vid)) {
+            $vid_dir = __DIR__ . '/../../uploads/videos/';
+            if (!is_dir($vid_dir)) mkdir($vid_dir, 0755, true);
+            $ext      = pathinfo($_FILES['video_file']['name'], PATHINFO_EXTENSION) ?: 'mp4';
+            $vid_name = uniqid('vid_') . '.' . strtolower($ext);
+            if (move_uploaded_file($_FILES['video_file']['tmp_name'], $vid_dir . $vid_name)) {
+                $video_url = 'uploads/videos/' . $vid_name;
+            }
+        }
+    }
 
     // Handle image upload — create folder in /images/{product_name}/
     $image_link = '';
@@ -72,11 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     // Insert product
     $sql = "INSERT INTO products (name_en, name_ar, slug, short_description_en, short_description_ar,
-            description, product_details, how_to_use_en, how_to_use_ar, video_review_url,
+            description, description_ar, product_details, product_details_ar, how_to_use_en, how_to_use_ar, video_review_url,
             price_jod, stock_quantity, image_link, subcategory_id,
             supplier_cost, public_price_min, public_price_max,
             original_price, discount_percentage, has_discount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -84,9 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit();
     }
 
-    $stmt->bind_param('ssssssssssdisidddddi',
+    $stmt->bind_param('sssssssssssssdisidddddi',
         $name_en, $name_ar, $slug, $short_en, $short_ar,
-        $desc, $details, $how_en, $how_ar, $video_url,
+        $desc, $desc_ar, $details, $details_ar, $how_en, $how_ar, $video_url,
         $price, $stock, $image_link, $subcat_id,
         $sup_cost, $pub_min, $pub_max,
         $orig_price, $discount, $has_disc
@@ -262,7 +278,7 @@ if ($cat_result) {
         <a href="admin_panel.php" class="nav-item"><i class="fas fa-tag"></i><span>Products & Pricing</span></a>
         <a href="add_product.php" class="nav-item active"><i class="fas fa-plus-circle"></i><span>Add New Product</span></a>
         <a href="manage_coupons.php" class="nav-item"><i class="fas fa-ticket-alt"></i><span>Coupon Management</span></a>
-        <a href="manage_podcasts.php" class="nav-item"><i class="fas fa-podcast"></i><span>Podcast Management</span></a>
+        <a href="manage_categories.php" class="nav-item"><i class="fas fa-layer-group"></i><span>Categories</span></a>
         <a href="daily_reports.php" class="nav-item"><i class="fas fa-chart-line"></i><span>Daily Reports</span></a>
         <a href="../../index.php" class="nav-item"><i class="fas fa-store"></i><span>Visit Store</span></a>
     </div>
@@ -286,17 +302,9 @@ if ($cat_result) {
                     <input type="text" name="name_en" id="nameEn" required placeholder="e.g. The Ordinary Niacinamide 10%">
                 </div>
                 <div class="form-group">
-                    <label>Product Name (Arabic) <span class="required">*</span></label>
-                    <input type="text" name="name_ar" dir="rtl" required placeholder="اسم المنتج بالعربي">
-                </div>
-                <div class="form-group">
                     <label>Short Description (English)</label>
                     <input type="text" name="short_description_en" placeholder="Brief one-line description" maxlength="255">
                     <div class="help-text">Max 255 characters. Shown on product cards.</div>
-                </div>
-                <div class="form-group">
-                    <label>Short Description (Arabic)</label>
-                    <input type="text" name="short_description_ar" dir="rtl" placeholder="وصف قصير بالعربي" maxlength="255">
                 </div>
                 <div class="form-group">
                     <label>Category / Subcategory</label>
@@ -311,10 +319,21 @@ if ($cat_result) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Video Review URL</label>
-                    <input type="url" name="video_review_url" placeholder="https://youtube.com/watch?v=...">
-                    <div class="help-text">YouTube or other video link for product review.</div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Video (See in Action)</label>
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+                        <button type="button" class="btn btn-sm" id="videoTabUrl" onclick="switchVideoTab('url')" style="background:var(--accent);color:#fff;">URL / YouTube</button>
+                        <button type="button" class="btn btn-sm" id="videoTabFile" onclick="switchVideoTab('file')" style="background:var(--surface-alt);color:var(--text-primary);">Upload Video File</button>
+                    </div>
+                    <div id="videoPanelUrl">
+                        <input type="url" name="video_review_url" id="videoReviewUrl" placeholder="https://youtube.com/watch?v=...">
+                        <div class="help-text">YouTube or other video link for product review.</div>
+                    </div>
+                    <div id="videoPanelFile" style="display:none;">
+                        <input type="file" name="video_file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/avi">
+                        <div class="help-text">Upload MP4, WebM, or other video file. Saved to <code>uploads/videos/</code>.</div>
+                        <video id="videoPreview" style="display:none;max-width:320px;margin-top:0.5rem;border-radius:8px;" controls></video>
+                    </div>
                 </div>
             </div>
         </div>
@@ -363,21 +382,18 @@ if ($cat_result) {
             <h2><i class="fas fa-align-left"></i> Description & Details</h2>
             <div class="form-grid">
                 <div class="form-group full-width">
-                    <label>Full Description</label>
-                    <textarea name="description" rows="4" placeholder="Detailed product description..."></textarea>
+                    <label>Full Description (English)</label>
+                    <textarea name="description" rows="4" placeholder="Detailed product description in English..."></textarea>
                 </div>
                 <div class="form-group full-width">
-                    <label>Product Details</label>
+                    <label>Product Details (English)</label>
                     <textarea name="product_details" rows="4" placeholder="Ingredients, specifications, etc..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>How to Use (English)</label>
                     <textarea name="how_to_use_en" rows="3" placeholder="Usage instructions in English..."></textarea>
                 </div>
-                <div class="form-group">
-                    <label>How to Use (Arabic)</label>
-                    <textarea name="how_to_use_ar" rows="3" dir="rtl" placeholder="طريقة الاستخدام بالعربي..."></textarea>
-                </div>
+
             </div>
         </div>
 
@@ -439,16 +455,45 @@ document.getElementById('imageInput').addEventListener('change', function() {
     });
 });
 
+function switchVideoTab(tab) {
+    const urlPanel  = document.getElementById('videoPanelUrl');
+    const filePanel = document.getElementById('videoPanelFile');
+    const urlBtn    = document.getElementById('videoTabUrl');
+    const fileBtn   = document.getElementById('videoTabFile');
+    if (tab === 'url') {
+        urlPanel.style.display  = '';
+        filePanel.style.display = 'none';
+        urlBtn.style.background  = 'var(--accent)'; urlBtn.style.color = '#fff';
+        fileBtn.style.background = 'var(--surface-alt)'; fileBtn.style.color = 'var(--text-primary)';
+        document.getElementById('videoFileInput').value = '';
+        document.getElementById('videoPreview').style.display = 'none';
+    } else {
+        urlPanel.style.display  = 'none';
+        filePanel.style.display = '';
+        fileBtn.style.background = 'var(--accent)'; fileBtn.style.color = '#fff';
+        urlBtn.style.background  = 'var(--surface-alt)'; urlBtn.style.color = 'var(--text-primary)';
+        document.getElementById('videoReviewUrl').value = '';
+    }
+}
+
+document.getElementById('videoFileInput').addEventListener('change', function() {
+    const prev = document.getElementById('videoPreview');
+    if (this.files[0]) {
+        prev.src = URL.createObjectURL(this.files[0]);
+        prev.style.display = 'block';
+    } else {
+        prev.style.display = 'none';
+    }
+});
+
 // Form submission
 document.getElementById('addProductForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
     const nameEn = document.querySelector('[name="name_en"]').value.trim();
-    const nameAr = document.querySelector('[name="name_ar"]').value.trim();
     const price  = parseFloat(document.querySelector('[name="price_jod"]').value) || 0;
 
     if (!nameEn) { showToast('English name is required', 'error'); return; }
-    if (!nameAr) { showToast('Arabic name is required', 'error'); return; }
     if (price <= 0) { showToast('Price must be greater than 0', 'error'); return; }
 
     const fd = new FormData(this);

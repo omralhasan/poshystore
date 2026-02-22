@@ -1326,12 +1326,9 @@ if ($is_logged_in) {
                 </div>
                 
                 <div class="col-md-6">
-                    <h1 style="color: var(--purple-color); font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 0.5rem;">
-                        <?= htmlspecialchars($product['name_en']) ?>
+                    <h1 style="color: var(--purple-color); font-family: <?= $current_lang === 'ar' ? "'Tajawal', sans-serif" : "'Playfair Display', serif" ?>; font-size: 2rem; margin-bottom: 0.5rem;">
+                        <?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?>
                     </h1>
-                    <h2 style="color: var(--gold-color); font-family: 'Tajawal', sans-serif; font-size: 1.3rem; margin-bottom: 0.5rem;">
-                        <?= htmlspecialchars($product['name_ar']) ?>
-                    </h2>
                     
                     <?php if (!empty($product['short_description_en']) || !empty($product['short_description_ar'])): ?>
                     <p style="color: #666; font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem; font-style: italic;">
@@ -1488,9 +1485,19 @@ if ($is_logged_in) {
                 <!-- Details Tab -->
                 <div id="details-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="details-tab-btn">
                     <h4><i class="fas fa-cube me-2" style="color: var(--gold-color);"></i><?= t('product_details') ?></h4>
-                    <?php if (!empty($product['product_details'])): ?>
+                    <?php
+                        // Pick correct language for product details
+                        if ($current_lang === 'ar' && !empty($product['product_details_ar'])) {
+                            $details_content = $product['product_details_ar'];
+                        } elseif (!empty($product['product_details'])) {
+                            $details_content = $product['product_details'];
+                        } else {
+                            $details_content = '';
+                        }
+                    ?>
+                    <?php if (!empty($details_content)): ?>
                         <div style="line-height: 1.8;">
-                            <?= nl2br(htmlspecialchars($product['product_details'])) ?>
+                            <?= nl2br(htmlspecialchars($details_content)) ?>
                         </div>
                     <?php else: ?>
                         <div style="line-height: 1.8;">
@@ -1511,9 +1518,19 @@ if ($is_logged_in) {
                 <!-- Description Tab -->
                 <div id="description-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="description-tab-btn">
                     <h4><i class="fas fa-file-alt me-2" style="color: var(--gold-color);"></i><?= t('product_description') ?></h4>
-                    <?php if (!empty($product['description'])): ?>
+                    <?php
+                        // Pick correct language for description
+                        if ($current_lang === 'ar' && !empty($product['description_ar'])) {
+                            $desc_content = $product['description_ar'];
+                        } elseif (!empty($product['description'])) {
+                            $desc_content = $product['description'];
+                        } else {
+                            $desc_content = '';
+                        }
+                    ?>
+                    <?php if (!empty($desc_content)): ?>
                         <div style="line-height: 1.8;">
-                            <?= nl2br(htmlspecialchars($product['description'])) ?>
+                            <?= nl2br(htmlspecialchars($desc_content)) ?>
                         </div>
                     <?php else: ?>
                         <p><?= t('default_description') ?></p>
