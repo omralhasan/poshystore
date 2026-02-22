@@ -1223,20 +1223,20 @@ if ($is_logged_in) {
             <ol class="breadcrumb" style="background: transparent; padding: 0; margin: 0;">
                 <li class="breadcrumb-item">
                     <a href="<?= $base_url ?>/" style="color: var(--gold-color); text-decoration: none;">
-                        <i class="fas fa-home me-1"></i><?= $lang === 'ar' ? 'الرئيسية' : 'Home' ?>
+                        <i class="fas fa-home me-1"></i><?= $current_lang === 'ar' ? 'الرئيسية' : 'Home' ?>
                     </a>
                 </li>
                 <?php if (!empty($product['category_en'])): ?>
                 <li class="breadcrumb-item">
                     <a href="<?= $base_url ?>/index.php#products" style="color: var(--gold-color); text-decoration: none;">
-                        <?= $lang === 'ar' ? htmlspecialchars($product['category_ar']) : htmlspecialchars($product['category_en']) ?>
+                        <?= $current_lang === 'ar' ? htmlspecialchars($product['category_ar']) : htmlspecialchars($product['category_en']) ?>
                     </a>
                 </li>
                 <?php endif; ?>
                 <?php if (!empty($product['subcategory_en'])): ?>
                 <li class="breadcrumb-item">
                     <a href="<?= $base_url ?>/index.php?subcategory=<?= $product['subcategory_id'] ?>#products" style="color: var(--gold-color); text-decoration: none;">
-                        <?= $lang === 'ar' ? htmlspecialchars($product['subcategory_ar']) : htmlspecialchars($product['subcategory_en']) ?>
+                        <?= $current_lang === 'ar' ? htmlspecialchars($product['subcategory_ar']) : htmlspecialchars($product['subcategory_en']) ?>
                     </a>
                 </li>
                 <?php endif; ?>
@@ -1295,7 +1295,7 @@ if ($is_logged_in) {
                                 <div class="indicator<?= $i === 0 ? ' active' : '' ?>" onclick="goToSlide(<?= $i ?>)"></div>
                             <?php endfor; ?>
                         </div>
-                        <div class="zoom-hint"><i class="fas fa-search-plus"></i> <?= $lang === 'ar' ? 'انقر للتكبير' : 'Click to zoom' ?></div>
+                        <div class="zoom-hint"><i class="fas fa-search-plus"></i> <?= $current_lang === 'ar' ? 'انقر للتكبير' : 'Click to zoom' ?></div>
                     </div>
                     
                     <!-- Thumbnail Gallery -->
@@ -1505,7 +1505,7 @@ if ($is_logged_in) {
                                 <li><strong><?= t('product_name') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?></li>
                                 <li><strong><?= t('brand') ?>:</strong> Poshy Store</li>
                                 <li><strong><?= t('category') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? ($product['category_name_ar'] ?? 'مستحضرات التجميل') : ($product['category_name_en'] ?? 'Cosmetics')) ?></li>
-                                <li><strong><?= t('price') ?>:</strong> <?= $product['final_price_formatted'] ?></li>
+                                <li><strong><?= t('price') ?>:</strong> <?= $product['price_formatted'] ?? number_format($product['price_jod'], 3) . ' JOD' ?></li>
                                 <li><strong><?= t('stock_status') ?>:</strong> <?= $product['in_stock'] ? t('in_stock') : t('out_of_stock') ?></li>
                                 <?php if ($product['in_stock'] && isAdmin()): ?>
                                 <li><strong><?= t('available_units') ?>:</strong> <?= $product['stock_quantity'] ?></li>
