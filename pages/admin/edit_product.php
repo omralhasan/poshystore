@@ -24,6 +24,20 @@ if (!$product_id) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
 
+    // ── Delete handler ──
+    if (($_POST['action'] ?? '') === 'delete_product') {
+        $del_id = intval($_POST['product_id'] ?? 0);
+        $conn->query("DELETE FROM product_tags WHERE product_id = $del_id");
+        $conn->query("DELETE FROM cart_items WHERE product_id = $del_id");
+        $conn->query("DELETE FROM cart WHERE product_id = $del_id");
+        $conn->query("DELETE FROM product_reviews WHERE product_id = $del_id");
+        $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
+        $stmt->bind_param('i', $del_id);
+        if ($stmt->execute()) { echo json_encode(['success' => true]); }
+        else { echo json_encode(['success' => false, 'error' => 'Delete failed']); }
+        $stmt->close(); exit();
+    }
+
     $pid        = intval($_POST['product_id'] ?? 0);
     $name_en    = trim($_POST['name_en'] ?? '');
     $name_ar    = trim($_POST['name_ar'] ?? '');
@@ -39,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $price      = floatval($_POST['price_jod'] ?? 0);
     $stock      = intval($_POST['stock_quantity'] ?? 0);
     $subcat_id  = intval($_POST['subcategory_id'] ?? 0) ?: null;
+    $brand_id   = intval($_POST['brand_id'] ?? 0) ?: null;
+    $tags_raw   = trim($_POST['tags'] ?? '');
     $sup_cost   = ($_POST['supplier_cost'] ?? '') !== '' ? floatval($_POST['supplier_cost']) : null;
     $pub_min    = ($_POST['public_price_min'] ?? '') !== '' ? floatval($_POST['public_price_min']) : null;
     $pub_max    = ($_POST['public_price_max'] ?? '') !== '' ? floatval($_POST['public_price_max']) : null;
@@ -50,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if ($price <= 0)      { echo json_encode(['success' => false, 'error' => 'Price must be greater than 0']); exit(); }
 
     // Handle video file upload
+    $video_url = trim($_POST['video_review_url'] ?? '');
     if (!empty($_FILES['video_file']['name']) && $_FILES['video_file']['error'] === UPLOAD_ERR_OK) {
         $allowed_vid = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/mpeg'];
         if (in_array($_FILES['video_file']['type'], $allowed_vid)) {
@@ -88,16 +105,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
                     description=?, description_ar=?, product_details=?, product_details_ar=?,
                     how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
-                    price_jod=?, stock_quantity=?, image_link=?, subcategory_id=?,
+                    price_jod=?, stock_quantity=?, image_link=?, subcategory_id=?, brand_id=?,
                     supplier_cost=?, public_price_min=?, public_price_max=?,
                     original_price=?, discount_percentage=?, has_discount=?
                 WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sssssssssssdisidddddii',
+        $stmt->bind_param('sssssssssssdisiidddddii',
             $name_en, $name_ar, $short_en, $short_ar,
             $desc, $desc_ar, $details, $details_ar,
             $how_en, $how_ar, $video_url,
-            $price, $stock, $image_link_update, $subcat_id,
+            $price, $stock, $image_link_update, $subcat_id, $brand_id,
             $sup_cost, $pub_min, $pub_max,
             $orig_price, $discount, $has_disc,
             $pid
@@ -107,16 +124,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
                     description=?, description_ar=?, product_details=?, product_details_ar=?,
                     how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
-                    price_jod=?, stock_quantity=?, subcategory_id=?,
+                    price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
                     supplier_cost=?, public_price_min=?, public_price_max=?,
                     original_price=?, discount_percentage=?, has_discount=?
                 WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sssssssssssdiidddddii',
+        $stmt->bind_param('sssssssssssdiiidddddii',
             $name_en, $name_ar, $short_en, $short_ar,
             $desc, $desc_ar, $details, $details_ar,
             $how_en, $how_ar, $video_url,
-            $price, $stock, $subcat_id,
+            $price, $stock, $subcat_id, $brand_id,
             $sup_cost, $pub_min, $pub_max,
             $orig_price, $discount, $has_disc,
             $pid
@@ -127,6 +144,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     if ($stmt->execute()) {
         $stmt->close();
+
+        // Handle tags — clear old, insert new
+        $conn->query("DELETE FROM product_tags WHERE product_id = $pid");
+        if (!empty($tags_raw)) {
+            $tag_names = array_unique(array_filter(array_map('trim', explode(',', $tags_raw))));
+            foreach ($tag_names as $tag_name) {
+                $tag_slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($tag_name)));
+                $tag_slug = trim($tag_slug, '-');
+                if (empty($tag_slug)) continue;
+                $conn->query("INSERT IGNORE INTO tags (name_en, slug) VALUES ('" . $conn->real_escape_string($tag_name) . "', '" . $conn->real_escape_string($tag_slug) . "')");
+                $tag_row = $conn->query("SELECT id FROM tags WHERE slug = '" . $conn->real_escape_string($tag_slug) . "'")->fetch_assoc();
+                if ($tag_row) {
+                    $conn->query("INSERT IGNORE INTO product_tags (product_id, tag_id) VALUES ($pid, {$tag_row['id']})");
+                }
+            }
+        }
+
         echo json_encode(['success' => true, 'message' => 'Product updated successfully!']);
     } else {
         echo json_encode(['success' => false, 'error' => 'Update failed: ' . $stmt->error]);
@@ -160,6 +194,18 @@ if ($cat_result) {
 
 // ─── Current images ────────────────────────────────────────────────────────────
 $base_dir   = __DIR__ . '/../../';
+
+// Load brands
+$brands = [];
+$brand_res = $conn->query("SELECT id, name_en FROM brands ORDER BY sort_order, name_en");
+if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
+
+// Load current tags for this product
+$product_tags = [];
+$tag_res = $conn->query("SELECT t.name_en FROM tags t JOIN product_tags pt ON pt.tag_id = t.id WHERE pt.product_id = $product_id ORDER BY t.name_en");
+if ($tag_res) { while ($r = $tag_res->fetch_assoc()) $product_tags[] = $r['name_en']; }
+$tags_string = implode(', ', $product_tags);
+
 $img_folder = $base_dir . 'images/' . $product['name_en'] . '/';
 $current_images = [];
 if (is_dir($img_folder)) {
@@ -259,6 +305,7 @@ if (is_dir($img_folder)) {
         <a href="add_product.php"       class="nav-item"><i class="fas fa-plus-circle"></i><span>Add New Product</span></a>
         <a href="manage_coupons.php"    class="nav-item"><i class="fas fa-ticket-alt"></i><span>Coupon Management</span></a>
         <a href="manage_categories.php" class="nav-item"><i class="fas fa-layer-group"></i><span>Categories</span></a>
+        <a href="manage_brands.php" class="nav-item"><i class="fas fa-copyright"></i><span>Brands</span></a>
         <a href="daily_reports.php"     class="nav-item"><i class="fas fa-chart-line"></i><span>Daily Reports</span></a>
         <a href="../../index.php"       class="nav-item"><i class="fas fa-store"></i><span>Visit Store</span></a>
     </div>
@@ -273,6 +320,7 @@ if (is_dir($img_folder)) {
         <div style="display:flex;gap:.75rem;">
             <a href="admin_panel.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
             <a href="../../<?= htmlspecialchars($product['slug'] ?? '') ?>" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-eye"></i> View Product</a>
+            <button type="button" class="btn btn-sm" onclick="deleteProduct()" style="background:linear-gradient(135deg,var(--danger),#dc2626);color:#fff;"><i class="fas fa-trash"></i> Delete</button>
         </div>
     </div>
 
@@ -314,24 +362,30 @@ if (is_dir($img_folder)) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group" style="grid-column:1/-1;">
-                    <label>Video (See in Action)</label>
-                    <div style="display:flex;gap:.5rem;margin-bottom:.5rem;">
-                        <button type="button" class="btn btn-sm" id="videoTabUrl" onclick="switchVideoTab('url')" style="background:var(--accent-blue);color:#fff;">URL / YouTube</button>
-                        <button type="button" class="btn btn-sm" id="videoTabFile" onclick="switchVideoTab('file')" style="background:var(--bg-light);color:var(--text-dark);border:2px solid var(--border-color);">Upload Video File</button>
-                    </div>
-                    <div id="videoPanelUrl">
-                        <input type="url" name="video_review_url" id="videoReviewUrl" placeholder="https://youtube.com/watch?v=..." value="<?= htmlspecialchars($product['video_review_url'] ?? '') ?>">
-                        <div class="help-text">YouTube or other video link.</div>
-                    </div>
-                    <div id="videoPanelFile" style="display:none;">
-                        <input type="file" name="video_file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/avi">
-                        <div class="help-text">Upload a new video to replace the current one.</div>
-                        <?php if (!empty($product['video_review_url']) && !str_starts_with($product['video_review_url'], 'http')): ?>
-                            <div style="margin-top:.5rem;font-size:.82rem;color:var(--text-gray);">Current: <?= htmlspecialchars($product['video_review_url']) ?></div>
-                        <?php endif; ?>
-                        <video id="videoPreview" style="display:none;max-width:320px;margin-top:.5rem;border-radius:8px;" controls></video>
-                    </div>
+                <div class="form-group">
+                    <label>Brand</label>
+                    <select name="brand_id">
+                        <option value="">-- None --</option>
+                        <?php foreach ($brands as $br): ?>
+                            <option value="<?= $br['id'] ?>" <?= ($product['brand_id'] ?? 0) == $br['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($br['name_en']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Tags</label>
+                    <input type="text" name="tags" placeholder="e.g. skincare, acne, moisturizer" maxlength="500" value="<?= htmlspecialchars($tags_string) ?>">
+                    <div class="help-text">Comma-separated tags. Users can search products by these tags.</div>
+                </div>
+                <div class="form-group full-width">
+                    <label><i class="fas fa-video"></i> Upload Video (See in Action)</label>
+                    <?php if (!empty($product['video_review_url'])): ?>
+                        <div style="margin-bottom:.5rem;font-size:.85rem;color:var(--text-gray);"><i class="fas fa-check-circle" style="color:var(--success);"></i> Current: <?= htmlspecialchars($product['video_review_url']) ?></div>
+                    <?php endif; ?>
+                    <input type="file" name="video_file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/avi" style="padding:.5rem;">
+                    <div class="help-text">Upload a new video to replace the current one. Leave empty to keep existing.</div>
+                    <video id="videoPreview" style="display:none;max-width:320px;margin-top:.5rem;border-radius:8px;" controls></video>
                 </div>
             </div>
         </div>
@@ -451,32 +505,27 @@ function showLoading(on) {
     document.getElementById('loadingOverlay').classList.toggle('active', on);
 }
 
-function switchVideoTab(tab) {
-    const urlPanel  = document.getElementById('videoPanelUrl');
-    const filePanel = document.getElementById('videoPanelFile');
-    const urlBtn    = document.getElementById('videoTabUrl');
-    const fileBtn   = document.getElementById('videoTabFile');
-    if (tab === 'url') {
-        urlPanel.style.display  = '';
-        filePanel.style.display = 'none';
-        urlBtn.style.cssText  = 'background:var(--accent-blue);color:#fff;';
-        fileBtn.style.cssText = 'background:var(--bg-light);color:var(--text-dark);border:2px solid var(--border-color);';
-        document.getElementById('videoFileInput').value = '';
-        document.getElementById('videoPreview').style.display = 'none';
-    } else {
-        urlPanel.style.display  = 'none';
-        filePanel.style.display = '';
-        fileBtn.style.cssText = 'background:var(--accent-blue);color:#fff;';
-        urlBtn.style.cssText  = 'background:var(--bg-light);color:var(--text-dark);border:2px solid var(--border-color);';
-        document.getElementById('videoReviewUrl').value = '';
-    }
-}
-
 document.getElementById('videoFileInput').addEventListener('change', function() {
     const prev = document.getElementById('videoPreview');
     if (this.files[0]) { prev.src = URL.createObjectURL(this.files[0]); prev.style.display = 'block'; }
     else { prev.style.display = 'none'; }
 });
+
+async function deleteProduct() {
+    if (!confirm('Permanently delete this product? This cannot be undone.')) return;
+    const fd = new FormData();
+    fd.append('ajax', '1');
+    fd.append('action', 'delete_product');
+    fd.append('product_id', '<?= $product_id ?>');
+    showLoading(true);
+    try {
+        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
+        const d = await r.json();
+        showLoading(false);
+        if (d.success) { showToast('Product deleted!'); setTimeout(() => window.location.href = 'admin_panel.php', 1000); }
+        else showToast(d.error || 'Delete failed', 'error');
+    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+}
 
 document.getElementById('imageInput').addEventListener('change', function() {
     const preview = document.getElementById('imagePreview');

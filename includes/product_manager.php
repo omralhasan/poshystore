@@ -21,13 +21,15 @@ function getAllProducts($filters = [], $limit = 50, $offset = 0) {
     
     // Base query - joins with subcategories and categories
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar, p.description, 
-                   p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id,
+                   p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
                    p.original_price, p.discount_percentage, p.has_discount,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
-                   c.name_en AS category_en, c.name_ar AS category_ar
+                   c.name_en AS category_en, c.name_ar AS category_ar,
+                   b.name_en AS brand_en, b.name_ar AS brand_ar
             FROM products p
             LEFT JOIN subcategories s ON p.subcategory_id = s.id
             LEFT JOIN categories c ON s.category_id = c.id
+            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE 1=1";
     
     $params = [];
@@ -62,14 +64,33 @@ function getAllProducts($filters = [], $limit = 50, $offset = 0) {
     
     if (isset($filters['search']) && !empty($filters['search'])) {
         $search = '%' . $filters['search'] . '%';
-        $sql .= " AND (p.name_en LIKE ? OR p.name_ar LIKE ?)";
-        $types .= 'ss';
+        $sql .= " AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.id IN (SELECT pt.product_id FROM product_tags pt JOIN tags t ON pt.tag_id = t.id WHERE t.name_en LIKE ? OR t.name_ar LIKE ?))";
+        $types .= 'ssss';
+        $params[] = $search;
+        $params[] = $search;
         $params[] = $search;
         $params[] = $search;
     }
     
     if (isset($filters['in_stock']) && $filters['in_stock'] == true) {
         $sql .= " AND p.stock_quantity > 0";
+    }
+    
+    // Filter by brand
+    if (isset($filters['brand_id']) && !empty($filters['brand_id'])) {
+        $sql .= " AND p.brand_id = ?";
+        $types .= 'i';
+        $params[] = (int)$filters['brand_id'];
+    }
+    
+    // Filter by tag (search products that have a specific tag)
+    if (isset($filters['tag']) && !empty($filters['tag'])) {
+        $tag_search = '%' . $filters['tag'] . '%';
+        $sql .= " AND p.id IN (SELECT pt.product_id FROM product_tags pt JOIN tags t ON pt.tag_id = t.id WHERE t.name_en LIKE ? OR t.name_ar LIKE ? OR t.slug LIKE ?)";
+        $types .= 'sss';
+        $params[] = $tag_search;
+        $params[] = $tag_search;
+        $params[] = $tag_search;
     }
     
     // Add ordering
@@ -131,13 +152,15 @@ function getProductById($id) {
     // Query products table by ID with category info
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar, 
                    p.description, p.description_ar, p.product_details, p.product_details_ar, p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
-                   p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id,
+                   p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
                    p.original_price, p.discount_percentage, p.has_discount,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
-                   c.name_en AS category_en, c.name_ar AS category_ar, c.id AS category_id
+                   c.name_en AS category_en, c.name_ar AS category_ar, c.id AS category_id,
+                   b.name_en AS brand_en, b.name_ar AS brand_ar, b.logo AS brand_logo
             FROM products p
             LEFT JOIN subcategories s ON p.subcategory_id = s.id
             LEFT JOIN categories c ON s.category_id = c.id
+            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE p.id = ?";
     
     $stmt = $conn->prepare($sql);
@@ -193,13 +216,15 @@ function getProductBySlug($slug) {
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar, 
                    p.description, p.description_ar, p.product_details, p.product_details_ar,
                    p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
-                   p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id,
+                   p.price_jod, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
                    p.original_price, p.discount_percentage, p.has_discount,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
-                   c.name_en AS category_en, c.name_ar AS category_ar, c.id AS category_id
+                   c.name_en AS category_en, c.name_ar AS category_ar, c.id AS category_id,
+                   b.name_en AS brand_en, b.name_ar AS brand_ar, b.logo AS brand_logo
             FROM products p
             LEFT JOIN subcategories s ON p.subcategory_id = s.id
             LEFT JOIN categories c ON s.category_id = c.id
+            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE p.slug = ?";
     
     $stmt = $conn->prepare($sql);
@@ -798,4 +823,57 @@ function getUserProductReview($product_id, $user_id) {
             'has_review' => false
         ];
     }
+}
+
+/**
+ * Get all tags for a product
+ */
+function getProductTags($product_id) {
+    global $conn;
+    $sql = "SELECT t.id, t.name_en, t.name_ar, t.slug 
+            FROM tags t 
+            JOIN product_tags pt ON t.id = pt.tag_id 
+            WHERE pt.product_id = ?
+            ORDER BY t.name_en";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) return [];
+    $stmt->bind_param('i', $product_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $tags = [];
+    while ($row = $result->fetch_assoc()) {
+        $tags[] = $row;
+    }
+    $stmt->close();
+    return $tags;
+}
+
+/**
+ * Get products by tag slug
+ */
+function getProductsByTag($tag_slug, $limit = 50) {
+    global $conn;
+    $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
+                   p.price_jod, p.stock_quantity, p.image_link,
+                   p.original_price, p.discount_percentage, p.has_discount,
+                   b.name_en AS brand_en, b.name_ar AS brand_ar
+            FROM products p
+            JOIN product_tags pt ON p.id = pt.product_id
+            JOIN tags t ON pt.tag_id = t.id
+            LEFT JOIN brands b ON p.brand_id = b.id
+            WHERE t.slug = ?
+            ORDER BY p.id DESC
+            LIMIT ?";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) return [];
+    $stmt->bind_param('si', $tag_slug, $limit);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $products = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['price_formatted'] = formatJOD($row['price_jod']);
+        $products[] = $row;
+    }
+    $stmt->close();
+    return $products;
 }

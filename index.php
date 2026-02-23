@@ -66,6 +66,8 @@ if ($is_logged_in) {
 $search_query = isset($_GET['search']) ? trim(htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8')) : '';
 $active_category = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $active_subcategory = isset($_GET['subcategory']) ? (int)$_GET['subcategory'] : 0;
+$active_brand = isset($_GET['brand']) ? (int)$_GET['brand'] : 0;
+$active_tag = isset($_GET['tag']) ? trim($_GET['tag']) : '';
 $show_all = isset($_GET['show_all']) ? true : false;
 
 // Load categories
@@ -79,12 +81,20 @@ try {
 // Get products
 $products_array = [];
 $is_search_mode = !empty($search_query);
-$products_limit = ($is_search_mode || $active_subcategory > 0 || $active_category > 0 || $show_all) ? 100 : 8;
+$is_tag_mode = !empty($active_tag);
+$is_brand_mode = ($active_brand > 0);
+$products_limit = ($is_search_mode || $is_tag_mode || $is_brand_mode || $active_subcategory > 0 || $active_category > 0 || $show_all) ? 100 : 8;
 
 try {
     if ($is_search_mode) {
         $search_filters = ['search' => $search_query, 'in_stock' => true];
         $products_result = getAllProducts($search_filters, $products_limit);
+    } elseif ($is_tag_mode) {
+        // Tag-based product search
+        $tag_products = getProductsByTag($active_tag, $products_limit);
+        $products_result = ['products' => $tag_products, 'success' => true];
+    } elseif ($is_brand_mode) {
+        $products_result = getAllProducts(['brand_id' => $active_brand, 'in_stock' => true], $products_limit);
     } elseif ($active_subcategory > 0) {
         $products_result = getAllProducts(['subcategory_id' => $active_subcategory, 'in_stock' => true], $products_limit);
     } elseif ($active_category > 0) {
@@ -102,7 +112,7 @@ try {
 
 // Count total products for "View All" link
 $total_products_count = 0;
-if (!$is_search_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all) {
+if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all) {
     try {
         $all_products_result = getAllProducts(['in_stock' => true], 200);
         $total_products_count = count($all_products_result['products'] ?? []);
@@ -1042,7 +1052,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             </div>
             
             <!-- Categories -->
-            <?php if (!$is_search_mode && !empty($all_categories)): ?>
+            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && !empty($all_categories)): ?>
             <div class="category-chips">
                 <a href="javascript:void(0)" onclick="filterByCategory(0, this)" class="cat-chip <?= ($active_subcategory === 0 && $active_category === 0 && !$show_all) ? 'active' : '' ?>">
                     <i class="fas fa-th-large"></i>
@@ -1081,6 +1091,28 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     <i class="fas fa-times me-1"></i><?= t('clear_search') ?>
                 </a>
             </div>
+        <?php elseif ($is_tag_mode): ?>
+            <div class="search-info-bar fade-in">
+                <span>
+                    <i class="fas fa-tag me-1"></i>
+                    <?= $current_lang === 'ar' ? 'نتائج الوسم' : 'Tag results for' ?> <span class="search-term">"<?= htmlspecialchars($active_tag) ?>"</span>
+                    <small style="color: var(--text-muted); margin-left: 0.5rem;">(<?= count($products_array) ?> <?= t('products') ?>)</small>
+                </span>
+                <a href="index.php" class="clear-search">
+                    <i class="fas fa-times me-1"></i><?= $current_lang === 'ar' ? 'مسح' : 'Clear' ?>
+                </a>
+            </div>
+        <?php elseif ($is_brand_mode): ?>
+            <div class="search-info-bar fade-in">
+                <span>
+                    <i class="fas fa-building me-1"></i>
+                    <?= $current_lang === 'ar' ? 'منتجات العلامة التجارية' : 'Brand products' ?>
+                    <small style="color: var(--text-muted); margin-left: 0.5rem;">(<?= count($products_array) ?> <?= t('products') ?>)</small>
+                </span>
+                <a href="index.php" class="clear-search">
+                    <i class="fas fa-times me-1"></i><?= $current_lang === 'ar' ? 'مسح' : 'Clear' ?>
+                </a>
+            </div>
         <?php endif; ?>
 
         <div class="section-header">
@@ -1107,7 +1139,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php endif; ?>
             </h2>
 
-            <?php if (!$is_search_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
+            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
                 <a href="javascript:void(0)" onclick="showAllProducts(this)" class="view-all-link">
                     <?= t('view_all') ?> (<?= $total_products_count ?>)
                     <i class="fas fa-arrow-right"></i>
@@ -1192,7 +1224,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php endforeach; ?>
             </div>
 
-            <?php if (!$is_search_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
+            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
             <div style="text-align: center; margin-top: 2rem;">
                 <a href="javascript:void(0)" onclick="showAllProducts(this)" class="hero-cta" style="font-size: 0.9rem; padding: 0.7rem 1.75rem;">
                     <i class="fas fa-th-large"></i> <?= t('view_all_products') ?> (<?= $total_products_count ?>)

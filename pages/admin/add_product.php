@@ -32,6 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $price      = floatval($_POST['price_jod'] ?? 0);
     $stock      = intval($_POST['stock_quantity'] ?? 0);
     $subcat_id  = intval($_POST['subcategory_id'] ?? 0) ?: null;
+    $brand_id   = intval($_POST['brand_id'] ?? 0) ?: null;
+    $tags_raw   = trim($_POST['tags'] ?? '');
     $sup_cost   = ($_POST['supplier_cost'] ?? '') !== '' ? floatval($_POST['supplier_cost']) : null;
     $pub_min    = ($_POST['public_price_min'] ?? '') !== '' ? floatval($_POST['public_price_min']) : null;
     $pub_max    = ($_POST['public_price_max'] ?? '') !== '' ? floatval($_POST['public_price_max']) : null;
@@ -46,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     // Generate unique slug
     $slug = generateUniqueSlug($conn, $name_en);
 
-    // Handle video file upload (if chosen instead of URL)
+    // Handle video file upload
+    $video_url = '';
     if (!empty($_FILES['video_file']['name']) && $_FILES['video_file']['error'] === UPLOAD_ERR_OK) {
         $allowed_vid = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/mpeg'];
         $vid_type    = $_FILES['video_file']['type'];
@@ -89,10 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     // Insert product
     $sql = "INSERT INTO products (name_en, name_ar, slug, short_description_en, short_description_ar,
             description, description_ar, product_details, product_details_ar, how_to_use_en, how_to_use_ar, video_review_url,
-            price_jod, stock_quantity, image_link, subcategory_id,
+            price_jod, stock_quantity, image_link, subcategory_id, brand_id,
             supplier_cost, public_price_min, public_price_max,
             original_price, discount_percentage, has_discount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -100,10 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit();
     }
 
-    $stmt->bind_param('ssssssssssssdisidddddi',
+    $stmt->bind_param('ssssssssssssdisiidddddi',
         $name_en, $name_ar, $slug, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar, $how_en, $how_ar, $video_url,
-        $price, $stock, $image_link, $subcat_id,
+        $price, $stock, $image_link, $subcat_id, $brand_id,
         $sup_cost, $pub_min, $pub_max,
         $orig_price, $discount, $has_disc
     );
@@ -111,6 +114,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if ($stmt->execute()) {
         $product_id = $stmt->insert_id;
         $stmt->close();
+
+        // Handle tags
+        if (!empty($tags_raw)) {
+            $tag_names = array_unique(array_filter(array_map('trim', explode(',', $tags_raw))));
+            foreach ($tag_names as $tag_name) {
+                $tag_slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($tag_name)));
+                $tag_slug = trim($tag_slug, '-');
+                if (empty($tag_slug)) continue;
+                // Insert or get existing tag
+                $conn->query("INSERT IGNORE INTO tags (name_en, slug) VALUES ('" . $conn->real_escape_string($tag_name) . "', '" . $conn->real_escape_string($tag_slug) . "')");
+                $tag_row = $conn->query("SELECT id FROM tags WHERE slug = '" . $conn->real_escape_string($tag_slug) . "'")->fetch_assoc();
+                if ($tag_row) {
+                    $conn->query("INSERT IGNORE INTO product_tags (product_id, tag_id) VALUES ($product_id, {$tag_row['id']})");
+                }
+            }
+        }
+
         echo json_encode([
             'success' => true,
             'message' => 'Product added successfully!',
@@ -142,6 +162,11 @@ if ($cat_result) {
         }
     }
 }
+
+// Load brands for the form
+$brands = [];
+$brand_res = $conn->query("SELECT id, name_en FROM brands ORDER BY sort_order, name_en");
+if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -279,6 +304,7 @@ if ($cat_result) {
         <a href="add_product.php" class="nav-item active"><i class="fas fa-plus-circle"></i><span>Add New Product</span></a>
         <a href="manage_coupons.php" class="nav-item"><i class="fas fa-ticket-alt"></i><span>Coupon Management</span></a>
         <a href="manage_categories.php" class="nav-item"><i class="fas fa-layer-group"></i><span>Categories</span></a>
+        <a href="manage_brands.php" class="nav-item"><i class="fas fa-copyright"></i><span>Brands</span></a>
         <a href="daily_reports.php" class="nav-item"><i class="fas fa-chart-line"></i><span>Daily Reports</span></a>
         <a href="../../index.php" class="nav-item"><i class="fas fa-store"></i><span>Visit Store</span></a>
     </div>
@@ -319,21 +345,25 @@ if ($cat_result) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Video (See in Action)</label>
-                    <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
-                        <button type="button" class="btn btn-sm" id="videoTabUrl" onclick="switchVideoTab('url')" style="background:var(--accent);color:#fff;">URL / YouTube</button>
-                        <button type="button" class="btn btn-sm" id="videoTabFile" onclick="switchVideoTab('file')" style="background:var(--surface-alt);color:var(--text-primary);">Upload Video File</button>
-                    </div>
-                    <div id="videoPanelUrl">
-                        <input type="url" name="video_review_url" id="videoReviewUrl" placeholder="https://youtube.com/watch?v=...">
-                        <div class="help-text">YouTube or other video link for product review.</div>
-                    </div>
-                    <div id="videoPanelFile" style="display:none;">
-                        <input type="file" name="video_file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/avi">
-                        <div class="help-text">Upload MP4, WebM, or other video file. Saved to <code>uploads/videos/</code>.</div>
-                        <video id="videoPreview" style="display:none;max-width:320px;margin-top:0.5rem;border-radius:8px;" controls></video>
-                    </div>
+                <div class="form-group">
+                    <label>Brand</label>
+                    <select name="brand_id">
+                        <option value="">-- Select Brand --</option>
+                        <?php foreach ($brands as $br): ?>
+                            <option value="<?= $br['id'] ?>"><?= htmlspecialchars($br['name_en']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Tags</label>
+                    <input type="text" name="tags" placeholder="e.g. skincare, acne, moisturizer, korean" maxlength="500">
+                    <div class="help-text">Comma-separated tags. Users can search products by these tags.</div>
+                </div>
+                <div class="form-group full-width">
+                    <label><i class="fas fa-video"></i> Upload Video (See in Action)</label>
+                    <input type="file" name="video_file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/avi" style="padding:.5rem;">
+                    <div class="help-text">Upload a product video (MP4, WebM, etc). The video will play directly on the product page.</div>
+                    <video id="videoPreview" style="display:none;max-width:320px;margin-top:0.5rem;border-radius:8px;" controls></video>
                 </div>
             </div>
         </div>
@@ -454,27 +484,6 @@ document.getElementById('imageInput').addEventListener('change', function() {
         preview.appendChild(item);
     });
 });
-
-function switchVideoTab(tab) {
-    const urlPanel  = document.getElementById('videoPanelUrl');
-    const filePanel = document.getElementById('videoPanelFile');
-    const urlBtn    = document.getElementById('videoTabUrl');
-    const fileBtn   = document.getElementById('videoTabFile');
-    if (tab === 'url') {
-        urlPanel.style.display  = '';
-        filePanel.style.display = 'none';
-        urlBtn.style.background  = 'var(--accent)'; urlBtn.style.color = '#fff';
-        fileBtn.style.background = 'var(--surface-alt)'; fileBtn.style.color = 'var(--text-primary)';
-        document.getElementById('videoFileInput').value = '';
-        document.getElementById('videoPreview').style.display = 'none';
-    } else {
-        urlPanel.style.display  = 'none';
-        filePanel.style.display = '';
-        fileBtn.style.background = 'var(--accent)'; fileBtn.style.color = '#fff';
-        urlBtn.style.background  = 'var(--surface-alt)'; urlBtn.style.color = 'var(--text-primary)';
-        document.getElementById('videoReviewUrl').value = '';
-    }
-}
 
 document.getElementById('videoFileInput').addEventListener('change', function() {
     const prev = document.getElementById('videoPreview');

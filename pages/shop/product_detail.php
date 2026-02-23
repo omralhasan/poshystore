@@ -26,6 +26,9 @@ if (!$product_result['success']) {
 
 $product = $product_result['product'];
 
+// Get product tags
+$product_tags = getProductTags($product_id);
+
 // Get product reviews (last 5)
 $reviews_result = getProductReviews($product_id, 5);
 $reviews = $reviews_result['reviews'] ?? [];
@@ -1211,6 +1214,96 @@ if ($is_logged_in) {
                 flex-direction: column;
             }
         }
+
+        /* Sticky Mini Video Player */
+        .video-mini-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            z-index: 9999;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            pointer-events: none;
+            background: #000;
+        }
+        .video-mini-player.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+        .video-mini-player video {
+            width: 100%;
+            display: block;
+        }
+        .video-mini-player .mini-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+        .video-mini-player .mini-close:hover {
+            background: rgba(200,0,0,0.8);
+        }
+        .video-mini-player .mini-back {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px 10px;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+        .video-mini-player .mini-back:hover {
+            background: var(--purple-color);
+        }
+
+        /* RTL adjustment */
+        [dir="rtl"] .video-mini-player {
+            right: auto;
+            left: 20px;
+        }
+        [dir="rtl"] .video-mini-player .mini-close {
+            right: auto;
+            left: 8px;
+        }
+        [dir="rtl"] .video-mini-player .mini-back {
+            left: auto;
+            right: 8px;
+        }
+
+        @media (max-width: 576px) {
+            .video-mini-player {
+                width: 220px;
+                bottom: 12px;
+                right: 12px;
+            }
+            [dir="rtl"] .video-mini-player {
+                right: auto;
+                left: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1390,6 +1483,29 @@ if ($is_logged_in) {
                         <?php endif; ?>
                     </div>
                     
+                    <?php if (!empty($product['brand_en'])): ?>
+                    <div class="mb-3">
+                        <span style="color: #555; font-size: 0.95rem;">
+                            <i class="fas fa-building me-1" style="color: var(--gold-color);"></i>
+                            <strong><?= $current_lang === 'ar' ? 'العلامة التجارية' : 'Brand' ?>:</strong>
+                            <?= htmlspecialchars($current_lang === 'ar' ? ($product['brand_ar'] ?: $product['brand_en']) : $product['brand_en']) ?>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($product_tags)): ?>
+                    <div class="mb-3">
+                        <?php foreach ($product_tags as $ptag): ?>
+                            <a href="<?= $base_url ?>/index.php?tag=<?= urlencode($ptag['slug']) ?>" 
+                               style="display: inline-block; background: linear-gradient(135deg, #f0e6f6, #e8d5f5); color: var(--purple-color); 
+                                      padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; margin: 0.15rem; 
+                                      text-decoration: none; transition: all 0.2s; border: 1px solid #d4b5e8;">
+                                <i class="fas fa-tag me-1" style="font-size: 0.75rem;"></i><?= htmlspecialchars($current_lang === 'ar' ? ($ptag['name_ar'] ?: $ptag['name_en']) : $ptag['name_en']) ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                    
                     <div class="d-flex gap-2">
                         <?php if ($is_logged_in): ?>
                             <?php if ($product_in_cart_quantity > 0): ?>
@@ -1461,16 +1577,31 @@ if ($is_logged_in) {
                 <!-- See in Action Tab -->
                 <div id="see-in-action-tab" class="tab-pane fade show active" role="tabpanel" aria-labelledby="see-in-action-tab-btn">
                     <h4><i class="fas fa-play-circle me-2" style="color: var(--gold-color);"></i><?= t('see_in_action') ?></h4>
-                    <div class="video-container" style="margin-top: 1.5rem;">
+                    <div class="video-container" id="videoContainer" style="margin-top: 1.5rem;">
                         <?php if (!empty($product['video_review_url'])): ?>
-                            <div class="video-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                <iframe 
-                                    src="<?= htmlspecialchars($product['video_review_url']) ?>" 
-                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                                    allowfullscreen
-                                    loading="lazy"
-                                ></iframe>
-                            </div>
+                            <?php
+                            $video_src = $product['video_review_url'];
+                            $is_local = (strpos($video_src, 'uploads/') === 0 || strpos($video_src, '/uploads/') === 0);
+                            ?>
+                            <?php if ($is_local): ?>
+                                <div class="video-wrapper" style="border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <video id="productVideo" controls playsinline preload="metadata"
+                                        style="width: 100%; max-height: 500px; display: block; background: #000;"
+                                        poster="">
+                                        <source src="<?= $base_url . '/' . htmlspecialchars($video_src) ?>" type="video/mp4">
+                                        <?= $current_lang === 'ar' ? 'متصفحك لا يدعم تشغيل الفيديو' : 'Your browser does not support the video tag.' ?>
+                                    </video>
+                                </div>
+                            <?php else: ?>
+                                <div class="video-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <iframe 
+                                        src="<?= htmlspecialchars($video_src) ?>" 
+                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+                                        allowfullscreen
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            <?php endif; ?>
                         <?php else: ?>
                             <div class="no-video-placeholder" style="text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; border: 2px dashed #dee2e6;">
                                 <i class="fas fa-play-circle" style="font-size: 4rem; color: #adb5bd; margin-bottom: 1rem;"></i>
@@ -1503,7 +1634,7 @@ if ($is_logged_in) {
                         <div style="line-height: 1.8;">
                             <ul>
                                 <li><strong><?= t('product_name') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?></li>
-                                <li><strong><?= t('brand') ?>:</strong> Poshy Store</li>
+                                <li><strong><?= t('brand') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? ($product['brand_ar'] ?? 'Poshy Store') : ($product['brand_en'] ?? 'Poshy Store')) ?></li>
                                 <li><strong><?= t('category') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? ($product['category_name_ar'] ?? 'مستحضرات التجميل') : ($product['category_name_en'] ?? 'Cosmetics')) ?></li>
                                 <li><strong><?= t('price') ?>:</strong> <?= $product['price_formatted'] ?? number_format($product['price_jod'], 3) . ' JOD' ?></li>
                                 <li><strong><?= t('stock_status') ?>:</strong> <?= $product['in_stock'] ? t('in_stock') : t('out_of_stock') ?></li>
@@ -2194,5 +2325,80 @@ if ($is_logged_in) {
     </div>
     
     <?php require_once __DIR__ . '/../../includes/ramadan_footer.php'; ?>
+
+    <?php if (!empty($product['video_review_url']) && (strpos($product['video_review_url'], 'uploads/') === 0 || strpos($product['video_review_url'], '/uploads/') === 0)): ?>
+    <!-- Sticky Mini Video Player -->
+    <div class="video-mini-player" id="miniPlayer">
+        <button class="mini-close" onclick="closeMiniPlayer()" title="Close">&times;</button>
+        <button class="mini-back" onclick="scrollToVideo()"><?= $current_lang === 'ar' ? 'العودة للفيديو' : 'Back to video' ?></button>
+        <video id="miniVideo" playsinline>
+            <source src="<?= $base_url . '/' . htmlspecialchars($product['video_review_url']) ?>" type="video/mp4">
+        </video>
+    </div>
+    <script>
+    (function() {
+        const mainVideo = document.getElementById('productVideo');
+        const miniPlayer = document.getElementById('miniPlayer');
+        const miniVideo = document.getElementById('miniVideo');
+        const videoContainer = document.getElementById('videoContainer');
+        if (!mainVideo || !miniPlayer || !miniVideo || !videoContainer) return;
+
+        let miniClosed = false;
+        let wasPlaying = false;
+
+        function checkScroll() {
+            if (miniClosed) return;
+            const rect = videoContainer.getBoundingClientRect();
+            const isOutOfView = rect.bottom < 0;
+            
+            if (isOutOfView && !mainVideo.paused) {
+                // Video scrolled out of view while playing → show mini player
+                if (!miniPlayer.classList.contains('visible')) {
+                    miniVideo.currentTime = mainVideo.currentTime;
+                    mainVideo.pause();
+                    miniVideo.play();
+                    miniPlayer.classList.add('visible');
+                }
+            } else if (!isOutOfView && miniPlayer.classList.contains('visible')) {
+                // Scrolled back to video → restore
+                mainVideo.currentTime = miniVideo.currentTime;
+                miniVideo.pause();
+                mainVideo.play();
+                miniPlayer.classList.remove('visible');
+            }
+        }
+
+        window.addEventListener('scroll', checkScroll, { passive: true });
+
+        // Sync time when mini video ends
+        miniVideo.addEventListener('ended', function() {
+            mainVideo.currentTime = miniVideo.currentTime;
+            miniPlayer.classList.remove('visible');
+        });
+
+        // Close mini player
+        window.closeMiniPlayer = function() {
+            miniVideo.pause();
+            miniPlayer.classList.remove('visible');
+            miniClosed = true;
+            mainVideo.pause();
+        };
+
+        // Scroll back to the main video
+        window.scrollToVideo = function() {
+            miniVideo.pause();
+            mainVideo.currentTime = miniVideo.currentTime;
+            miniPlayer.classList.remove('visible');
+            videoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => mainVideo.play(), 500);
+        };
+
+        // Reset miniClosed when user manually plays the main video again
+        mainVideo.addEventListener('play', function() {
+            miniClosed = false;
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>
