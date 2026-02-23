@@ -27,15 +27,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     // ── Delete handler ──
     if (($_POST['action'] ?? '') === 'delete_product') {
         $del_id = intval($_POST['product_id'] ?? 0);
-        $conn->query("DELETE FROM product_tags WHERE product_id = $del_id");
-        $conn->query("DELETE FROM cart_items WHERE product_id = $del_id");
-        $conn->query("DELETE FROM cart WHERE product_id = $del_id");
-        $conn->query("DELETE FROM product_reviews WHERE product_id = $del_id");
-        $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
-        $stmt->bind_param('i', $del_id);
-        if ($stmt->execute()) { echo json_encode(['success' => true]); }
-        else { echo json_encode(['success' => false, 'error' => 'Delete failed']); }
-        $stmt->close(); exit();
+        try {
+            // Block if product has order history
+            $chk = $conn->prepare('SELECT COUNT(*) AS cnt FROM order_items WHERE product_id = ?');
+            $chk->bind_param('i', $del_id);
+            $chk->execute();
+            $order_count = $chk->get_result()->fetch_assoc()['cnt'];
+            $chk->close();
+            if ($order_count > 0) {
+                echo json_encode(['success' => false, 'error' => "Cannot delete: this product appears in $order_count order(s)."]);
+                exit();
+            }
+            $conn->query("DELETE FROM product_tags WHERE product_id = $del_id");
+            $conn->query("DELETE FROM cart WHERE product_id = $del_id");
+            $conn->query("DELETE FROM product_reviews WHERE product_id = $del_id");
+            $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
+            $stmt->bind_param('i', $del_id);
+            if ($stmt->execute()) { $stmt->close(); echo json_encode(['success' => true]); }
+            else { $stmt->close(); echo json_encode(['success' => false, 'error' => 'Delete failed']); }
+        } catch (mysqli_sql_exception $e) {
+            echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
+        }
+        exit();
     }
 
     $pid        = intval($_POST['product_id'] ?? 0);

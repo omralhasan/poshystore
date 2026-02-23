@@ -82,19 +82,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_product') {
         $product_id = intval($_POST['product_id'] ?? 0);
         if (!$product_id) { echo json_encode(['success' => false, 'error' => 'Invalid ID']); exit(); }
-        // Clean up all related rows first
-        $conn->query("DELETE FROM product_tags WHERE product_id = $product_id");
-        $conn->query("DELETE FROM cart_items WHERE product_id = $product_id");
-        $conn->query("DELETE FROM cart WHERE product_id = $product_id");
-        $conn->query("DELETE FROM product_reviews WHERE product_id = $product_id");
-        $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
-        $stmt->bind_param('i', $product_id);
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'error' => $conn->error]);
+        try {
+            $chk = $conn->prepare('SELECT COUNT(*) AS cnt FROM order_items WHERE product_id = ?');
+            $chk->bind_param('i', $product_id);
+            $chk->execute();
+            $order_count = $chk->get_result()->fetch_assoc()['cnt'];
+            $chk->close();
+            if ($order_count > 0) {
+                echo json_encode(['success' => false, 'error' => "Cannot delete: product has $order_count order(s)."]);
+                exit();
+            }
+            $conn->query("DELETE FROM product_tags WHERE product_id = $product_id");
+            $conn->query("DELETE FROM cart WHERE product_id = $product_id");
+            $conn->query("DELETE FROM product_reviews WHERE product_id = $product_id");
+            $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
+            $stmt->bind_param('i', $product_id);
+            if ($stmt->execute()) {
+                $stmt->close();
+                echo json_encode(['success' => true]);
+            } else {
+                $stmt->close();
+                echo json_encode(['success' => false, 'error' => $conn->error]);
+            }
+        } catch (mysqli_sql_exception $e) {
+            echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
         }
-        $stmt->close();
         exit();
     }
     
