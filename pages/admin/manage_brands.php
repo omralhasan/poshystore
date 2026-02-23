@@ -118,7 +118,7 @@ th{background:var(--bg-light);font-weight:700;font-size:.85rem;text-transform:up
     <div class="sidebar-header"><div class="logo"><i class="fas fa-shopping-bag"></i> POSHY</div><div class="admin-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div></div>
     <div class="sidebar-nav">
         <a href="admin_panel.php" class="nav-item"><i class="fas fa-box"></i><span>Orders Management</span></a>
-        <a href="admin_panel.php" class="nav-item"><i class="fas fa-tag"></i><span>Products & Pricing</span></a>
+        <a href="manage_products.php" class="nav-item"><i class="fas fa-tag"></i><span>Products</span></a>
         <a href="add_product.php" class="nav-item"><i class="fas fa-plus-circle"></i><span>Add New Product</span></a>
         <a href="manage_coupons.php" class="nav-item"><i class="fas fa-ticket-alt"></i><span>Coupon Management</span></a>
         <a href="manage_categories.php" class="nav-item"><i class="fas fa-layer-group"></i><span>Categories</span></a>

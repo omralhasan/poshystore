@@ -82,8 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_product') {
         $product_id = intval($_POST['product_id'] ?? 0);
         if (!$product_id) { echo json_encode(['success' => false, 'error' => 'Invalid ID']); exit(); }
-        // Remove from cart items and order items first to avoid FK issues
+        // Clean up all related rows first
+        $conn->query("DELETE FROM product_tags WHERE product_id = $product_id");
         $conn->query("DELETE FROM cart_items WHERE product_id = $product_id");
+        $conn->query("DELETE FROM cart WHERE product_id = $product_id");
+        $conn->query("DELETE FROM product_reviews WHERE product_id = $product_id");
         $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
         $stmt->bind_param('i', $product_id);
         if ($stmt->execute()) {
