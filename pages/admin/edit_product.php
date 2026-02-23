@@ -24,11 +24,10 @@ if (!$product_id) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
 
-    // ── Delete handler ──
+    // ── Delete product handler ──
     if (($_POST['action'] ?? '') === 'delete_product') {
         $del_id = intval($_POST['product_id'] ?? 0);
         try {
-            // Block if product has order history
             $chk = $conn->prepare('SELECT COUNT(*) AS cnt FROM order_items WHERE product_id = ?');
             $chk->bind_param('i', $del_id);
             $chk->execute();
@@ -48,6 +47,217 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         } catch (mysqli_sql_exception $e) {
             echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
         }
+        exit();
+    }
+
+    // ── Delete single image handler ──
+    if (($_POST['action'] ?? '') === 'delete_image') {
+        $pid = intval($_POST['product_id'] ?? 0);
+        $img_file = trim($_POST['image_file'] ?? '');
+        if (!$pid || !$img_file) {
+            echo json_encode(['success' => false, 'error' => 'Missing parameters']); exit();
+        }
+        // Get product name for folder
+        $pstmt = $conn->prepare('SELECT name_en, image_link FROM products WHERE id = ?');
+        $pstmt->bind_param('i', $pid);
+        $pstmt->execute();
+        $prow = $pstmt->get_result()->fetch_assoc();
+        $pstmt->close();
+        if (!$prow) { echo json_encode(['success' => false, 'error' => 'Product not found']); exit(); }
+
+        $img_base = __DIR__ . '/../../images/' . $prow['name_en'] . '/';
+        $full_path = __DIR__ . '/../../' . $img_file;
+        if (file_exists($full_path)) {
+            unlink($full_path);
+        }
+        // Renumber remaining images sequentially
+        if (is_dir($img_base)) {
+            $remaining = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+            sort($remaining);
+            // Remove and re-add with correct numbers
+            $temp_names = [];
+            foreach ($remaining as $idx => $f) {
+                $tmp = $img_base . 'tmp_rename_' . $idx . '_' . basename($f);
+                rename($f, $tmp);
+                $temp_names[] = $tmp;
+            }
+            foreach ($temp_names as $idx => $tmp) {
+                $ext = pathinfo($tmp, PATHINFO_EXTENSION);
+                $new_name = $img_base . ($idx + 1) . '.' . $ext;
+                rename($tmp, $new_name);
+            }
+            // Update image_link to first image if it exists
+            $new_files = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+            sort($new_files);
+            if (!empty($new_files)) {
+                $new_link = 'images/' . $prow['name_en'] . '/' . basename($new_files[0]);
+                $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
+            } else {
+                $conn->query("UPDATE products SET image_link = '' WHERE id = $pid");
+            }
+        }
+        // Return updated images list
+        $updated_images = [];
+        if (is_dir($img_base)) {
+            $files = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+            sort($files);
+            foreach ($files as $f) {
+                $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
+            }
+        }
+        echo json_encode(['success' => true, 'images' => $updated_images]);
+        exit();
+    }
+
+    // ── Replace single image handler ──
+    if (($_POST['action'] ?? '') === 'replace_image') {
+        $pid = intval($_POST['product_id'] ?? 0);
+        $img_file = trim($_POST['image_file'] ?? '');
+        if (!$pid || !$img_file || empty($_FILES['new_image']['name'])) {
+            echo json_encode(['success' => false, 'error' => 'Missing parameters']); exit();
+        }
+        $allowed_img = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($_FILES['new_image']['type'], $allowed_img)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid image type']); exit();
+        }
+        $full_path = __DIR__ . '/../../' . $img_file;
+        // Get the number from the old filename and keep the same path
+        $dir = dirname($full_path) . '/';
+        $old_base = pathinfo($full_path, PATHINFO_FILENAME);
+        $new_ext = pathinfo($_FILES['new_image']['name'], PATHINFO_EXTENSION) ?: 'png';
+        // Remove old file (may have different extension)
+        foreach (glob($dir . $old_base . '.*') as $old_f) { unlink($old_f); }
+        $new_path = $dir . $old_base . '.' . strtolower($new_ext);
+        move_uploaded_file($_FILES['new_image']['tmp_name'], $new_path);
+
+        // Get product name to build relative paths
+        $pstmt = $conn->prepare('SELECT name_en FROM products WHERE id = ?');
+        $pstmt->bind_param('i', $pid);
+        $pstmt->execute();
+        $prow = $pstmt->get_result()->fetch_assoc();
+        $pstmt->close();
+
+        // If replaced image #1, update image_link
+        if ($old_base === '1' && $prow) {
+            $new_link = 'images/' . $prow['name_en'] . '/1.' . strtolower($new_ext);
+            $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
+        }
+
+        // Return updated images list
+        $updated_images = [];
+        $img_base = $dir;
+        $files = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+        sort($files);
+        foreach ($files as $f) {
+            $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
+        }
+        echo json_encode(['success' => true, 'images' => $updated_images]);
+        exit();
+    }
+
+    // ── Add more images handler ──
+    if (($_POST['action'] ?? '') === 'add_images') {
+        $pid = intval($_POST['product_id'] ?? 0);
+        if (!$pid || empty($_FILES['new_images']['name'][0])) {
+            echo json_encode(['success' => false, 'error' => 'Missing parameters']); exit();
+        }
+        $pstmt = $conn->prepare('SELECT name_en, image_link FROM products WHERE id = ?');
+        $pstmt->bind_param('i', $pid);
+        $pstmt->execute();
+        $prow = $pstmt->get_result()->fetch_assoc();
+        $pstmt->close();
+        if (!$prow) { echo json_encode(['success' => false, 'error' => 'Product not found']); exit(); }
+
+        $img_base = __DIR__ . '/../../images/' . $prow['name_en'] . '/';
+        if (!is_dir($img_base)) mkdir($img_base, 0755, true);
+
+        // Find highest existing number
+        $existing = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+        $max_num = 0;
+        foreach ($existing as $f) {
+            $num = intval(pathinfo($f, PATHINFO_FILENAME));
+            if ($num > $max_num) $max_num = $num;
+        }
+
+        $allowed_img = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $files = $_FILES['new_images'];
+        $added = 0;
+        for ($i = 0; $i < count($files['name']); $i++) {
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+            if (!in_array($files['type'][$i], $allowed_img)) continue;
+            $max_num++;
+            $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION) ?: 'png';
+            $dest = $img_base . $max_num . '.' . strtolower($ext);
+            move_uploaded_file($files['tmp_name'][$i], $dest);
+            $added++;
+            // If this is the first image ever, set image_link
+            if (empty($prow['image_link']) && $max_num === 1) {
+                $new_link = 'images/' . $prow['name_en'] . '/1.' . strtolower($ext);
+                $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
+            }
+        }
+
+        // Return updated images list
+        $updated_images = [];
+        $files_list = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+        sort($files_list);
+        foreach ($files_list as $f) {
+            $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
+        }
+        echo json_encode(['success' => true, 'images' => $updated_images, 'added' => $added]);
+        exit();
+    }
+
+    // ── Set main image handler ──
+    if (($_POST['action'] ?? '') === 'set_main_image') {
+        $pid = intval($_POST['product_id'] ?? 0);
+        $img_file = trim($_POST['image_file'] ?? '');
+        if (!$pid || !$img_file) {
+            echo json_encode(['success' => false, 'error' => 'Missing parameters']); exit();
+        }
+        $pstmt = $conn->prepare('SELECT name_en FROM products WHERE id = ?');
+        $pstmt->bind_param('i', $pid);
+        $pstmt->execute();
+        $prow = $pstmt->get_result()->fetch_assoc();
+        $pstmt->close();
+        if (!$prow) { echo json_encode(['success' => false, 'error' => 'Product not found']); exit(); }
+
+        $img_base = __DIR__ . '/../../images/' . $prow['name_en'] . '/';
+        $target_path = __DIR__ . '/../../' . $img_file;
+        $target_num = intval(pathinfo($target_path, PATHINFO_FILENAME));
+        $target_ext = pathinfo($target_path, PATHINFO_EXTENSION);
+
+        if ($target_num === 1) {
+            echo json_encode(['success' => true, 'images' => []]);
+            exit();
+        }
+
+        // Swap: target becomes 1, old 1 takes target's number
+        $old_main_files = glob($img_base . '1.*');
+        $old_main = !empty($old_main_files) ? $old_main_files[0] : null;
+        $old_main_ext = $old_main ? pathinfo($old_main, PATHINFO_EXTENSION) : 'png';
+
+        // Temp rename to avoid collision
+        if ($old_main && file_exists($old_main)) {
+            rename($old_main, $img_base . 'tmp_swap_old.' . $old_main_ext);
+        }
+        rename($target_path, $img_base . '1.' . $target_ext);
+        if (file_exists($img_base . 'tmp_swap_old.' . $old_main_ext)) {
+            rename($img_base . 'tmp_swap_old.' . $old_main_ext, $img_base . $target_num . '.' . $old_main_ext);
+        }
+
+        // Update image_link
+        $new_link = 'images/' . $prow['name_en'] . '/1.' . $target_ext;
+        $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
+
+        // Return updated images list
+        $updated_images = [];
+        $files_list = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+        sort($files_list);
+        foreach ($files_list as $f) {
+            $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
+        }
+        echo json_encode(['success' => true, 'images' => $updated_images]);
         exit();
     }
 
@@ -93,65 +303,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         }
     }
 
-    // Handle new image uploads
-    $image_link_update = '';
-    $images_base = __DIR__ . '/../../images/';
-    $folder_path = $images_base . $name_en . '/';
-
-    if (!empty($_FILES['product_images']['name'][0])) {
-        if (!is_dir($folder_path)) mkdir($folder_path, 0755, true);
-        $files = $_FILES['product_images'];
-        for ($i = 0; $i < count($files['name']); $i++) {
-            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
-            $allowed_img = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array($files['type'][$i], $allowed_img)) continue;
-            $num  = $i + 1;
-            $dest = $folder_path . $num . '.png';
-            move_uploaded_file($files['tmp_name'][$i], $dest);
-            if ($num === 1) $image_link_update = 'images/' . $name_en . '/1.png';
-        }
-    }
-
-    // Build UPDATE query
-    if ($image_link_update) {
-        $sql = "UPDATE products SET
-                    name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
-                    description=?, description_ar=?, product_details=?, product_details_ar=?,
-                    how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
-                    price_jod=?, stock_quantity=?, image_link=?, subcategory_id=?, brand_id=?,
-                    supplier_cost=?, public_price_min=?, public_price_max=?,
-                    original_price=?, discount_percentage=?, has_discount=?
-                WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sssssssssssdisiidddddii',
-            $name_en, $name_ar, $short_en, $short_ar,
-            $desc, $desc_ar, $details, $details_ar,
-            $how_en, $how_ar, $video_url,
-            $price, $stock, $image_link_update, $subcat_id, $brand_id,
-            $sup_cost, $pub_min, $pub_max,
-            $orig_price, $discount, $has_disc,
-            $pid
-        );
-    } else {
-        $sql = "UPDATE products SET
-                    name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
-                    description=?, description_ar=?, product_details=?, product_details_ar=?,
-                    how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
-                    price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
-                    supplier_cost=?, public_price_min=?, public_price_max=?,
-                    original_price=?, discount_percentage=?, has_discount=?
-                WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sssssssssssdiiidddddii',
-            $name_en, $name_ar, $short_en, $short_ar,
-            $desc, $desc_ar, $details, $details_ar,
-            $how_en, $how_ar, $video_url,
-            $price, $stock, $subcat_id, $brand_id,
-            $sup_cost, $pub_min, $pub_max,
-            $orig_price, $discount, $has_disc,
-            $pid
-        );
-    }
+    // Build UPDATE query (images are now managed via separate AJAX actions)
+    $sql = "UPDATE products SET
+                name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
+                description=?, description_ar=?, product_details=?, product_details_ar=?,
+                how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
+                price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
+                supplier_cost=?, public_price_min=?, public_price_max=?,
+                original_price=?, discount_percentage=?, has_discount=?
+            WHERE id=?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sssssssssssdiiidddddii',
+        $name_en, $name_ar, $short_en, $short_ar,
+        $desc, $desc_ar, $details, $details_ar,
+        $how_en, $how_ar, $video_url,
+        $price, $stock, $subcat_id, $brand_id,
+        $sup_cost, $pub_min, $pub_max,
+        $orig_price, $discount, $has_disc,
+        $pid
+    );
 
     if (!$stmt) { echo json_encode(['success' => false, 'error' => 'DB prepare error: ' . $conn->error]); exit(); }
 
@@ -290,10 +460,22 @@ if (is_dir($img_folder)) {
         .image-preview-item{width:120px;height:120px;border-radius:10px;overflow:hidden;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.1);}
         .image-preview-item img{width:100%;height:100%;object-fit:cover;}
         .image-preview-item .badge{position:absolute;bottom:4px;left:4px;background:var(--accent-blue);color:#fff;font-size:.65rem;padding:2px 6px;border-radius:8px;font-weight:700;}
-        .current-images{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem;}
-        .current-img-item{position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:2px solid var(--border-color);}
-        .current-img-item img{width:100%;height:100%;object-fit:cover;}
-        .current-img-item .img-num{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;font-size:.65rem;padding:1px 5px;border-radius:4px;}
+        .current-images{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;}
+        .current-img-item{position:relative;width:140px;height:140px;border-radius:10px;overflow:visible;border:2px solid var(--border-color);background:#fff;}
+        .current-img-item.is-main{border-color:var(--accent-blue);box-shadow:0 0 0 2px rgba(79,158,255,.3);}
+        .current-img-item img{width:100%;height:100%;object-fit:cover;border-radius:8px;}
+        .current-img-item .img-num{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;font-size:.65rem;padding:2px 6px;border-radius:4px;}
+        .current-img-item .img-main-badge{position:absolute;top:-8px;left:-8px;background:var(--accent-blue);color:#fff;font-size:.6rem;padding:3px 8px;border-radius:10px;font-weight:700;z-index:2;}
+        .img-actions{position:absolute;top:4px;right:4px;display:flex;flex-direction:column;gap:3px;z-index:2;}
+        .img-action-btn{width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:all .2s;opacity:.85;}
+        .img-action-btn:hover{opacity:1;transform:scale(1.1);}
+        .img-action-btn.delete{background:var(--danger);color:#fff;}
+        .img-action-btn.replace{background:var(--warning);color:#fff;}
+        .img-action-btn.set-main{background:var(--accent-teal);color:#fff;}
+        .add-more-images-area{border:2px dashed var(--border-color);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .3s;position:relative;background:var(--bg-light);margin-top:1rem;}
+        .add-more-images-area:hover{border-color:var(--accent-teal);background:rgba(0,212,170,.05);}
+        .add-more-images-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+        .hidden-replace-input{display:none;}
         .toast{position:fixed;top:2rem;right:2rem;padding:1rem 1.5rem;border-radius:12px;color:#fff;font-weight:600;z-index:9999;transform:translateX(120%);transition:transform .4s;box-shadow:0 10px 30px rgba(0,0,0,.2);}
         .toast.show{transform:translateX(0);}
         .toast-success{background:linear-gradient(135deg,var(--success),#059669);}
@@ -474,22 +656,48 @@ if (is_dir($img_folder)) {
         <!-- Images -->
         <div class="form-card">
             <h2><i class="fas fa-images"></i> Product Images</h2>
-            <?php if (!empty($current_images)): ?>
-                <p style="font-weight:600;margin-bottom:.75rem;font-size:.9rem;">Current Images:</p>
-                <div class="current-images">
+            <p style="color:var(--text-gray);margin-bottom:1rem;font-size:.85rem;">
+                <i class="fas fa-info-circle"></i>
+                Hover over images to <strong>delete</strong> <i class="fas fa-trash" style="color:var(--danger);"></i>,
+                <strong>replace</strong> <i class="fas fa-sync" style="color:var(--warning);"></i>,
+                or <strong>set as main</strong> <i class="fas fa-star" style="color:var(--accent-teal);"></i>.
+            </p>
+
+            <div class="current-images" id="currentImagesContainer">
+                <?php if (!empty($current_images)): ?>
                     <?php foreach ($current_images as $i => $img): ?>
-                        <div class="current-img-item">
-                            <img src="../../<?= htmlspecialchars($img) ?>" alt="Image <?= $i+1 ?>">
-                            <span class="img-num"><?= $i===0 ? 'Main' : ($i+1) ?></span>
+                        <div class="current-img-item <?= $i === 0 ? 'is-main' : '' ?>" data-img="<?= htmlspecialchars($img) ?>">
+                            <?php if ($i === 0): ?><span class="img-main-badge"><i class="fas fa-star"></i> Main</span><?php endif; ?>
+                            <div class="img-actions">
+                                <button type="button" class="img-action-btn delete" title="Delete image" onclick="deleteImage('<?= htmlspecialchars($img) ?>')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button type="button" class="img-action-btn replace" title="Replace image" onclick="triggerReplace('<?= htmlspecialchars($img) ?>')">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                                <?php if ($i !== 0): ?>
+                                <button type="button" class="img-action-btn set-main" title="Set as main image" onclick="setMainImage('<?= htmlspecialchars($img) ?>')">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <?php endif; ?>
+                            </div>
+                            <img src="../../<?= htmlspecialchars($img) ?>?t=<?= time() ?>" alt="Image <?= $i+1 ?>">
+                            <span class="img-num"><?= $i === 0 ? 'Main' : ($i+1) ?></span>
                         </div>
                     <?php endforeach; ?>
-                </div>
-                <p style="font-size:.82rem;color:var(--text-gray);margin-bottom:1rem;">Upload new images below to <strong>replace</strong> the current ones.</p>
-            <?php endif; ?>
-            <div class="image-upload-area">
-                <input type="file" name="product_images[]" accept="image/*" multiple id="imageInput">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Click or drag to upload new images</p>
+                <?php else: ?>
+                    <p style="color:var(--text-gray);font-size:.9rem;"><i class="fas fa-image"></i> No images yet.</p>
+                <?php endif; ?>
+            </div>
+
+            <!-- Hidden file input for replacing individual images -->
+            <input type="file" id="replaceImageInput" class="hidden-replace-input" accept="image/*">
+
+            <!-- Add more images -->
+            <div class="add-more-images-area" id="addMoreArea">
+                <input type="file" accept="image/*" multiple id="addMoreInput">
+                <i class="fas fa-plus-circle" style="font-size:2rem;color:var(--accent-teal);margin-bottom:.5rem;"></i>
+                <p style="color:var(--text-gray);font-size:.9rem;"><strong>Add more images</strong> — click or drag to append new photos</p>
             </div>
             <div class="image-preview" id="imagePreview"></div>
         </div>
@@ -540,21 +748,127 @@ async function deleteProduct() {
     } catch(e) { showLoading(false); showToast('Network error', 'error'); }
 }
 
-document.getElementById('imageInput').addEventListener('change', function() {
-    const preview = document.getElementById('imagePreview');
-    preview.innerHTML = '';
-    Array.from(this.files).forEach((f, i) => {
-        const item = document.createElement('div');
-        item.className = 'image-preview-item';
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(f);
-        item.appendChild(img);
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = i === 0 ? 'Main' : (i + 1) + '.png';
-        item.appendChild(badge);
-        preview.appendChild(item);
+// ─── Image Management Functions ───
+let replaceTarget = '';
+
+function renderImages(images) {
+    const container = document.getElementById('currentImagesContainer');
+    if (!images || images.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-gray);font-size:.9rem;"><i class="fas fa-image"></i> No images yet.</p>';
+        return;
+    }
+    container.innerHTML = '';
+    images.forEach((img, i) => {
+        const div = document.createElement('div');
+        div.className = 'current-img-item' + (i === 0 ? ' is-main' : '');
+        div.dataset.img = img;
+        let html = '';
+        if (i === 0) html += '<span class="img-main-badge"><i class="fas fa-star"></i> Main</span>';
+        html += '<div class="img-actions">';
+        html += `<button type="button" class="img-action-btn delete" title="Delete image" onclick="deleteImage('${img}')"><i class="fas fa-trash"></i></button>`;
+        html += `<button type="button" class="img-action-btn replace" title="Replace image" onclick="triggerReplace('${img}')"><i class="fas fa-sync"></i></button>`;
+        if (i !== 0) html += `<button type="button" class="img-action-btn set-main" title="Set as main image" onclick="setMainImage('${img}')"><i class="fas fa-star"></i></button>`;
+        html += '</div>';
+        html += `<img src="../../${img}?t=${Date.now()}" alt="Image ${i+1}">`;
+        html += `<span class="img-num">${i === 0 ? 'Main' : (i+1)}</span>`;
+        div.innerHTML = html;
+        container.appendChild(div);
     });
+}
+
+async function deleteImage(imgFile) {
+    if (!confirm('Delete this image?')) return;
+    const fd = new FormData();
+    fd.append('ajax', '1');
+    fd.append('action', 'delete_image');
+    fd.append('product_id', '<?= $product_id ?>');
+    fd.append('image_file', imgFile);
+    showLoading(true);
+    try {
+        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
+        const d = await r.json();
+        showLoading(false);
+        if (d.success) {
+            showToast('Image deleted');
+            renderImages(d.images);
+        } else {
+            showToast(d.error || 'Failed to delete image', 'error');
+        }
+    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+}
+
+function triggerReplace(imgFile) {
+    replaceTarget = imgFile;
+    document.getElementById('replaceImageInput').click();
+}
+
+document.getElementById('replaceImageInput').addEventListener('change', async function() {
+    if (!this.files[0] || !replaceTarget) return;
+    const fd = new FormData();
+    fd.append('ajax', '1');
+    fd.append('action', 'replace_image');
+    fd.append('product_id', '<?= $product_id ?>');
+    fd.append('image_file', replaceTarget);
+    fd.append('new_image', this.files[0]);
+    showLoading(true);
+    try {
+        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
+        const d = await r.json();
+        showLoading(false);
+        if (d.success) {
+            showToast('Image replaced');
+            renderImages(d.images);
+        } else {
+            showToast(d.error || 'Failed to replace image', 'error');
+        }
+    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    this.value = '';
+    replaceTarget = '';
+});
+
+async function setMainImage(imgFile) {
+    const fd = new FormData();
+    fd.append('ajax', '1');
+    fd.append('action', 'set_main_image');
+    fd.append('product_id', '<?= $product_id ?>');
+    fd.append('image_file', imgFile);
+    showLoading(true);
+    try {
+        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
+        const d = await r.json();
+        showLoading(false);
+        if (d.success) {
+            showToast('Main image updated');
+            renderImages(d.images);
+        } else {
+            showToast(d.error || 'Failed to set main image', 'error');
+        }
+    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+}
+
+// Add more images
+document.getElementById('addMoreInput').addEventListener('change', async function() {
+    if (!this.files.length) return;
+    const fd = new FormData();
+    fd.append('ajax', '1');
+    fd.append('action', 'add_images');
+    fd.append('product_id', '<?= $product_id ?>');
+    for (let i = 0; i < this.files.length; i++) {
+        fd.append('new_images[]', this.files[i]);
+    }
+    showLoading(true);
+    try {
+        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
+        const d = await r.json();
+        showLoading(false);
+        if (d.success) {
+            showToast(`${d.added} image(s) added`);
+            renderImages(d.images);
+        } else {
+            showToast(d.error || 'Failed to add images', 'error');
+        }
+    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    this.value = '';
 });
 
 document.getElementById('editProductForm').addEventListener('submit', function(e) {
