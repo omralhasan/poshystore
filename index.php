@@ -1192,8 +1192,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
                     <div class="p-card-body">
                         <a href="<?= htmlspecialchars($product['slug'] ?? '#') ?>" style="text-decoration:none; color:inherit;">
-                            <div class="p-card-name"><?= htmlspecialchars($product['name_en']) ?></div>
-                            <div class="p-card-name-ar"><?= htmlspecialchars($product['name_ar'] ?? '') ?></div>
+                            <div class="p-card-name"><?= htmlspecialchars($lang === 'ar' ? ($product['name_ar'] ?: $product['name_en']) : $product['name_en']) ?></div>
+                            <div class="p-card-name-ar"><?= htmlspecialchars($lang === 'ar' ? $product['name_en'] : ($product['name_ar'] ?? '')) ?></div>
                         </a>
                         
                         <div class="p-card-price">
@@ -1389,8 +1389,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     'onerror="this.onerror=null; this.src=\'images/placeholder-cosmetics.svg\';"></a></div>' +
                     '<div class="p-card-body">' +
                     '<a href="' + product.slug + '" style="text-decoration:none; color:inherit;">' +
-                    '<div class="p-card-name">' + product.name_en + '</div>' +
-                    '<div class="p-card-name-ar">' + product.name_ar + '</div></a>' +
+                    '<div class="p-card-name">' + (CURRENT_LANG === 'ar' ? (product.name_ar || product.name_en) : product.name_en) + '</div>' +
+                    '<div class="p-card-name-ar">' + (CURRENT_LANG === 'ar' ? product.name_en : product.name_ar) + '</div></a>' +
                     '<div class="p-card-price">' + priceHtml + '</div>' +
                     '<div class="p-card-actions">' + actionsHtml + '</div>' +
                     '</div></div>';
