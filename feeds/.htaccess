@@ -1,0 +1,4 @@
+# Allow public CSV feed access (overrides parent .htaccess block)
+<FilesMatch "\.csv$">
+    Require all granted
+</FilesMatch>
