@@ -25,20 +25,23 @@ require_once $root . '/config.php';
 require_once $root . '/includes/db_connect.php';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-$CURRENCY       = 'JOD';     // Change to 'SAR' if needed (see conversion below)
-$SAR_RATE       = 5.15;      // JOD → SAR conversion (update as needed)
-$LANG           = 'en';      // 'en' for English titles, 'ar' for Arabic
+$CURRENCY       = 'JOD';        // Change to 'SAR' if needed
+$SAR_RATE       = 5.15;         // JOD → SAR conversion rate
+$LANG           = 'en';         // 'en' or 'ar'
 $OUTPUT_DIR     = $root . '/feeds';
 $OUTPUT_FILE    = $OUTPUT_DIR . '/products.csv';
-$LOG_PREFIX     = '[' . date('Y-m-d H:i:s') . '] Feed CSV: ';
+$LOG_FILE       = '/var/log/feed_csv.log';
+
+// ─── Start log entry ─────────────────────────────────────────────────────────
+log_msg('Start: Generating CSV');
 
 // ─── Ensure output directory exists ──────────────────────────────────────────
 if (!is_dir($OUTPUT_DIR)) {
     if (!mkdir($OUTPUT_DIR, 0755, true)) {
-        log_msg("ERROR – Could not create directory: $OUTPUT_DIR");
+        log_msg('Error: Could not create directory: ' . $OUTPUT_DIR);
         exit(1);
     }
-    log_msg("Created directory: $OUTPUT_DIR");
+    log_msg('Info: Created directory: ' . $OUTPUT_DIR);
 }
 
 // ─── Fetch products ───────────────────────────────────────────────────────────
@@ -68,14 +71,17 @@ $sql = "SELECT
 
 $result = $conn->query($sql);
 if (!$result) {
-    log_msg("ERROR – Query failed: " . $conn->error);
+    log_msg('Error: DB query failed – ' . $conn->error);
     exit(1);
 }
+
+$total_fetched = $result->num_rows;
+log_msg('Info: Fetched ' . $total_fetched . ' products from database');
 
 // ─── Open file for writing (overwrite) ───────────────────────────────────────
 $fh = fopen($OUTPUT_FILE, 'w');
 if (!$fh) {
-    log_msg("ERROR – Cannot open file for writing: $OUTPUT_FILE");
+    log_msg('Error: Cannot open file for writing: ' . $OUTPUT_FILE);
     exit(1);
 }
 
@@ -193,13 +199,21 @@ while ($p = $result->fetch_assoc()) {
 fclose($fh);
 $conn->close();
 
-// ─── Summary ──────────────────────────────────────────────────────────────────
+// ─── Fix permissions so web server (apache) can overwrite next run ────────────
+@chmod($OUTPUT_FILE, 0664);
+@chown($OUTPUT_FILE, 'apache');
+
+// ─── Success log ─────────────────────────────────────────────────────────────
 $size = round(filesize($OUTPUT_FILE) / 1024, 1);
-log_msg("OK – Wrote $count products ($size KB) → $OUTPUT_FILE");
-log_msg("URL: $site_url/feeds/products.csv");
+log_msg('Success: ' . $count . ' products written to products.csv (' . $size . ' KB)');
+log_msg('Info: URL → ' . $site_url . '/feeds/products.csv');
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 function log_msg(string $msg): void {
-    global $LOG_PREFIX;
-    echo $LOG_PREFIX . $msg . PHP_EOL;
+    global $LOG_FILE;
+    $line = '[' . date('Y-m-d H:i:s') . '] Feed CSV: ' . $msg . PHP_EOL;
+    // Always print to stdout (captured by cron's >> redirect)
+    echo $line;
+    // Also append directly to the log file
+    @file_put_contents($LOG_FILE, $line, FILE_APPEND | LOCK_EX);
 }
