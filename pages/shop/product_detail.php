@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
+require_once __DIR__ . '/../../includes/auto_translate.php';
 
 // Base URL for absolute paths – uses central config constant
 $base_url = BASE_PATH;
@@ -25,6 +26,12 @@ if (!$product_result['success']) {
 }
 
 $product = $product_result['product'];
+
+// Auto-translate English content to Arabic when language is Arabic
+// and Arabic fields are missing. Results are cached back to the DB.
+if ($current_lang === 'ar') {
+    ensureArabicContent($conn, $product);
+}
 
 // Get product tags
 $product_tags = getProductTags($product_id);
