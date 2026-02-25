@@ -36,7 +36,7 @@ if (file_exists($env_file)) {
 // SITE_URL: Full URL without trailing slash  (http://159.223.180.154)
 // BASE_PATH: Path prefix for links          (empty string when at doc root)
 // ROOT_DIR: Absolute filesystem path        (/var/www/html)
-define('SITE_URL',  getenv('SITE_URL')  ?: 'http://159.223.180.154');
+define('SITE_URL',  getenv('SITE_URL')  ?: 'https://poshystore.com');
 define('BASE_PATH', getenv('BASE_PATH') ?: '');
 define('ROOT_DIR',  __DIR__);
 
