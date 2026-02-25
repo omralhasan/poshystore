@@ -7,6 +7,31 @@
 RewriteEngine On
 RewriteBase /
 
+# ─── Force HTTPS ──────────────────────────────────────────────────────
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ─── HTTP Security Headers ────────────────────────────────────────────
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    # Prevent MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    # XSS filter
+    Header always set X-XSS-Protection "1; mode=block"
+    # Referrer policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # HSTS – tells browsers to always use HTTPS (6 months)
+    Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains"
+    # Permissions policy – disable unused browser features
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # Content Security Policy – allow Google/Facebook scripts needed for OAuth
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://connect.facebook.net https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; frame-src https://accounts.google.com https://www.facebook.com; connect-src 'self' https://accounts.google.com https://graph.facebook.com"
+    # Remove server fingerprinting
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+</IfModule>
+
 # ─── Security: Block sensitive files ───────────────────────────────────
 <FilesMatch "\.(env|log|bak|sql|csv|md|py|sh)$">
     Require all denied
