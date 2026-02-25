@@ -433,17 +433,19 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
             <p style="color: var(--text-gray); margin-bottom: 1rem; font-size: .9rem;">
                 Upload product images. The <strong>first image</strong> becomes the main thumbnail (1.png), additional images become gallery photos (2.png, 3.png, etc.).
             </p>
-            <div class="image-upload-area">
+            <div class="image-upload-area" id="imageUploadArea">
                 <input type="file" name="product_images[]" accept="image/*" multiple id="imageInput">
                 <i class="fas fa-cloud-upload-alt"></i>
-                <p>Click or drag to upload images (multiple allowed)</p>
+                <p>Click or drag to upload images &mdash; <strong>click multiple times to add more</strong></p>
+                <p style="font-size:.78rem;color:var(--text-gray);margin-top:.3rem;">Hold <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> in the picker to select several at once</p>
             </div>
+            <div id="imageCountBadge" style="margin:.5rem 0;font-size:.82rem;color:var(--text-gray);display:none;"></div>
             <div class="image-preview" id="imagePreview"></div>
         </div>
 
         <!-- Submit -->
         <div class="btn-actions">
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('addProductForm').reset(); document.getElementById('imagePreview').innerHTML='';">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('addProductForm').reset(); accumulatedFiles = new DataTransfer(); syncInputFiles(); renderImagePreviews(); document.getElementById('imageCountBadge').style.display='none';">
                 <i class="fas fa-undo"></i> Reset Form
             </button>
             <button type="submit" class="btn btn-success" id="submitBtn">
@@ -467,22 +469,68 @@ function showLoading(on) {
     document.getElementById('loadingOverlay').classList.toggle('active', on);
 }
 
-// Image preview
-document.getElementById('imageInput').addEventListener('change', function() {
+// ── Accumulated file list (persists across multiple picks) ──
+let accumulatedFiles = new DataTransfer();
+
+function syncInputFiles() {
+    // Assign accumulated DataTransfer back to the file input so FormData picks them all up
+    document.getElementById('imageInput').files = accumulatedFiles.files;
+}
+
+function renderImagePreviews() {
     const preview = document.getElementById('imagePreview');
+    const badge   = document.getElementById('imageCountBadge');
     preview.innerHTML = '';
-    Array.from(this.files).forEach((f, i) => {
+    const count = accumulatedFiles.files.length;
+    if (count === 0) { badge.style.display = 'none'; return; }
+    badge.style.display = '';
+    badge.innerHTML = '<i class="fas fa-images"></i> <strong>' + count + '</strong> image' + (count > 1 ? 's' : '') + ' selected — first is the <strong>Main</strong> thumbnail';
+    Array.from(accumulatedFiles.files).forEach((f, i) => {
         const item = document.createElement('div');
         item.className = 'image-preview-item';
+        item.style.cssText = 'position:relative;';
+        // Image
         const img = document.createElement('img');
         img.src = URL.createObjectURL(f);
         item.appendChild(img);
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = i === 0 ? 'Main' : (i + 1) + '.png';
-        item.appendChild(badge);
+        // Main / number badge
+        const numBadge = document.createElement('span');
+        numBadge.className = 'badge';
+        numBadge.textContent = i === 0 ? 'Main' : (i + 1);
+        item.appendChild(numBadge);
+        // Remove (×) button
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.title = 'Remove';
+        rmBtn.innerHTML = '&times;';
+        rmBtn.style.cssText = 'position:absolute;top:3px;right:3px;background:rgba(220,38,38,.85);' +
+            'color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;' +
+            'font-size:.85rem;line-height:1;display:flex;align-items:center;justify-content:center;z-index:9;';
+        rmBtn.addEventListener('click', function() {
+            removeFileAt(i);
+        });
+        item.appendChild(rmBtn);
         preview.appendChild(item);
     });
+}
+
+function removeFileAt(idx) {
+    const dt = new DataTransfer();
+    Array.from(accumulatedFiles.files).forEach((f, i) => {
+        if (i !== idx) dt.items.add(f);
+    });
+    accumulatedFiles = dt;
+    syncInputFiles();
+    renderImagePreviews();
+}
+
+// Each time user picks files, ADD them to the accumulated list (not replace)
+document.getElementById('imageInput').addEventListener('change', function() {
+    Array.from(this.files).forEach(f => accumulatedFiles.items.add(f));
+    syncInputFiles();
+    renderImagePreviews();
+    // Clear input value so picking the same file twice still triggers 'change'
+    this.value = '';
 });
 
 document.getElementById('videoFileInput').addEventListener('change', function() {
