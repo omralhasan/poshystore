@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
+require_once __DIR__ . '/../../includes/product_image_helper.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -102,7 +103,9 @@ $total_items = $cart['total_items'] ?? 0;
         .item-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: #faf8f5;
+            padding: 4px;
         }
         
         .item-image-placeholder {
@@ -614,8 +617,18 @@ $total_items = $cart['total_items'] ?? 0;
                         ?>
                             <div class="cart-item">
                                 <div class="item-image">
-                                    <?php if (!empty($item['image_url'])): ?>
-                                        <img src="<?= htmlspecialchars($item['image_url']) ?>" alt="<?= htmlspecialchars($item['name_en']) ?>">
+                                    <?php
+                                        $cart_img = get_product_thumbnail(
+                                            $item['name_en'] ?? '',
+                                            $item['image_url'] ?? '',
+                                            __DIR__ . '/../..'
+                                        );
+                                    ?>
+                                    <?php if (!empty($cart_img)): ?>
+                                        <img src="<?= htmlspecialchars($cart_img) ?>" alt="<?= htmlspecialchars($item['name_en']) ?>" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                        <div class="item-image-placeholder" style="display:none;">
+                                            <?= $icons[$item['product_id'] % count($icons)] ?>
+                                        </div>
                                     <?php else: ?>
                                         <div class="item-image-placeholder">
                                             <?= $icons[$item['product_id'] % count($icons)] ?>

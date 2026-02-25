@@ -78,6 +78,17 @@ try {
     error_log("Failed to load categories: " . $e->getMessage());
 }
 
+// Load brands for filter dropdown
+$all_brands = [];
+try {
+    $brands_result = $conn->query("SELECT id, name_en, name_ar FROM brands ORDER BY name_en ASC");
+    if ($brands_result) {
+        while ($br = $brands_result->fetch_assoc()) $all_brands[] = $br;
+    }
+} catch (Exception $e) {
+    error_log("Failed to load brands: " . $e->getMessage());
+}
+
 // Get products
 $products_array = [];
 $is_search_mode = !empty($search_query);
@@ -327,6 +338,85 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         [dir="rtl"] .search-icon { left: auto; right: 1rem; }
         [dir="rtl"] .search-input { padding: 0.75rem 2.75rem 0.75rem 1rem; }
 
+        /* ─── Search Autocomplete Dropdown ─── */
+        .search-wrapper {
+            position: relative;
+        }
+        .search-suggestions {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: var(--surface);
+            border: 1.5px solid var(--accent);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
+            z-index: 9999;
+            max-height: 380px;
+            overflow-y: auto;
+            display: none;
+        }
+        .search-suggestions.open { display: block; }
+        .sugg-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light);
+            transition: background 0.15s;
+        }
+        .sugg-item:last-child { border-bottom: none; }
+        .sugg-item:hover, .sugg-item.focused { background: var(--surface-hover); }
+        .sugg-img {
+            width: 44px; height: 44px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: var(--surface-alt);
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+        }
+        .sugg-img-placeholder {
+            width: 44px; height: 44px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sugg-text { flex: 1; min-width: 0; }
+        .sugg-name { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sugg-meta { font-size: 0.75rem; color: var(--text-muted); }
+        .sugg-price { font-weight: 700; font-size: 0.85rem; color: var(--accent-dark); white-space: nowrap; }
+        .sugg-footer { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center; background: var(--surface-alt); border-radius: 0 0 14px 14px; }
+        /* ─── Brand / Category Filter Dropdowns ─── */
+        .search-filters {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        .filter-select {
+            padding: 0.4rem 2rem 0.4rem 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            background: var(--surface-alt);
+            color: var(--text-secondary);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.6rem center;
+            transition: border-color 0.2s;
+        }
+        .filter-select:focus { outline: none; border-color: var(--accent); }
+        .filter-select.active-filter { border-color: var(--accent); color: var(--accent-dark); background-color: rgba(201,169,110,0.08); }
+        [dir="rtl"] .filter-select {
+            padding: 0.4rem 0.75rem 0.4rem 2rem;
+            background-position: left 0.6rem center;
+        }
         /* Category Chips */
         .category-chips {
             display: flex;
@@ -536,7 +626,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         .p-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: var(--surface-alt);
+            padding: 4px;
             transition: transform 0.5s ease;
         }
 
@@ -1038,17 +1130,58 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <div class="filter-inner">
             <!-- Search -->
             <div class="search-row">
-                <form method="GET" action="index.php" class="search-form">
-                    <i class="fas fa-search search-icon"></i>
-                    <input 
-                        type="text" 
-                        name="search" 
-                        class="search-input" 
-                        placeholder="<?= t('search_products') ?>"
-                        value="<?= htmlspecialchars($search_query) ?>"
-                        autocomplete="off"
-                    >
+                <form method="GET" action="index.php" class="search-form" id="searchForm">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            id="searchInput"
+                            class="search-input" 
+                            placeholder="<?= t('search_products') ?>"
+                            value="<?= htmlspecialchars($search_query) ?>"
+                            autocomplete="off"
+                        >
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                    <!-- Hidden fields to carry active brand/category into text search -->
+                    <input type="hidden" name="brand"    id="searchBrandHidden"    value="<?= $active_brand ?>">
+                    <input type="hidden" name="category" id="searchCategoryHidden" value="<?= $active_category ?>">
                 </form>
+                <!-- Brand & Category filter dropdowns (submit via JS) -->
+                <div class="search-filters">
+                    <select class="filter-select <?= $active_brand > 0 ? 'active-filter' : '' ?>"
+                            id="brandFilter"
+                            onchange="applySearchFilter()">
+                        <option value="0"><?= $lang === 'ar' ? '🏷 كل الماركات' : '🏷 All Brands' ?></option>
+                        <?php foreach ($all_brands as $brand): ?>
+                            <option value="<?= (int)$brand['id'] ?>" <?= $active_brand === (int)$brand['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($lang === 'ar' && !empty($brand['name_ar']) ? $brand['name_ar'] : $brand['name_en']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <select class="filter-select <?= $active_category > 0 ? 'active-filter' : '' ?>"
+                            id="categoryFilter"
+                            onchange="applySearchFilter()">
+                        <option value="0"><?= $lang === 'ar' ? '📂 كل الفئات' : '📂 All Categories' ?></option>
+                        <?php foreach ($all_categories as $cat): ?>
+                            <optgroup label="<?= htmlspecialchars($lang === 'ar' ? $cat['name_ar'] : $cat['name_en']) ?>">
+                                <?php foreach ($cat['subcategories'] as $sub): ?>
+                                    <option value="<?= (int)$sub['id'] ?>" data-is-sub="1"
+                                            <?= $active_subcategory === (int)$sub['id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($lang === 'ar' ? $sub['name_ar'] : $sub['name_en']) ?>
+                                        (<?= $sub['product_count'] ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if ($active_brand > 0 || $active_category > 0 || $active_subcategory > 0): ?>
+                        <a href="index.php" class="filter-select" style="background:none; border-color:#ef4444; color:#ef4444; text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem; padding: 0.4rem 0.75rem; font-weight:600;">
+                            <i class="fas fa-times"></i> <?= $lang === 'ar' ? 'مسح' : 'Clear' ?>
+                        </a>
+                    <?php endif; ?>
+                </div>
             </div>
             
             <!-- Categories -->
@@ -1500,6 +1633,111 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
+
+    // ==========================================
+    // Brand / Category Filter (dropdown submit)
+    // ==========================================
+    function applySearchFilter() {
+        const brand    = document.getElementById('brandFilter').value;
+        const catSel   = document.getElementById('categoryFilter');
+        const catVal   = catSel.value;
+        const isSub    = catSel.options[catSel.selectedIndex]?.dataset?.isSub === '1';
+        const search   = document.getElementById('searchInput').value.trim();
+
+        let url = 'index.php?';
+        if (search)  url += 'search=' + encodeURIComponent(search) + '&';
+        if (brand  > 0) url += 'brand='    + brand + '&';
+        if (catVal > 0) url += (isSub ? 'subcategory=' : 'category=') + catVal + '&';
+        window.location.href = url.replace(/&$/, '');
+    }
+
+    // ==========================================
+    // Search Autocomplete
+    // ==========================================
+    (function() {
+        const input   = document.getElementById('searchInput');
+        const box     = document.getElementById('searchSuggestions');
+        const LANG    = '<?= $lang ?>';
+        let timer     = null;
+        let focused   = -1;
+        let lastQuery = '';
+
+        if (!input || !box) return;
+
+        function showBox(items) {
+            if (!items.length) { box.classList.remove('open'); return; }
+            focused = -1;
+            box.innerHTML = items.map((it, i) => {
+                const imgHtml = it.image
+                    ? `<img class="sugg-img" src="${escHtml(it.image)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                      + `<div class="sugg-img-placeholder" style="display:none"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`
+                    : `<div class="sugg-img-placeholder"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`;
+                const meta = [it.brand, it.category].filter(Boolean).join(' · ');
+                return `<div class="sugg-item" data-slug="${escHtml(it.slug)}" data-name="${escHtml(it.name_en)}" onclick="pickSugg(this)">
+                    ${imgHtml}
+                    <div class="sugg-text">
+                        <div class="sugg-name">${escHtml(it.name)}</div>
+                        ${meta ? `<div class="sugg-meta">${escHtml(meta)}</div>` : ''}
+                    </div>
+                    <div class="sugg-price">${escHtml(it.price)}</div>
+                </div>`;
+            }).join('') + `<div class="sugg-footer"><?= $lang === 'ar' ? 'اضغط Enter للبحث الكامل' : 'Press Enter for full results' ?></div>`;
+            box.classList.add('open');
+        }
+
+        function closeBox() { box.classList.remove('open'); focused = -1; }
+
+        window.pickSugg = function(el) {
+            const slug = el.dataset.slug;
+            if (slug) { window.location.href = slug; }
+            else { input.value = el.dataset.name; document.getElementById('searchForm').submit(); }
+        };
+
+        function escHtml(s) {
+            if (!s) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function fetchSuggestions(q) {
+            if (q.length < 1) { closeBox(); return; }
+            if (q === lastQuery) return;
+            lastQuery = q;
+            fetch(`api/search_suggestions.php?q=${encodeURIComponent(q)}&lang=${LANG}&limit=8`)
+                .then(r => r.json())
+                .then(items => { if (input.value.trim() === q) showBox(items); })
+                .catch(() => {});
+        }
+
+        input.addEventListener('input', function() {
+            clearTimeout(timer);
+            const q = this.value.trim();
+            if (!q) { closeBox(); lastQuery = ''; return; }
+            timer = setTimeout(() => fetchSuggestions(q), 220);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            const items = box.querySelectorAll('.sugg-item');
+            if (!box.classList.contains('open')) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (focused < items.length - 1) { focused++; }
+                items.forEach((el,i) => el.classList.toggle('focused', i === focused));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (focused > 0) { focused--; }
+                items.forEach((el,i) => el.classList.toggle('focused', i === focused));
+            } else if (e.key === 'Enter' && focused >= 0) {
+                e.preventDefault();
+                pickSugg(items[focused]);
+            } else if (e.key === 'Escape') {
+                closeBox();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-wrapper')) closeBox();
+        });
+    })();
 
     // ==========================================
     // Smooth scroll

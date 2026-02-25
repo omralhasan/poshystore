@@ -7,7 +7,7 @@
  * Overwrites the file on every run — safe to call from cron.
  *
  * Output file : /var/www/html/feeds/products.csv
- * Public URL  : http://159.223.180.154/feeds/products.csv
+ * Public URL  : https://poshystore.com/feeds/products.csv
  *
  * Cron (every hour):
  *   0 * * * * php /var/www/html/generate_feed_csv.php >> /var/log/feed_csv.log 2>&1
@@ -105,8 +105,10 @@ $headers = [
 fputcsv($fh, $headers);
 
 // ─── Write rows ───────────────────────────────────────────────────────────────
-$site_url = rtrim(SITE_URL, '/');
-$count    = 0;
+// Use canonical domain for all public URLs in the feed (improves Google/Meta indexing)
+$site_url   = rtrim(SITE_URL, '/');
+$feed_domain = 'https://poshystore.com';  // canonical domain for feed image/product URLs
+$count       = 0;
 
 while ($p = $result->fetch_assoc()) {
 
@@ -128,18 +130,21 @@ while ($p = $result->fetch_assoc()) {
     $desc = strip_tags((string)$desc);
     $desc = mb_substr($desc, 0, 5000, 'UTF-8');   // Google max length
 
-    // product URL
+    // product URL — use canonical domain
     $link = !empty($p['slug'])
-        ? $site_url . '/' . $p['slug']
-        : $site_url . '/product.php?id=' . (int)$p['id'];
+        ? $feed_domain . '/' . $p['slug']
+        : $feed_domain . '/product.php?id=' . (int)$p['id'];
 
-    // image URL (absolute)
+    // image URL — always use canonical domain so Google/Meta can verify ownership
     $image_link = '';
     if (!empty($p['image_link'])) {
         $img = trim($p['image_link']);
-        $image_link = preg_match('#^https?://#i', $img)
-            ? $img
-            : $site_url . '/' . ltrim($img, '/');
+        if (preg_match('#^https?://#i', $img)) {
+            // Replace any IP-based URL with the canonical domain
+            $image_link = preg_replace('#^https?://[^/]+#i', $feed_domain, $img);
+        } else {
+            $image_link = $feed_domain . '/' . ltrim($img, '/');
+        }
     }
 
     // availability
@@ -206,7 +211,7 @@ $conn->close();
 // ─── Success log ─────────────────────────────────────────────────────────────
 $size = round(filesize($OUTPUT_FILE) / 1024, 1);
 log_msg('Success: ' . $count . ' products written to products.csv (' . $size . ' KB)');
-log_msg('Info: URL → ' . $site_url . '/feeds/products.csv');
+log_msg('Info: URL → ' . $feed_domain . '/feeds/products.csv');
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 function log_msg(string $msg): void {
