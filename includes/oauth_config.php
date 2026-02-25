@@ -37,9 +37,9 @@ return [
         'app_id' => '1257016736289462',
         'app_secret' => '9754bc68520be46d248623117a3bb854',
         'redirect_uri' => $oauth_domain . '/oauth_callback.php',  // must match Facebook App Dashboard
-        'auth_url' => 'https://www.facebook.com/v12.0/dialog/oauth',
-        'token_url' => 'https://graph.facebook.com/v12.0/oauth/access_token',
-        'user_info_url' => 'https://graph.facebook.com/me',
+        'auth_url' => 'https://www.facebook.com/v22.0/dialog/oauth',
+        'token_url' => 'https://graph.facebook.com/v22.0/oauth/access_token',
+        'user_info_url' => 'https://graph.facebook.com/v22.0/me',
         'scope' => 'email,public_profile'
     ],
     
