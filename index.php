@@ -207,6 +207,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             animation: float 6s ease-in-out infinite;
         }
 
+        @media (max-width: 1024px) {
+            .hero::after { display: none; }
+        }
+
         @keyframes heroFloat {
             0%, 100% { transform: translateY(0) rotate(0deg); }
             50% { transform: translateY(-15px) rotate(5deg); }

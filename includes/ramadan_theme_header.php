@@ -609,7 +609,14 @@ if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
     /* ============================================
        GLOBAL MOBILE RESPONSIVE IMPROVEMENTS
        ============================================ */
-    
+
+    @media (max-width: 1024px) {
+        /* Hide floating decorations on tablets and phones */
+        .floating-decorations {
+            display: none;
+        }
+    }
+
     @media (max-width: 768px) {
         /* Navbar mobile tweaks */
         .ramadan-navbar {
