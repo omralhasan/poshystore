@@ -155,6 +155,8 @@ function viewCart($user_id = null) {
                 p.name_en,
                 p.name_ar,
                 p.slug,
+                p.short_description_en,
+                p.short_description_ar,
                 p.price_jod as price,
                 p.stock_quantity as stock,
                 p.image_link as image_url,

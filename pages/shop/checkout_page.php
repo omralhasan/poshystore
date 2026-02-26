@@ -750,6 +750,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                         <div style="font-weight: 600; color: var(--purple-color); font-size: 0.95rem; margin-bottom: 0.25rem; line-height: 1.3;">
                                             <?= htmlspecialchars($item['name_en']) ?>
                                         </div>
+                                        
+                                        <!-- Short Description with Language Support -->
+                                        <?php if (!empty($item['short_description_en']) || !empty($item['short_description_ar'])): ?>
+                                        <div style="font-size: 0.75rem; color: #888; font-style: italic; margin-bottom: 0.25rem;">
+                                            <?php if ($current_lang === 'ar' && !empty($item['short_description_ar'])): ?>
+                                                <?= htmlspecialchars($item['short_description_ar']) ?>
+                                            <?php elseif (!empty($item['short_description_en'])): ?>
+                                                <?= htmlspecialchars($item['short_description_en']) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php endif; ?>
+                                        
                                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
                                             <span style="color: #666; font-size: 0.85rem; background: linear-gradient(135deg, #f0f0f0, #e8e8e8); padding: 0.25rem 0.5rem; border-radius: 5px;">
                                                 <i class="fas fa-times" style="font-size: 0.7rem;"></i> <?= $item['quantity'] ?>

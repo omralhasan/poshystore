@@ -638,6 +638,18 @@ $total_items = $cart['total_items'] ?? 0;
                                 <div class="item-details">
                                     <div class="item-name"><?= htmlspecialchars($item['name_en']) ?></div>
                                     <div class="item-name-ar"><?= htmlspecialchars($item['name_ar']) ?></div>
+                                    
+                                    <!-- Short Description with Language Support -->
+                                    <?php if (!empty($item['short_description_en']) || !empty($item['short_description_ar'])): ?>
+                                    <div style="font-size: 0.8rem; color: #888; font-style: italic; line-height: 1.3; margin-bottom: 0.5rem;">
+                                        <?php if ($current_lang === 'ar' && !empty($item['short_description_ar'])): ?>
+                                            <?= htmlspecialchars($item['short_description_ar']) ?>
+                                        <?php elseif (!empty($item['short_description_en'])): ?>
+                                            <?= htmlspecialchars($item['short_description_en']) ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php endif; ?>
+                                    
                                     <div class="item-price">
                                         <span class="price-badge"><?= $item['price_formatted'] ?></span>
                                         <span style="color: #999;">×</span>
