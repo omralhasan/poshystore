@@ -1,0 +1,36 @@
+[26-Feb-2026 03:27:45 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/cleanup_orders.php(7): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[26-Feb-2026 03:27:49 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/cleanup_orders.php(7): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[26-Feb-2026 03:41:43 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/test_product_management.php(8): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[26-Feb-2026 03:41:47 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/test_product_management.php(8): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[26-Feb-2026 03:41:54 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/quick_status.php(3): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[26-Feb-2026 03:44:13 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
