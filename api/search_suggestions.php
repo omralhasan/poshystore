@@ -60,11 +60,21 @@ $stmt->bind_param(
 $stmt->execute();
 $result = $stmt->get_result();
 
+// Include image helper to resolve image paths properly
+require_once __DIR__ . '/../includes/product_image_helper.php';
+
 $suggestions = [];
 while ($row = $result->fetch_assoc()) {
     $name = $lang === 'ar' && !empty($row['name_ar']) ? $row['name_ar'] : $row['name_en'];
     $sub  = $lang === 'ar' && !empty($row['subcategory_ar'])
               ? $row['subcategory_ar'] : ($row['subcategory_en'] ?? '');
+
+    // Get proper image path using image helper
+    $image_path = get_product_thumbnail(
+        $row['name_en'],
+        $row['image_link'] ?? '',
+        __DIR__ . '/..'
+    );
 
     $suggestions[] = [
         'id'     => (int)$row['id'],
@@ -73,7 +83,7 @@ while ($row = $result->fetch_assoc()) {
         'name_ar' => $row['name_ar'] ?? '',
         'slug'   => $row['slug'] ?? '',
         'price'  => number_format((float)$row['price_jod'], 3) . ' JOD',
-        'image'  => $row['image_link'] ?? '',
+        'image'  => $image_path,
         'brand'  => $lang === 'ar' && !empty($row['brand_ar']) ? $row['brand_ar'] : ($row['brand_en'] ?? ''),
         'category' => $sub,
     ];

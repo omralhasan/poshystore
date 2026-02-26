@@ -1375,6 +1375,17 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                             <div class="p-card-name-ar"><?= htmlspecialchars($lang === 'ar' ? $product['name_en'] : ($product['name_ar'] ?? '')) ?></div>
                         </a>
                         
+                        <!-- Short Description with Language Support -->
+                        <?php if (!empty($product['short_description_en']) || !empty($product['short_description_ar'])): ?>
+                        <div class="p-card-short-desc" style="font-size: 0.85rem; color: #666; font-style: italic; margin-bottom: 0.5rem; line-height: 1.4;">
+                            <?php if ($lang === 'ar' && !empty($product['short_description_ar'])): ?>
+                                <?= htmlspecialchars($product['short_description_ar']) ?>
+                            <?php elseif (!empty($product['short_description_en'])): ?>
+                                <?= htmlspecialchars($product['short_description_en']) ?>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
+                        
                         <div class="p-card-price">
                             <span class="price-now"><?= number_format($product['price_jod'], 3) ?> <?= t('currency') ?></span>
                             <?php if (!empty($product['has_discount']) && $product['original_price'] > 0): ?>
