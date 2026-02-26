@@ -175,3 +175,64 @@ function toggleMobileMenu() {
     document.body.style.overflow = isOpen ? '' : 'hidden';
 }
 </script>
+
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile navigation">
+    <a href="<?= $base_path ?>index.php" class="bottom-nav-item <?= (basename($_SERVER['PHP_SELF']) === 'index.php' && !isset($_GET['search'])) ? 'active' : '' ?>">
+        <i class="fas fa-home"></i>
+        <span><?= $current_lang === 'ar' ? 'الرئيسية' : 'Home' ?></span>
+    </a>
+    
+    <a href="<?= $base_path ?>index.php?show_all=1" class="bottom-nav-item <?= isset($_GET['search']) || isset($_GET['brand']) || isset($_GET['subcategory']) ? 'active' : '' ?>" id="bottomNavSearch">
+        <i class="fas fa-search"></i>
+        <span><?= $current_lang === 'ar' ? 'بحث' : 'Search' ?></span>
+    </a>
+    
+    <?php if ($is_logged_in): ?>
+    <a href="<?= $base_path ?>pages/shop/cart.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'cart.php' ? 'active' : '' ?>">
+        <i class="fas fa-shopping-cart"></i>
+        <?php if ($cart_count > 0): ?>
+            <span class="bottom-nav-badge"><?= $cart_count > 9 ? '9+' : $cart_count ?></span>
+        <?php endif; ?>
+        <span><?= $current_lang === 'ar' ? 'السلة' : 'Cart' ?></span>
+    </a>
+    
+    <a href="<?= $base_path ?>pages/shop/my_orders.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'my_orders.php' ? 'active' : '' ?>">
+        <i class="fas fa-box"></i>
+        <span><?= $current_lang === 'ar' ? 'طلباتي' : 'Orders' ?></span>
+    </a>
+    
+    <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'points_wallet.php' ? 'active' : '' ?>">
+        <i class="fas fa-award"></i>
+        <span><?= $current_lang === 'ar' ? 'مكافآت' : 'Rewards' ?></span>
+    </a>
+    <?php else: ?>
+    <a href="<?= $base_path ?>pages/shop/shop.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'shop.php' ? 'active' : '' ?>">
+        <i class="fas fa-shopping-bag"></i>
+        <span><?= $current_lang === 'ar' ? 'المتجر' : 'Shop' ?></span>
+    </a>
+    
+    <a href="<?= $base_path ?>pages/auth/signin.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'signin.php' ? 'active' : '' ?>">
+        <i class="fas fa-user"></i>
+        <span><?= $current_lang === 'ar' ? 'دخول' : 'Sign In' ?></span>
+    </a>
+    <?php endif; ?>
+</nav>
+
+<script>
+// Bottom nav: highlight search icon and open search on mobile
+document.addEventListener('DOMContentLoaded', function() {
+    const searchBtn = document.getElementById('bottomNavSearch');
+    if (!searchBtn) return;
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) {
+        // Not on homepage — use href as-is
+        return;
+    }
+    searchBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+});
+</script>

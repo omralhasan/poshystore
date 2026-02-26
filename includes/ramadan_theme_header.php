@@ -17,10 +17,10 @@ if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
 <!-- Google Fonts -->
 <?php if (($_SESSION['language'] ?? 'en') === 'ar'): ?>
 <!-- Arabic Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Cairo:wght@300;400;600;700&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 <?php else: ?>
 <!-- English Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@400;600;700&family=Dancing+Script:wght@600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
 <?php endif; ?>
 
 <style>
@@ -613,21 +613,27 @@ if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
     @media (max-width: 768px) {
         /* Navbar mobile tweaks */
         .ramadan-navbar {
-            padding: 0.6rem 0;
+            padding: 0.5rem 0;
+        }
+        .ramadan-navbar .container-fluid {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
         }
         .navbar-brand-ramadan {
-            font-size: 2rem !important;
+            font-size: 1.75rem !important;
+            line-height: 1 !important;
         }
         .navbar-brand-ramadan .logo-subtitle {
-            font-size: 0.55rem !important;
-            letter-spacing: 3px !important;
+            font-size: 0.45rem !important;
+            letter-spacing: 2.5px !important;
+            margin-top: 0.15rem !important;
         }
         
-        /* Nav icons - more touch-friendly */
+        /* Nav icons - touch-friendly */
         .nav-icon-ramadan {
-            font-size: 1.15rem;
-            padding: 6px;
-            margin-left: 0.4rem;
+            font-size: 1.1rem;
+            padding: 7px;
+            margin-left: 0.2rem;
             border-radius: 8px;
             min-width: 36px;
             min-height: 36px;
@@ -637,16 +643,16 @@ if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
             transition: all 0.2s ease;
         }
         .nav-icon-ramadan:active {
-            transform: scale(0.92);
-            background: rgba(201, 168, 106, 0.15);
+            transform: scale(0.9);
+            background: rgba(201, 168, 106, 0.2);
         }
         
         .cart-badge {
-            width: 20px;
-            height: 20px;
-            font-size: 0.65rem;
-            top: -6px;
-            right: -6px;
+            width: 18px;
+            height: 18px;
+            font-size: 0.6rem;
+            top: -4px;
+            right: -4px;
         }
         
         /* Page container */
@@ -656,10 +662,11 @@ if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
         
         /* Section titles */
         .section-title-ramadan {
-            font-size: 1.5rem !important;
+            font-size: 1.4rem !important;
+            margin-bottom: 1.25rem;
         }
         
-        /* Cards - more compact on mobile */
+        /* Cards */
         .card-ramadan {
             border-radius: 12px;
             margin-bottom: 1rem;
@@ -668,48 +675,144 @@ if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
             transform: none;
         }
         
-        /* Buttons - full width on mobile */
+        /* Buttons */
         .btn-ramadan, .btn-ramadan-secondary {
-            padding: 0.75rem 1.5rem;
-            font-size: 0.95rem;
+            padding: 0.7rem 1.25rem;
+            font-size: 0.92rem;
             border-radius: 20px;
+            touch-action: manipulation;
         }
         
-        /* Forms - better on mobile */
+        /* Forms */
         .form-control-ramadan {
-            font-size: 16px !important; /* Prevents iOS zoom on input focus */
-            padding: 0.9rem !important;
+            font-size: 16px !important;
+            padding: 0.85rem !important;
         }
         
         /* Footer */
         .footer-ramadan {
-            margin-top: 2rem;
-            padding: 1.5rem 0 1rem;
+            margin-top: 1.5rem;
+            padding: 1.25rem 0 5rem;  /* 5rem bottom padding for bottom nav */
         }
         .footer-ramadan h5 {
-            font-size: 1.8rem !important;
+            font-size: 1.6rem !important;
         }
         
-        /* Floating decorations - hide on mobile for performance */
+        /* Hide floating decorations on mobile */
         .floating-decorations {
             display: none;
         }
         
-        /* Smooth scrolling for all */
+        /* Prevent hover effects on touch */
+        .p-card:hover {
+            transform: none !important;
+        }
+        
+        /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
         }
+        
+        /* Add padding at bottom for mobile bottom nav */
+        body {
+            padding-bottom: 70px;
+        }
     }
     
-    @media (max-width: 480px) {
+    /* Very small phones */
+    @media (max-width: 390px) {
         .navbar-brand-ramadan {
-            font-size: 1.6rem !important;
+            font-size: 1.5rem !important;
         }
         .nav-icon-ramadan {
-            font-size: 1.05rem;
-            margin-left: 0.25rem;
+            font-size: 1rem;
+            margin-left: 0.1rem;
             min-width: 32px;
             min-height: 32px;
+        }
+    }
+    
+    /* ============================================
+       MOBILE BOTTOM NAVIGATION BAR
+       ============================================ */
+    .mobile-bottom-nav {
+        display: none;
+    }
+    
+    @media (max-width: 768px) {
+        .mobile-bottom-nav {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            background: linear-gradient(180deg, var(--deep-purple) 0%, var(--purple-dark) 100%);
+            border-top: 1px solid rgba(201, 168, 106, 0.25);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            padding: 0;
+            height: 62px;
+            align-items: stretch;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .bottom-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: rgba(201, 168, 106, 0.55);
+            text-decoration: none;
+            font-size: 0.58rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            transition: color 0.2s, background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            padding: 6px 0;
+            border-top: 2px solid transparent;
+            position: relative;
+        }
+        
+        .bottom-nav-item i {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+        
+        .bottom-nav-item.active,
+        .bottom-nav-item:active {
+            color: var(--royal-gold);
+            border-top-color: var(--royal-gold);
+            background: rgba(201, 168, 106, 0.07);
+        }
+        
+        .bottom-nav-item:focus {
+            outline: none;
+            color: var(--royal-gold);
+        }
+        
+        .bottom-nav-badge {
+            position: absolute;
+            top: 4px;
+            left: calc(50% + 4px);
+            background: #ef4444;
+            color: white;
+            border-radius: 10px;
+            padding: 1px 5px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 16px;
+            text-align: center;
+            line-height: 1.4;
+            border: 1.5px solid var(--purple-dark);
+        }
+        
+        [dir="rtl"] .bottom-nav-badge {
+            left: auto;
+            right: calc(50% + 4px);
         }
     }
 </style>

@@ -946,7 +946,35 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             }
 
             .hero {
-                padding: 2.5rem 1rem 2rem;
+                padding: 2rem 1rem 1.5rem;
+            }
+            
+            /* Filter bar */
+            .filter-bar {
+                padding: 0.75rem 0.75rem 0.5rem;
+            }
+            .filter-inner {
+                gap: 0.5rem;
+            }
+            .search-row {
+                gap: 0.5rem;
+            }
+            .search-form {
+                max-width: 100%;
+            }
+            .search-input {
+                font-size: 16px !important; /* prevent iOS zoom */
+                padding: 0.7rem 1rem 0.7rem 2.5rem;
+            }
+            .search-filters {
+                gap: 0.4rem;
+                justify-content: flex-start;
+            }
+            .filter-select {
+                flex: 1;
+                min-width: 130px;
+                font-size: 0.8rem;
+                padding: 0.45rem 1.75rem 0.45rem 0.65rem;
             }
 
             .p-card-body {
@@ -1001,6 +1029,20 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             .rewards-inner {
                 flex-direction: column;
                 text-align: center;
+            }
+            
+            /* Search autocomplete on mobile */
+            .search-suggestions {
+                border-radius: 10px;
+            }
+            .sugg-item {
+                padding: 0.6rem 0.75rem;
+            }
+            .sugg-img {
+                width: 38px; height: 38px;
+            }
+            .sugg-img-placeholder {
+                width: 38px; height: 38px;
             }
         }
 
