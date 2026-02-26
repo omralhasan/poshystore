@@ -612,27 +612,39 @@ $total_items = $cart['total_items'] ?? 0;
                             </div>
                         </div>
                         <?php 
-                        $icons = ['💄', '💅', '🌹', '✨', '💫', '🌙', '⭐', '💎'];
                         foreach ($cart_items as $item): 
                         ?>
                             <div class="cart-item">
                                 <div class="item-image">
                                     <?php
-                                        $cart_img = get_product_thumbnail(
-                                            $item['name_en'] ?? '',
-                                            $item['image_url'] ?? '',
-                                            __DIR__ . '/../..'
-                                        );
+                                        // Try to get the product's main image
+                                        $cart_img = '';
+                                        
+                                        // First, prioritize the database image_link field (direct path to main image)
+                                        if (!empty($item['image_url']) && $item['image_url'] !== 'NULL') {
+                                            $cart_img = $item['image_url'];
+                                        }
+                                        
+                                        // If not found, use get_product_thumbnail to find the main image
+                                        if (empty($cart_img)) {
+                                            $cart_img = get_product_thumbnail(
+                                                $item['name_en'] ?? '',
+                                                $item['image_url'] ?? '',
+                                                __DIR__ . '/../..'
+                                            );
+                                        }
                                     ?>
-                                    <?php if (!empty($cart_img)): ?>
-                                        <img src="<?= htmlspecialchars($cart_img) ?>" alt="<?= htmlspecialchars($item['name_en']) ?>" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                                        <div class="item-image-placeholder" style="display:none;">
-                                            <?= $icons[$item['product_id'] % count($icons)] ?>
-                                        </div>
+                                    <?php if (!empty($cart_img) && $cart_img !== 'images/placeholder-cosmetics.svg'): ?>
+                                        <img src="<?= htmlspecialchars($cart_img) ?>" 
+                                             alt="<?= htmlspecialchars($item['name_en']) ?>"
+                                             style="width:100%; height:100%; object-fit:cover; border-radius:12px;"
+                                             loading="lazy"
+                                             onerror="this.onerror=null; this.src='<?= $base_url ?>/images/placeholder-cosmetics.svg';">
                                     <?php else: ?>
-                                        <div class="item-image-placeholder">
-                                            <?= $icons[$item['product_id'] % count($icons)] ?>
-                                        </div>
+                                        <img src="<?= htmlspecialchars($cart_img ?: ($base_url . '/images/placeholder-cosmetics.svg')) ?>" 
+                                             alt="<?= htmlspecialchars($item['name_en']) ?>"
+                                             style="width:100%; height:100%; object-fit:cover; border-radius:12px;"
+                                             loading="lazy">
                                     <?php endif; ?>
                                 </div>
                                 <div class="item-details">

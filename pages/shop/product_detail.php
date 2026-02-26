@@ -2130,9 +2130,9 @@ if ($is_logged_in) {
             // Update added product section
             const addedImgEl = document.getElementById('addedProductImage');
             if (product.image_path) {
-                addedImgEl.innerHTML = `<img src="${product.image_path}" alt="${product.name_en}" style="width:100%;height:100%;object-fit:contain;" onerror="this.onerror=null;this.parentElement.textContent='📦';">`;
+                addedImgEl.innerHTML = `<img src="${product.image_path}" alt="${product.name_en}" style="width:100%;height:100%;object-fit:contain;" onerror="this.onerror=null;this.src='/images/placeholder-cosmetics.svg';">`;
             } else {
-                addedImgEl.textContent = '📦';
+                addedImgEl.innerHTML = `<img src="/images/placeholder-cosmetics.svg" alt="Placeholder" style="width:100%;height:100%;object-fit:contain;">`;
             }
             document.getElementById('addedProductName').textContent = product.name_en;
             if (product.name_ar) {

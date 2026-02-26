@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/checkout.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
+require_once __DIR__ . '/../../includes/product_image_helper.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/signin.php');
@@ -831,30 +832,28 @@ unset($order); // Break reference
                                         (<?= $order['items_count'] ?> Total Items)
                                     </div>
                                     
-                                    <?php 
-                                    $photo_gradients = [
-                        'linear-gradient(135deg, var(--purple-color), var(--purple-dark))',
-                        'linear-gradient(135deg, var(--gold-color), var(--gold-light))',
-                        'linear-gradient(135deg, #f093fb, #f5576c)',
-                        'linear-gradient(135deg, #4facfe, #00f2fe)',
-                        'linear-gradient(135deg, #43e97b, #38f9d7)'
-                    ];
-                    $icons = ['💄', '💅', '🌹', '✨', '💫', '🌙', '⭐', '💎', '🎁', '👑'];
-                                    foreach ($order['items'] as $item): 
-                                        // Create multiple icons for carousel effect
-                                        $product_icons = [];
-                                        for ($i = 0; $i < 3; $i++) {
-                                            $product_icons[] = $icons[($item['product_id'] + $i) % count($icons)];
-                                        }
-                                    ?>
+                                    <?php foreach ($order['items'] as $item): ?>
                                         <div class="order-item">
-                                            <div class="item-icon" id="item-<?= $item['product_id'] ?>-<?= $order['order_id'] ?>">
-                                                <?php foreach ($product_icons as $idx => $icon): ?>
-                                                    <div class="item-image-slide <?= $idx === 0 ? 'active' : '' ?>" 
-                                                         style="background: <?= $photo_gradients[$idx % count($photo_gradients)] ?>">
-                                                        <?= $icon ?>
-                                                    </div>
-                                                <?php endforeach; ?>
+                                            <?php
+                                                // Get the main product image
+                                                $item_img = get_product_thumbnail(
+                                                    trim($item['product_name_en'] ?? ''),
+                                                    '',
+                                                    __DIR__ . '/../..'
+                                                );
+                                            ?>
+                                            <div class="item-icon" id="item-<?= $item['product_id'] ?>-<?= $order['order_id'] ?>" style="background: #fff; padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                                <?php if (!empty($item_img) && $item_img !== 'images/placeholder-cosmetics.svg'): ?>
+                                                    <img src="<?= htmlspecialchars($item_img) ?>" 
+                                                         alt="<?= htmlspecialchars($item['product_name_en']) ?>"
+                                                         style="width: 100%; height: 100%; object-fit: cover;"
+                                                         loading="lazy"
+                                                         onerror="this.onerror=null; this.src='<?= $base_url ?>/images/placeholder-cosmetics.svg';">
+                                                <?php else: ?>
+                                                    <img src="<?= $base_url ?>/images/placeholder-cosmetics.svg" 
+                                                         alt="Placeholder"
+                                                         style="width: 100%; height: 100%; object-fit: cover;">
+                                                <?php endif; ?>
                                             </div>
                                             <div class="item-info">
                                                 <div class="item-name">
