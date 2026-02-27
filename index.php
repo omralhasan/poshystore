@@ -1387,7 +1387,14 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <?php endif; ?>
                         
                         <div class="p-card-price">
-                            <span class="price-now"><?= number_format($product['price_jod'], 3) ?> <?= t('currency') ?></span>
+                            <?php 
+                                // Show supplier price if user is supplier and supplier_cost is set
+                                $display_price = $product['price_jod'];
+                                if (isSupplier() && !empty($product['supplier_cost']) && $product['supplier_cost'] > 0) {
+                                    $display_price = $product['supplier_cost'];
+                                }
+                            ?>
+                            <span class="price-now"><?= number_format($display_price, 3) ?> <?= t('currency') ?></span>
                             <?php if (!empty($product['has_discount']) && $product['original_price'] > 0): ?>
                                 <span class="price-was"><?= number_format($product['original_price'], 3) ?></span>
                             <?php endif; ?>

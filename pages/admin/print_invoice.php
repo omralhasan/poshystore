@@ -53,7 +53,7 @@ $stmt->close();
 // Fetch order items with product ID as SKU and pricing info
 $items_sql = "SELECT oi.product_id, oi.product_name_en, oi.product_name_ar, 
                      oi.quantity, oi.price_per_item, oi.subtotal,
-                     p.supplier_cost, p.public_price_min, p.public_price_max
+                     p.supplier_cost
               FROM order_items oi
               LEFT JOIN products p ON oi.product_id = p.id
               WHERE oi.order_id = ?";
@@ -72,12 +72,12 @@ while ($item = $items_result->fetch_assoc()) {
     
     // Determine price based on invoice type
     if ($invoice_type === 'supplier') {
-        // For suppliers, show supplier cost
+        // For suppliers, show supplier price
         $item['display_price'] = $item['supplier_cost'] ?: $item['price_per_item'];
         $item['display_subtotal'] = $item['display_price'] * $item['quantity'];
     } else {
-        // For customers, use the minimum public price (or the original price_per_item)
-        $item['display_price'] = $item['public_price_min'] ?: $item['price_per_item'];
+        // For customers, use the order price
+        $item['display_price'] = $item['price_per_item'];
         $item['display_subtotal'] = $item['display_price'] * $item['quantity'];
     }
     

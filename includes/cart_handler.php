@@ -157,11 +157,11 @@ function viewCart($user_id = null) {
                 p.slug,
                 p.short_description_en,
                 p.short_description_ar,
-                p.price_jod as price,
+                p.price_jod,
+                p.supplier_cost,
                 p.stock_quantity as stock,
                 p.image_link as image_url,
-                p.subcategory_id,
-                (c.quantity * p.price_jod) as subtotal
+                p.subcategory_id
             FROM cart c
             INNER JOIN products p ON c.product_id = p.id
             WHERE c.user_id = ?
@@ -181,11 +181,21 @@ function viewCart($user_id = null) {
     $stmt->execute();
     $result = $stmt->get_result();
     
+    // Check if current user is a supplier
+    $is_supplier_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'supplier');
+    
     $cart_items = [];
     $total_amount = 0;
     $total_items = 0;
     
     while ($row = $result->fetch_assoc()) {
+        // Use supplier price if user is supplier and supplier_cost is set
+        if ($is_supplier_user && !empty($row['supplier_cost']) && $row['supplier_cost'] > 0) {
+            $row['price'] = $row['supplier_cost'];
+        } else {
+            $row['price'] = $row['price_jod'];
+        }
+        $row['subtotal'] = $row['quantity'] * $row['price'];
         $row['price_formatted'] = formatJOD($row['price']);
         $row['subtotal_formatted'] = formatJOD($row['subtotal']);
         $row['in_stock'] = $row['stock'] >= $row['quantity'];

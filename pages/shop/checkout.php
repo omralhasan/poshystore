@@ -135,14 +135,16 @@ function processCheckout($user_id = null, $additional_data = []) {
         }
         
         // Insert order into orders table with shipping details
-        $order_sql = "INSERT INTO orders (user_id, total_amount, status, shipping_address, phone, city, notes, is_gift, gift_recipient_name, gift_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Auto-set order_type based on user role
+        $order_type = (isset($_SESSION['role']) && $_SESSION['role'] === 'supplier') ? 'supplier' : 'customer';
+        $order_sql = "INSERT INTO orders (user_id, total_amount, status, shipping_address, phone, city, notes, is_gift, gift_recipient_name, gift_message, order_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $order_stmt = $conn->prepare($order_sql);
         
         if (!$order_stmt) {
             throw new Exception("Failed to prepare order statement: " . $conn->error);
         }
         
-        $order_stmt->bind_param('idssssssss', $user_id, $total_amount, $status, $shipping_address, $phone, $city, $notes, $is_gift, $gift_recipient_name, $gift_message);
+        $order_stmt->bind_param('idsssssssss', $user_id, $total_amount, $status, $shipping_address, $phone, $city, $notes, $is_gift, $gift_recipient_name, $gift_message, $order_type);
         
         if (!$order_stmt->execute()) {
             throw new Exception("Failed to create order: " . $order_stmt->error);

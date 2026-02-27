@@ -34,9 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $subcat_id  = intval($_POST['subcategory_id'] ?? 0) ?: null;
     $brand_id   = intval($_POST['brand_id'] ?? 0) ?: null;
     $tags_raw   = trim($_POST['tags'] ?? '');
-    $sup_cost   = ($_POST['supplier_cost'] ?? '') !== '' ? floatval($_POST['supplier_cost']) : null;
-    $pub_min    = ($_POST['public_price_min'] ?? '') !== '' ? floatval($_POST['public_price_min']) : null;
-    $pub_max    = ($_POST['public_price_max'] ?? '') !== '' ? floatval($_POST['public_price_max']) : null;
+    $sup_cost   = ($_POST['supplier_price'] ?? '') !== '' ? floatval($_POST['supplier_price']) : null;
     $orig_price = ($_POST['original_price'] ?? '') !== '' ? floatval($_POST['original_price']) : $price;
     $discount   = floatval($_POST['discount_percentage'] ?? 0);
     $has_disc   = ($discount > 0) ? 1 : 0;
@@ -93,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $sql = "INSERT INTO products (name_en, name_ar, slug, short_description_en, short_description_ar,
             description, description_ar, product_details, product_details_ar, how_to_use_en, how_to_use_ar, video_review_url,
             price_jod, stock_quantity, image_link, subcategory_id, brand_id,
-            supplier_cost, public_price_min, public_price_max,
+            supplier_cost,
             original_price, discount_percentage, has_discount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -103,11 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit();
     }
 
-    $stmt->bind_param('ssssssssssssdisiidddddi',
+    $stmt->bind_param('ssssssssssssdisiidddi',
         $name_en, $name_ar, $slug, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar, $how_en, $how_ar, $video_url,
         $price, $stock, $image_link, $subcat_id, $brand_id,
-        $sup_cost, $pub_min, $pub_max,
+        $sup_cost,
         $orig_price, $discount, $has_disc
     );
 
@@ -373,29 +371,23 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
             <h2><i class="fas fa-money-bill-wave"></i> Pricing & Stock</h2>
             <div class="price-grid">
                 <div class="form-group">
-                    <label>Selling Price (JOD) <span class="required">*</span></label>
+                    <label>Customer Price (JOD) <span class="required">*</span></label>
                     <input type="number" name="price_jod" step="0.001" min="0" required placeholder="0.000">
+                    <div class="help-text">Price shown to regular customers.</div>
+                </div>
+                <div class="form-group">
+                    <label>Supplier Price (JOD)</label>
+                    <input type="number" name="supplier_price" step="0.001" min="0" placeholder="0.000">
+                    <div class="help-text">Price shown to supplier accounts.</div>
                 </div>
                 <div class="form-group">
                     <label>Original Price (JOD)</label>
                     <input type="number" name="original_price" step="0.001" min="0" placeholder="0.000">
-                    <div class="help-text">Leave empty to use selling price.</div>
+                    <div class="help-text">Leave empty to use customer price.</div>
                 </div>
                 <div class="form-group">
                     <label>Stock Quantity <span class="required">*</span></label>
                     <input type="number" name="stock_quantity" min="0" value="0" required>
-                </div>
-                <div class="form-group">
-                    <label>Supplier Cost (JOD)</label>
-                    <input type="number" name="supplier_cost" step="0.001" min="0" placeholder="0.000">
-                </div>
-                <div class="form-group">
-                    <label>Public Price Min (JOD)</label>
-                    <input type="number" name="public_price_min" step="0.001" min="0" placeholder="0.000">
-                </div>
-                <div class="form-group">
-                    <label>Public Price Max (JOD)</label>
-                    <input type="number" name="public_price_max" step="0.001" min="0" placeholder="0.000">
                 </div>
             </div>
             <div class="form-grid" style="margin-top: 1rem;">

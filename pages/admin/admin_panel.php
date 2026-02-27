@@ -110,6 +110,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
+    if ($action === 'update_user_role') {
+        $user_id = intval($_POST['user_id'] ?? 0);
+        $new_role = $_POST['role'] ?? '';
+        
+        if ($user_id > 0 && in_array($new_role, ['customer', 'supplier', 'manager'])) {
+            // Don't allow changing own role
+            if ($user_id == ($_SESSION['user_id'] ?? 0)) {
+                echo json_encode(['success' => false, 'error' => 'Cannot change your own role']);
+                exit();
+            }
+            $sql = "UPDATE users SET role = ? WHERE id = ? AND role != 'admin'";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('si', $new_role, $user_id);
+            
+            if ($stmt->execute() && $stmt->affected_rows > 0) {
+                echo json_encode(['success' => true, 'message' => 'User role updated to ' . $new_role]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Failed to update role or user is admin']);
+            }
+            $stmt->close();
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
+        }
+        exit();
+    }
+    
     echo json_encode(['success' => false, 'error' => 'Invalid action']);
     exit();
 }
@@ -122,6 +148,11 @@ $orders = $orders_result['orders'] ?? [];
 // Get all products
 $products_result = getAllProducts(['in_stock' => false], 100);
 $products = $products_result['products'] ?? [];
+
+// Get all users (non-admin)
+$users_result = $conn->query("SELECT id, firstname, lastname, email, role FROM users ORDER BY id DESC");
+$all_users = [];
+while ($u = $users_result->fetch_assoc()) { $all_users[] = $u; }
 
 // Calculate statistics
 $total_orders = count($orders);
@@ -410,21 +441,6 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             right: 1.5rem;
             font-size: 2rem;
             opacity: 0.3;
-        }
-        
-        .stat-card:nth-child(2) .value,
-        .stat-card:nth-child(2)::before {
-            background: linear-gradient(135deg, var(--accent-purple), #8b5cf6);
-        }
-        
-        .stat-card:nth-child(3) .value,
-        .stat-card:nth-child(3)::before {
-            background: linear-gradient(135deg, var(--accent-teal), #14b8a6);
-        }
-        
-        .stat-card:nth-child(4) .value,
-        .stat-card:nth-child(4)::before {
-            background: linear-gradient(135deg, var(--accent-orange), #f97316);
         }
         
         /* Tabs */
@@ -927,6 +943,10 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 <i class="fas fa-tag"></i>
                 <span>Products & Pricing</span>
             </div>
+            <div class="nav-item" onclick="showTab('users')">
+                <i class="fas fa-users"></i>
+                <span>Users Management</span>
+            </div>
             <a href="add_product.php" class="nav-item">
                 <i class="fas fa-plus-circle"></i>
                 <span>Add New Product</span>
@@ -1007,6 +1027,10 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             <button class="tab-btn" onclick="showTab('products')">
                 <i class="fas fa-tag"></i>
                 Products & Pricing
+            </button>
+            <button class="tab-btn" onclick="showTab('users')">
+                <i class="fas fa-users"></i>
+                Users Management
             </button>
         </div>
         
@@ -1223,6 +1247,62 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 <?php endif; ?>
             </div>
         </div>
+        
+        <!-- Users Tab -->
+        <div id="users-tab" class="tab-content">
+            <div class="section">
+                <h2><i class="fas fa-users"></i> Users Management</h2>
+                <p style="color: var(--text-gray); margin-bottom: 1.5rem;">Change user roles to control pricing visibility. <strong>Suppliers</strong> see supplier prices, <strong>Customers</strong> see customer prices.</p>
+                
+                <div id="users-alert"></div>
+                
+                <?php if (empty($all_users)): ?>
+                    <p style="text-align: center; padding: 3rem; color: var(--text-gray);">No users found.</p>
+                <?php else: ?>
+                    <div class="table-container">
+                        <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Current Role</th>
+                                <th>Change Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($all_users as $user): ?>
+                                <tr>
+                                    <td><strong>#<?= $user['id'] ?></strong></td>
+                                    <td><?= htmlspecialchars($user['firstname'] . ' ' . $user['lastname']) ?></td>
+                                    <td><?= htmlspecialchars($user['email']) ?></td>
+                                    <td>
+                                        <span class="status-badge status-<?= $user['role'] === 'admin' ? 'delivered' : ($user['role'] === 'supplier' ? 'shipped' : 'pending') ?>">
+                                            <?= ucfirst($user['role']) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($user['role'] !== 'admin'): ?>
+                                            <select class="status-select" id="user-role-<?= $user['id'] ?>">
+                                                <option value="customer" <?= $user['role'] === 'customer' ? 'selected' : '' ?>>Customer</option>
+                                                <option value="supplier" <?= $user['role'] === 'supplier' ? 'selected' : '' ?>>Supplier</option>
+                                                <option value="manager" <?= $user['role'] === 'manager' ? 'selected' : '' ?>>Manager</option>
+                                            </select>
+                                            <button class="btn-update" onclick="updateUserRole(<?= $user['id'] ?>)">
+                                                <i class="fas fa-save"></i> Update
+                                            </button>
+                                        <?php else: ?>
+                                            <span style="color: var(--text-gray); font-size: 0.875rem;">Admin (cannot change)</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -1234,10 +1314,27 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
+            document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
             
             // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
+            const tabEl = document.getElementById(tabName + '-tab');
+            if (tabEl) tabEl.classList.add('active');
+            
+            // Highlight the matching tab button
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.onclick && btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + tabName + "'")) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Highlight sidebar nav item
+            document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes("'" + tabName + "'")) {
+                    item.classList.add('active');
+                }
+            });
         }
         
         function filterOrders(status) {
@@ -1492,6 +1589,42 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 showAlert('products', '❌ Network error', false);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+            }
+        }
+
+        async function updateUserRole(userId) {
+            const selectEl = document.getElementById('user-role-' + userId);
+            const newRole = selectEl.value;
+            const button = event.target;
+            
+            button.disabled = true;
+            button.textContent = 'Updating...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'update_user_role');
+                formData.append('user_id', userId);
+                formData.append('role', newRole);
+                
+                const response = await fetch('admin_panel.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('users', `✅ ${result.message}`, true);
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    showAlert('users', `❌ ${result.error}`, false);
+                    button.disabled = false;
+                    button.textContent = 'Update';
+                }
+            } catch (error) {
+                showAlert('users', '❌ Error: ' + error.message, false);
+                button.disabled = false;
+                button.textContent = 'Update';
             }
         }
     </script>

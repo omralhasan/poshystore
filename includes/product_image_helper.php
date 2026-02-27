@@ -76,10 +76,12 @@ function count_keyword_matches($source_keywords, $target_keywords) {
  * to avoid issues with special characters like [], *, ? in folder names)
  */
 function dir_has_png($dir_path) {
+    $allowed_ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
     $files = @scandir($dir_path);
     if (!$files) return false;
     foreach ($files as $file) {
-        if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), 'png') === 0) {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        if (in_array($ext, $allowed_ext)) {
             return true;
         }
     }
@@ -87,20 +89,22 @@ function dir_has_png($dir_path) {
 }
 
 /**
- * Get all PNG files in a directory (sorted), using scandir instead of glob
+ * Get all image files in a directory (sorted), supporting png, jpg, jpeg, gif, webp
  */
 function get_png_files($dir_path) {
-    $pngs = [];
+    $allowed_ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+    $images = [];
     $files = @scandir($dir_path);
-    if (!$files) return $pngs;
+    if (!$files) return $images;
     foreach ($files as $file) {
         if ($file === '.' || $file === '..') continue;
-        if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), 'png') === 0) {
-            $pngs[] = $file;
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        if (in_array($ext, $allowed_ext)) {
+            $images[] = $file;
         }
     }
-    sort($pngs);
-    return $pngs;
+    sort($images);
+    return $images;
 }
 
 /**
@@ -235,20 +239,28 @@ function get_product_thumbnail($product_name, $image_link, $base_dir) {
     
     if ($folder) {
         $folder_path = $images_dir . '/' . $folder;
-        $one_png = $folder_path . '/1.png';
-        if (file_exists($one_png)) {
-            return encode_image_path('images/' . $folder . '/1.png');
+        // Check for 1.* (any image extension)
+        $allowed_ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+        foreach ($allowed_ext as $ext) {
+            $one_img = $folder_path . '/1.' . $ext;
+            if (file_exists($one_img)) {
+                $mtime = filemtime($one_img);
+                return encode_image_path('images/' . $folder . '/1.' . $ext) . '?v=' . $mtime;
+            }
         }
-        // If no 1.png, use first available PNG
-        $pngs = get_png_files($folder_path);
-        if (!empty($pngs)) {
-            return encode_image_path('images/' . $folder . '/' . $pngs[0]);
+        // If no 1.*, use first available image
+        $imgs = get_png_files($folder_path);
+        if (!empty($imgs)) {
+            $mtime = filemtime($folder_path . '/' . $imgs[0]);
+            return encode_image_path('images/' . $folder . '/' . $imgs[0]) . '?v=' . $mtime;
         }
     }
     
     // Fallback to database image_link
     if (!empty($image_link) && $image_link !== 'NULL') {
-        return encode_image_path($image_link);
+        $full = $base_dir . '/' . $image_link;
+        $mtime = file_exists($full) ? filemtime($full) : time();
+        return encode_image_path($image_link) . '?v=' . $mtime;
     }
     
     return 'images/placeholder-cosmetics.svg';
@@ -267,42 +279,50 @@ function get_product_thumbnail($product_name, $image_link, $base_dir) {
 function get_product_gallery_images($product_name, $image_link, $images_dir, $path_prefix = '') {
     $folder = find_product_image_folder($product_name, $images_dir);
     $gallery = [];
+    $allowed_ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
     
     if ($folder) {
         $folder_path = $images_dir . '/' . $folder;
-        $all_pngs = get_png_files($folder_path);
+        $all_imgs = get_png_files($folder_path);
         
         $enc_folder = rawurlencode($folder);
         
-        // 1. First add 1.png (main image)
-        if (in_array('1.png', $all_pngs)) {
-            $gallery[] = $path_prefix . 'images/' . $enc_folder . '/1.png';
+        // 1. First add 1.* (main image - any extension)
+        foreach ($all_imgs as $img) {
+            $base = pathinfo($img, PATHINFO_FILENAME);
+            if ($base === '1') {
+                $gallery[] = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
+                break;
+            }
         }
         
-        // 2. Add img-*.png files (sorted) — already sorted from get_png_files
-        foreach ($all_pngs as $png) {
-            if (strpos($png, 'img-') === 0) {
-                $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($png);
+        // 2. Add img-*.* files (sorted)
+        foreach ($all_imgs as $img) {
+            if (strpos($img, 'img-') === 0) {
+                $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
                 if (!in_array($path, $gallery)) {
                     $gallery[] = $path;
                 }
             }
         }
         
-        // 3. Add numbered files 2.png, 3.png, etc.
+        // 3. Add numbered files 2.*, 3.*, etc.
         for ($i = 2; $i <= 20; $i++) {
-            $num_file = $i . '.png';
-            if (in_array($num_file, $all_pngs)) {
-                $path = $path_prefix . 'images/' . $enc_folder . '/' . $num_file;
-                if (!in_array($path, $gallery)) {
-                    $gallery[] = $path;
+            foreach ($all_imgs as $img) {
+                $base = pathinfo($img, PATHINFO_FILENAME);
+                if ($base === (string)$i) {
+                    $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
+                    if (!in_array($path, $gallery)) {
+                        $gallery[] = $path;
+                    }
+                    break;
                 }
             }
         }
         
-        // 4. Add any remaining .png files not already included
-        foreach ($all_pngs as $png) {
-            $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($png);
+        // 4. Add any remaining image files not already included
+        foreach ($all_imgs as $img) {
+            $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
             if (!in_array($path, $gallery)) {
                 $gallery[] = $path;
             }

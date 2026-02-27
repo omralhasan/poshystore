@@ -1454,7 +1454,16 @@ if ($is_logged_in) {
                     <?php endif; ?>
                     
                     <div class="mb-4">
-                        <?php if ($product['has_discount'] && $product['original_price'] > 0): ?>
+                        <?php
+                            // Show supplier price if user is supplier and supplier_cost is set
+                            $detail_display_price = $product['price_jod'];
+                            $detail_display_formatted = $product['price_formatted'];
+                            if (isSupplier() && !empty($product['supplier_cost']) && $product['supplier_cost'] > 0) {
+                                $detail_display_price = $product['supplier_cost'];
+                                $detail_display_formatted = formatJOD($product['supplier_cost']);
+                            }
+                        ?>
+                        <?php if ($product['has_discount'] && $product['original_price'] > 0 && !isSupplier()): ?>
                             <div class="mb-2">
                                 <span class="badge" style="background: var(--gold-color); color: var(--purple-dark); padding: 0.5rem 1rem; font-size: 1rem;">
                                     <i class="fas fa-tag me-1"></i>-<?= number_format($product['discount_percentage'], 0) ?>% OFF
@@ -1465,15 +1474,15 @@ if ($is_logged_in) {
                                     <?= formatJOD($product['original_price']) ?>
                                 </span>
                                 <span style="color: var(--purple-color); font-size: 1.8rem; font-weight: bold;">
-                                    <?= $product['price_formatted'] ?>
+                                    <?= $detail_display_formatted ?>
                                 </span>
                             </div>
                             <div style="color: var(--gold-color); font-weight: 600;">
-                                💰 <?= t('you_save') ?> <?= formatJOD($product['original_price'] - $product['price_jod']) ?>!
+                                💰 <?= t('you_save') ?> <?= formatJOD($product['original_price'] - $detail_display_price) ?>!
                             </div>
                         <?php else: ?>
                             <div style="color: var(--purple-color); font-size: 1.8rem; font-weight: bold;">
-                                <?= $product['price_formatted'] ?>
+                                <?= $detail_display_formatted ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -1643,7 +1652,7 @@ if ($is_logged_in) {
                                 <li><strong><?= t('product_name') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?></li>
                                 <li><strong><?= t('brand') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? ($product['brand_ar'] ?? 'Poshy Store') : ($product['brand_en'] ?? 'Poshy Store')) ?></li>
                                 <li><strong><?= t('category') ?>:</strong> <?= htmlspecialchars($current_lang === 'ar' ? ($product['category_name_ar'] ?? 'مستحضرات التجميل') : ($product['category_name_en'] ?? 'Cosmetics')) ?></li>
-                                <li><strong><?= t('price') ?>:</strong> <?= $product['price_formatted'] ?? number_format($product['price_jod'], 3) . ' JOD' ?></li>
+                                <li><strong><?= t('price') ?>:</strong> <?= $detail_display_formatted ?? number_format($detail_display_price, 3) . ' JOD' ?></li>
                                 <li><strong><?= t('stock_status') ?>:</strong> <?= $product['in_stock'] ? t('in_stock') : t('out_of_stock') ?></li>
                                 <?php if ($product['in_stock'] && isAdmin()): ?>
                                 <li><strong><?= t('available_units') ?>:</strong> <?= $product['stock_quantity'] ?></li>

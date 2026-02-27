@@ -54,7 +54,7 @@ function registerUser($firstname, $lastname, $email, $password, $role = 'custome
         $errors[] = 'Password must be at least 8 characters';
     }
     
-    if (!in_array($role, ['customer', 'admin', 'manager'])) {
+    if (!in_array($role, ['customer', 'admin', 'manager', 'supplier'])) {
         $role = 'customer';
     }
     
@@ -253,6 +253,15 @@ function hasRole($required_role) {
  */
 function isAdmin() {
     return hasRole('admin');
+}
+
+/**
+ * Check if current user is a supplier
+ * 
+ * @return bool True if user is supplier
+ */
+function isSupplier() {
+    return hasRole('supplier');
 }
 
 /**
