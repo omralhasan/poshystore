@@ -144,8 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         try {
-            // Restore stock for non-cancelled orders
-            $order_check = $conn->prepare("SELECT status FROM orders WHERE id = ?");
+            // Get order info
+            $order_check = $conn->prepare("SELECT status, user_id, total_amount FROM orders WHERE id = ?");
             $order_check->bind_param('i', $order_id);
             $order_check->execute();
             $order_row = $order_check->get_result()->fetch_assoc();
@@ -163,21 +163,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $items_stmt->execute();
                 $items_result = $items_stmt->get_result();
                 while ($item = $items_result->fetch_assoc()) {
-                    $conn->query("UPDATE products SET stock_quantity = stock_quantity + {$item['quantity']} WHERE id = {$item['product_id']}");
+                    $restock = $conn->prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?");
+                    $restock->bind_param('ii', $item['quantity'], $item['product_id']);
+                    $restock->execute();
+                    $restock->close();
                 }
                 $items_stmt->close();
+
+                // Reverse loyalty points earned from this order
+                $pts_stmt = $conn->prepare("SELECT user_id, points_change FROM points_transactions WHERE reference_id = ? AND transaction_type = 'earned_purchase'");
+                if ($pts_stmt) {
+                    $pts_stmt->bind_param('i', $order_id);
+                    $pts_stmt->execute();
+                    $pts_result = $pts_stmt->get_result();
+                    while ($pt = $pts_result->fetch_assoc()) {
+                        if ($pt['points_change'] > 0) {
+                            $conn->query("UPDATE users SET points = GREATEST(0, points - {$pt['points_change']}) WHERE id = {$pt['user_id']}");
+                        }
+                    }
+                    $pts_stmt->close();
+                }
+
+                // Restore wallet balance if wallet was used for this order
+                $wt_stmt = $conn->prepare("SELECT user_id, ABS(points_change) as amount FROM points_transactions WHERE reference_id = ? AND transaction_type = 'wallet_payment'");
+                if ($wt_stmt) {
+                    $wt_stmt->bind_param('i', $order_id);
+                    $wt_stmt->execute();
+                    $wt_result = $wt_stmt->get_result();
+                    while ($wt = $wt_result->fetch_assoc()) {
+                        $conn->query("UPDATE users SET wallet_balance = wallet_balance + {$wt['amount']} WHERE id = {$wt['user_id']}");
+                    }
+                    $wt_stmt->close();
+                }
             }
 
-            // Delete order items first (foreign key)
+            // Delete related records then order
             $conn->query("DELETE FROM order_items WHERE order_id = $order_id");
-            // Delete points transactions related to this order
-            $conn->query("DELETE FROM points_transactions WHERE order_id = $order_id");
-            // Delete the order
+            $conn->query("DELETE FROM points_transactions WHERE reference_id = $order_id");
             $del_stmt = $conn->prepare("DELETE FROM orders WHERE id = ?");
             $del_stmt->bind_param('i', $order_id);
             if ($del_stmt->execute()) {
                 $del_stmt->close();
-                echo json_encode(['success' => true, 'message' => 'Order #' . $order_id . ' deleted permanently']);
+                echo json_encode(['success' => true, 'message' => 'Order #' . $order_id . ' deleted. Stock restored.']);
             } else {
                 $del_stmt->close();
                 echo json_encode(['success' => false, 'error' => 'Failed to delete order']);

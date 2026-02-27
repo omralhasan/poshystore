@@ -982,7 +982,7 @@ unset($order); // Break reference
             loadingMsg.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cancelling order...';
             document.body.appendChild(loadingMsg);
             
-            fetch('<?= defined("SITE_URL") ? SITE_URL : "" ?>/api/cancel_order.php', {
+            fetch('/api/cancel_order.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

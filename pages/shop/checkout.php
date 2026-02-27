@@ -570,6 +570,29 @@ function updateOrderStatus($order_id, $new_status) {
             }
             $points_stmt->close();
         }
+
+        // Restore wallet balance if wallet was used for this order
+        $wallet_sql = "SELECT user_id, ABS(points_change) as wallet_amount 
+                       FROM points_transactions 
+                       WHERE reference_id = ? AND transaction_type = 'wallet_payment'";
+        $wallet_stmt = $conn->prepare($wallet_sql);
+        if ($wallet_stmt) {
+            $wallet_stmt->bind_param('i', $order_id);
+            $wallet_stmt->execute();
+            $wallet_result = $wallet_stmt->get_result();
+            while ($wrow = $wallet_result->fetch_assoc()) {
+                $w_user_id = $wrow['user_id'];
+                $w_amount = $wrow['wallet_amount'];
+                $refund_sql = "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?";
+                $refund_stmt = $conn->prepare($refund_sql);
+                if ($refund_stmt) {
+                    $refund_stmt->bind_param('di', $w_amount, $w_user_id);
+                    $refund_stmt->execute();
+                    $refund_stmt->close();
+                }
+            }
+            $wallet_stmt->close();
+        }
     }
     
     // Update orders table
@@ -578,7 +601,8 @@ function updateOrderStatus($order_id, $new_status) {
     $stmt->bind_param('si', $new_status, $order_id);
     $stmt->execute();
     
-    if ($stmt->affected_rows > 0) {
+    // Use affected_rows but also check if the status was already the same
+    if ($stmt->affected_rows > 0 || $new_status === $old_status) {
         $stmt->close();
         
         $response = [

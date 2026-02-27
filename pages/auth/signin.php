@@ -331,6 +331,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                             <div class="mb-4">
                                 <label for="password" class="form-label" style="color: var(--gold-color); font-weight: 500;"><?= t('password') ?></label>
                                 <input type="password" id="password" name="password" class="form-control-ramadan" required placeholder="<?= t('enter_password') ?>">
+                                <div style="text-align: right; margin-top: 6px;">
+                                    <a href="forgot_password.php" style="color: var(--gold-color); font-size: 0.85rem; text-decoration: none; font-weight: 500;">
+                                        <i class="fas fa-lock" style="font-size: 0.75rem;"></i> Forgot password?
+                                    </a>
+                                </div>
                             </div>
                             
                             <button type="submit" name="signin" class="btn-ramadan w-100">
