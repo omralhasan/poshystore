@@ -1222,13 +1222,12 @@ if ($is_logged_in) {
             }
         }
 
-        /* OPTION 3: MODERN CARD STYLE - PHONE VIEW ONLY */
+        /* OPTION 4: BOTTOM SHEET STYLE (APP-LIKE) - PHONE VIEW ONLY */
         @media (max-width: 640px) {
             /* Hide non-essential elements */
             .breadcrumb, 
             .breadcrumb-item,
             .thumbnail-gallery,
-            .carousel-indicators,
             .zoom-hint,
             .product-tabs,
             .reviews-section,
@@ -1237,29 +1236,39 @@ if ($is_logged_in) {
                 display: none !important;
             }
 
-            /* Container styling with modern card approach */
+            /* Full screen layout */
             body {
-                background: linear-gradient(135deg, #f8f6f3, #fff5f0);
+                background: #f5f5f5;
+                margin: 0;
+                padding: 0;
             }
 
             .product-container {
-                background: white;
-                border-radius: 16px;
-                box-shadow: 0 10px 30px rgba(72, 54, 112, 0.12);
-                margin: 16px 12px 0 12px;
-                border: 1px solid rgba(201, 168, 106, 0.2);
+                background: transparent;
+                border-radius: 0;
+                box-shadow: none;
+                margin-bottom: 0;
+                border: none;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
             }
 
             .product-main {
-                display: block;
+                display: flex;
+                flex-direction: column;
                 gap: 0;
                 padding: 0;
                 margin: 0;
+                flex: 1;
             }
 
             .container {
                 padding: 0;
                 max-width: 100%;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
             }
 
             .py-5 {
@@ -1273,64 +1282,112 @@ if ($is_logged_in) {
                 box-shadow: none;
                 border-radius: 0;
                 padding: 0;
+                display: flex;
+                flex-direction: column;
+                flex: 1;
             }
 
-            /* Product Image - Card style, rounded top */
+            .row {
+                display: flex !important;
+                flex-direction: column;
+                flex: 1;
+                margin: 0;
+            }
+
+            /* Large Full-Screen Product Image */
+            .col-md-6:first-child {
+                flex: 0 0 auto;
+                width: 100%;
+                padding: 0 !important;
+                margin: 0;
+                position: relative;
+            }
+
             .product-image-large {
-                height: 300px;
+                height: 380px;
                 width: 100%;
                 margin: 0;
                 padding: 0;
-                border-radius: 16px 16px 0 0;
-                font-size: 5rem;
+                border-radius: 0;
+                font-size: 6rem;
                 border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, var(--purple-color), var(--purple-dark));
+                position: relative;
             }
 
-            /* Product Details Section */
+            /* Carousel Indicators - Under image */
+            .carousel-indicators {
+                position: absolute;
+                bottom: 16px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 8px;
+                z-index: 10;
+            }
+
+            .indicator {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.5);
+                cursor: pointer;
+                transition: all 0.3s;
+                border: 2px solid white;
+            }
+
+            .indicator.active {
+                background: white;
+                width: 24px;
+                border-radius: 4px;
+            }
+
+            /* Bottom Sheet Style Product Details */
             .col-md-6:last-child {
-                padding: 18px 18px !important;
+                flex: 1;
+                width: 100%;
+                padding: 20px 16px !important;
+                background: white;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.1);
+                position: relative;
+                z-index: 100;
+                margin-top: -20px;
+                overflow-y: auto;
             }
 
-            /* Product Title - Elegant */
+            /* Pull handle indicator */
+            .col-md-6:last-child::before {
+                content: '';
+                position: absolute;
+                top: 8px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 40px;
+                height: 4px;
+                background: #ddd;
+                border-radius: 2px;
+                display: block;
+            }
+
+            /* Product Title */
             .product-title-en {
-                font-size: 1.3rem;
+                font-size: 1.4rem;
                 font-weight: 700;
                 color: #2d1b2c;
-                margin: 0 0 2px 0;
-                line-height: 1.2;
-                letter-spacing: -0.3px;
+                margin: 12px 0 6px 0;
+                line-height: 1.3;
+                padding-top: 8px;
             }
 
             .product-title-ar {
                 font-size: 1.2rem;
                 color: #2d1b2c;
-                margin: 0 0 12px 0;
+                margin: 0 0 10px 0;
                 font-weight: 600;
-            }
-
-            /* Rating - Badge style */
-            .rating-section {
-                margin: 12px 0;
-                font-size: 0.9rem;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                background: linear-gradient(135deg, #fff5e6, #fffbf0);
-                padding: 8px 12px;
-                border-radius: 20px;
-                border: 1px solid rgba(201, 168, 106, 0.3);
-            }
-
-            .stars {
-                font-size: 1.1rem;
-                margin: 0;
-                color: #ffc107;
-            }
-
-            .rating-text {
-                font-size: 0.8rem;
-                color: #666;
-                font-weight: 500;
             }
 
             /* Hide short description and brand */
@@ -1339,65 +1396,87 @@ if ($is_logged_in) {
                 display: none !important;
             }
 
-            /* Price Section - Highlight Card */
-            .price-section {
-                background: linear-gradient(135deg, rgba(45, 19, 44, 0.05), rgba(201, 168, 106, 0.1));
-                padding: 14px 14px;
+            /* Rating - Prominent */
+            .rating-section {
                 margin: 12px 0;
+                font-size: 1rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid #eee;
+            }
+
+            .stars {
+                font-size: 1.2rem;
+                margin: 0;
+                color: #ffc107;
+            }
+
+            .rating-text {
+                font-size: 0.9rem;
+                color: #666;
+                font-weight: 500;
+            }
+
+            /* Price Section - Large and Bold */
+            .price-section {
+                background: linear-gradient(135deg, rgba(45, 19, 44, 0.08), rgba(201, 168, 106, 0.08));
+                padding: 14px;
+                margin: 14px 0;
                 border-radius: 12px;
-                border: 1.5px solid rgba(45, 19, 44, 0.15);
-                position: relative;
+                border: 1px solid rgba(201, 168, 106, 0.2);
             }
 
             .discount-badge-detail {
                 background: linear-gradient(135deg, #ff5555, #ff3333);
                 color: white;
-                padding: 5px 12px;
+                padding: 6px 12px;
                 border-radius: 8px;
-                font-size: 0.75rem;
+                font-size: 0.8rem;
                 font-weight: 700;
                 margin-bottom: 8px;
                 display: inline-block;
-                box-shadow: 0 4px 12px rgba(255, 51, 51, 0.3);
+                box-shadow: 0 4px 12px rgba(255, 51, 51, 0.25);
             }
 
             .product-price {
-                font-size: 1.5rem;
+                font-size: 1.8rem;
                 color: #2d1b2c;
                 font-weight: 700;
-                margin-bottom: 4px;
+                margin-bottom: 6px;
             }
 
             .original-price-detail {
-                font-size: 0.85rem;
+                font-size: 0.9rem;
                 color: #999;
                 text-decoration: line-through;
                 margin-right: 8px;
             }
 
             .discounted-price-detail {
-                font-size: 1.5rem;
+                font-size: 1.8rem;
                 font-weight: 700;
                 color: #2d1b2c;
             }
 
             .savings-amount {
-                font-size: 0.95rem;
+                font-size: 1rem;
                 color: #ff3333;
                 font-weight: 700;
                 margin-top: 6px;
             }
 
-            /* Stock Status - Styled Badge */
+            /* Stock Status */
             .product-stock {
-                font-size: 0.85rem;
+                font-size: 0.95rem;
                 margin: 12px 0 0 0;
             }
 
             .stock-badge {
                 padding: 6px 12px;
                 border-radius: 8px;
-                font-size: 0.8rem;
+                font-size: 0.85rem;
                 font-weight: 600;
                 display: inline-block;
             }
@@ -1416,34 +1495,36 @@ if ($is_logged_in) {
 
             .product-details > div[style*="tag"] a {
                 display: inline-block;
-                background: linear-gradient(135deg, #f0e6f6, #e8d5f5);
+                background: #f5f5f5;
                 color: #2d1b2c;
                 padding: 5px 10px;
                 border-radius: 6px;
                 font-size: 0.75rem;
                 margin-right: 6px;
                 margin-bottom: 6px;
-                border: 1px solid #d4b5e8;
+                border: 1px solid #e0e0e0;
                 text-decoration: none;
                 font-weight: 600;
             }
 
-            /* Quantity Controls - Card style */
+            /* Quantity Controls - APP STYLE */
             .quantity-controls {
                 width: 100%;
                 padding: 12px;
-                border: 2px solid var(--gold-color);
+                border: 2px solid var(--purple-color);
                 border-radius: 10px;
                 gap: 10px;
-                background: linear-gradient(135deg, rgba(201, 168, 106, 0.08), rgba(201, 168, 106, 0.04));
+                background: white;
                 margin: 14px 0;
+                display: flex;
+                align-items: center;
             }
 
             .quantity-btn {
-                width: 42px;
-                height: 42px;
+                width: 44px;
+                height: 44px;
                 border: 2px solid var(--purple-color);
-                background: white;
+                background: linear-gradient(135deg, rgba(45, 19, 44, 0.05), rgba(45, 19, 44, 0.02));
                 color: var(--purple-color);
                 border-radius: 8px;
                 font-size: 1.2rem;
@@ -1457,14 +1538,14 @@ if ($is_logged_in) {
             }
 
             .quantity-btn:active {
-                background: rgba(201, 168, 106, 0.15);
+                background: rgba(45, 19, 44, 0.15);
                 transform: scale(0.95);
             }
 
             .quantity-value {
                 flex-grow: 1;
                 text-align: center;
-                font-size: 1.3rem;
+                font-size: 1.4rem;
                 font-weight: 700;
                 color: var(--purple-color);
             }
@@ -1475,13 +1556,18 @@ if ($is_logged_in) {
                 margin-right: 0;
             }
 
-            /* Action Buttons - Elegant */
+            /* Action Buttons - Sticky at bottom of sheet */
             .d-flex.gap-2 {
                 display: flex !important;
                 flex-direction: column;
                 gap: 8px !important;
-                margin-top: 14px;
-                padding: 0 0 14px 0;
+                margin-top: 16px;
+                padding: 0 0 16px 0;
+                position: sticky;
+                bottom: 0;
+                background: white;
+                z-index: 50;
+                border-top: 1px solid #eee;
             }
 
             .btn-ramadan,
@@ -1489,8 +1575,8 @@ if ($is_logged_in) {
             a.btn-ramadan,
             a.btn-ramadan-secondary {
                 width: 100%;
-                padding: 13px 16px !important;
-                font-size: 0.98rem !important;
+                padding: 14px 16px !important;
+                font-size: 1rem !important;
                 font-weight: 700;
                 border-radius: 10px;
                 border: none;
@@ -1518,15 +1604,13 @@ if ($is_logged_in) {
             .btn-ramadan-secondary,
             a.btn-ramadan-secondary {
                 background: white;
-                color: var(--gold-color);
-                border: 2px solid var(--gold-color) !important;
-                box-shadow: 0 4px 12px rgba(201, 168, 106, 0.15);
+                color: var(--purple-color);
+                border: 2px solid var(--purple-color) !important;
             }
 
             .btn-ramadan-secondary:active,
             a.btn-ramadan-secondary:active {
-                background: linear-gradient(135deg, #fff9f0, #fffbf5);
-                box-shadow: 0 2px 6px rgba(201, 168, 106, 0.1);
+                background: #f8f6f3;
             }
 
             /* Cart Modal on Mobile */
@@ -1600,7 +1684,6 @@ if ($is_logged_in) {
             .page-container {
                 margin: 0;
                 padding: 0;
-                background: linear-gradient(135deg, #f8f6f3, #fff5f0);
             }
 
             .mb-3, .mb-4 {
