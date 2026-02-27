@@ -23,6 +23,7 @@ function getAllProducts($filters = [], $limit = 50, $offset = 0) {
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar, p.description, 
                    p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
                    p.original_price, p.discount_percentage, p.has_discount,
+                   p.is_recommended, p.is_best_seller,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
                    c.name_en AS category_en, c.name_ar AS category_ar,
                    b.name_en AS brand_en, b.name_ar AS brand_ar
@@ -154,6 +155,7 @@ function getProductById($id) {
                    p.description, p.description_ar, p.product_details, p.product_details_ar, p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
                    p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
                    p.original_price, p.discount_percentage, p.has_discount,
+                   p.is_recommended, p.is_best_seller,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
                    c.name_en AS category_en, c.name_ar AS category_ar, c.id AS category_id,
                    b.name_en AS brand_en, b.name_ar AS brand_ar, b.logo AS brand_logo
@@ -218,6 +220,7 @@ function getProductBySlug($slug) {
                    p.how_to_use_en, p.how_to_use_ar, p.video_review_url,
                    p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
                    p.original_price, p.discount_percentage, p.has_discount,
+                   p.is_recommended, p.is_best_seller,
                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
                    c.name_en AS category_en, c.name_ar AS category_ar, c.id AS category_id,
                    b.name_en AS brand_en, b.name_ar AS brand_ar, b.logo AS brand_logo

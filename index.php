@@ -98,20 +98,20 @@ $products_limit = ($is_search_mode || $is_tag_mode || $is_brand_mode || $active_
 
 try {
     if ($is_search_mode) {
-        $search_filters = ['search' => $search_query, 'in_stock' => true];
+        $search_filters = ['search' => $search_query];
         $products_result = getAllProducts($search_filters, $products_limit);
     } elseif ($is_tag_mode) {
         // Tag-based product search
         $tag_products = getProductsByTag($active_tag, $products_limit);
         $products_result = ['products' => $tag_products, 'success' => true];
     } elseif ($is_brand_mode) {
-        $products_result = getAllProducts(['brand_id' => $active_brand, 'in_stock' => true], $products_limit);
+        $products_result = getAllProducts(['brand_id' => $active_brand], $products_limit);
     } elseif ($active_subcategory > 0) {
-        $products_result = getAllProducts(['subcategory_id' => $active_subcategory, 'in_stock' => true], $products_limit);
+        $products_result = getAllProducts(['subcategory_id' => $active_subcategory], $products_limit);
     } elseif ($active_category > 0) {
-        $products_result = getAllProducts(['category_id' => $active_category, 'in_stock' => true], $products_limit);
+        $products_result = getAllProducts(['category_id' => $active_category], $products_limit);
     } else {
-        $products_result = getAllProducts(['in_stock' => true], $products_limit);
+        $products_result = getAllProducts([], $products_limit);
     }
     
     if (!empty($products_result['products'])) {
@@ -125,7 +125,7 @@ try {
 $total_products_count = 0;
 if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all) {
     try {
-        $all_products_result = getAllProducts(['in_stock' => true], 200);
+        $all_products_result = getAllProducts([], 200);
         $total_products_count = count($all_products_result['products'] ?? []);
     } catch (Exception $e) {
         error_log("Failed to count products: " . $e->getMessage());
@@ -1131,11 +1131,26 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             from { transform: translateX(-100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* Out of stock card styling */
+        .out-of-stock-card .p-card-img img { opacity: 0.5; filter: grayscale(40%); }
+        .out-of-stock-card .p-card-body { opacity: 0.75; }
     </style>
 </head>
 <body>
 
     <?php require_once __DIR__ . '/includes/ramadan_navbar.php'; ?>
+
+    <!-- ======== WELCOME DISCOUNT BANNER TAPE ======== -->
+    <div id="promo-tape" style="background: linear-gradient(90deg, #2d132c, #6c3fa0, #c9a86a, #6c3fa0, #2d132c); background-size: 200% 100%; animation: promoShimmer 4s ease-in-out infinite; color: #fff; text-align: center; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; position: relative; z-index: 900; letter-spacing: 0.5px;">
+        <i class="fas fa-gift" style="margin-right: 6px;"></i>
+        <?= $lang === 'ar' ? 'مرحباً! استخدم كود <strong>WELCOME</strong> للحصول على خصم على طلبك الأول' : 'Welcome! Use code <strong>WELCOME</strong> for a discount on your first order' ?>
+        <i class="fas fa-gift" style="margin-left: 6px;"></i>
+        <button onclick="document.getElementById('promo-tape').style.display='none'" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:1rem;padding:4px;">&times;</button>
+    </div>
+    <style>
+        @keyframes promoShimmer { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    </style>
 
     <!-- ======== HERO SECTION ======== -->
     <section class="hero">
@@ -1340,8 +1355,20 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <!-- Product Grid -->
             <div class="product-grid">
                 <?php foreach ($products_array as $idx => $product): ?>
-                <div class="p-card fade-in" style="animation-delay: <?= $idx * 0.05 ?>s;">
+                <div class="p-card fade-in<?= ($product['stock_quantity'] <= 0) ? ' out-of-stock-card' : '' ?>" style="animation-delay: <?= $idx * 0.05 ?>s;">
                     <div class="p-card-img">
+                        <?php if ($product['stock_quantity'] <= 0): ?>
+                            <span class="out-of-stock-tag" style="position:absolute;top:10px;left:10px;z-index:5;background:rgba(239,68,68,0.92);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;"><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
+                        <?php endif; ?>
+
+                        <?php if (!empty($product['is_best_seller'])): ?>
+                            <span style="position:absolute;top:<?= ($product['stock_quantity'] <= 0) ? '38px' : '10px' ?>;left:10px;z-index:5;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-fire"></i> <?= $lang === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller' ?></span>
+                        <?php endif; ?>
+
+                        <?php if (!empty($product['is_recommended'])): ?>
+                            <span style="position:absolute;bottom:10px;left:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
+                        <?php endif; ?>
+
                         <?php if (!empty($product['has_discount']) && $product['discount_percentage'] > 0): ?>
                             <span class="discount-tag">-<?= intval($product['discount_percentage']) ?>%</span>
                         <?php endif; ?>
@@ -1401,7 +1428,12 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         </div>
 
                         <div class="p-card-actions">
-                            <?php if ($is_logged_in): ?>
+                            <?php if ($product['stock_quantity'] <= 0): ?>
+                                <button class="btn-cart" disabled style="opacity:0.6;cursor:not-allowed;background:#999;">
+                                    <i class="fas fa-ban"></i>
+                                    <span><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
+                                </button>
+                            <?php elseif ($is_logged_in): ?>
                                 <button class="btn-cart" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
                                     <i class="fas fa-cart-plus"></i>
                                     <span><?= t('add_to_cart') ?></span>

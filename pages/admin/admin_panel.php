@@ -135,6 +135,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit();
     }
+
+    // Delete order completely from database
+    if ($action === 'delete_order') {
+        $order_id = intval($_POST['order_id'] ?? 0);
+        if ($order_id <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Invalid order ID']);
+            exit();
+        }
+        try {
+            // Restore stock for non-cancelled orders
+            $order_check = $conn->prepare("SELECT status FROM orders WHERE id = ?");
+            $order_check->bind_param('i', $order_id);
+            $order_check->execute();
+            $order_row = $order_check->get_result()->fetch_assoc();
+            $order_check->close();
+
+            if (!$order_row) {
+                echo json_encode(['success' => false, 'error' => 'Order not found']);
+                exit();
+            }
+
+            // If order was not already cancelled, restore stock
+            if ($order_row['status'] !== 'cancelled') {
+                $items_stmt = $conn->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+                $items_stmt->bind_param('i', $order_id);
+                $items_stmt->execute();
+                $items_result = $items_stmt->get_result();
+                while ($item = $items_result->fetch_assoc()) {
+                    $conn->query("UPDATE products SET stock_quantity = stock_quantity + {$item['quantity']} WHERE id = {$item['product_id']}");
+                }
+                $items_stmt->close();
+            }
+
+            // Delete order items first (foreign key)
+            $conn->query("DELETE FROM order_items WHERE order_id = $order_id");
+            // Delete points transactions related to this order
+            $conn->query("DELETE FROM points_transactions WHERE order_id = $order_id");
+            // Delete the order
+            $del_stmt = $conn->prepare("DELETE FROM orders WHERE id = ?");
+            $del_stmt->bind_param('i', $order_id);
+            if ($del_stmt->execute()) {
+                $del_stmt->close();
+                echo json_encode(['success' => true, 'message' => 'Order #' . $order_id . ' deleted permanently']);
+            } else {
+                $del_stmt->close();
+                echo json_encode(['success' => false, 'error' => 'Failed to delete order']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
+        }
+        exit();
+    }
+
+    // Toggle recommended status
+    if ($action === 'toggle_recommended') {
+        $product_id = intval($_POST['product_id'] ?? 0);
+        if ($product_id > 0) {
+            $conn->query("UPDATE products SET is_recommended = NOT is_recommended WHERE id = $product_id");
+            $row = $conn->query("SELECT is_recommended FROM products WHERE id = $product_id")->fetch_assoc();
+            echo json_encode(['success' => true, 'is_recommended' => (bool)$row['is_recommended']]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid product ID']);
+        }
+        exit();
+    }
+
+    // Toggle best seller status
+    if ($action === 'toggle_best_seller') {
+        $product_id = intval($_POST['product_id'] ?? 0);
+        if ($product_id > 0) {
+            $conn->query("UPDATE products SET is_best_seller = NOT is_best_seller WHERE id = $product_id");
+            $row = $conn->query("SELECT is_best_seller FROM products WHERE id = $product_id")->fetch_assoc();
+            echo json_encode(['success' => true, 'is_best_seller' => (bool)$row['is_best_seller']]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid product ID']);
+        }
+        exit();
+    }
     
     echo json_encode(['success' => false, 'error' => 'Invalid action']);
     exit();
@@ -1130,6 +1208,12 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                                 <i class="fas fa-chart-line"></i> View Reports
                                             </a>
                                         </div>
+                                        
+                                        <div style="margin-top: 8px;">
+                                            <button class="btn-update" onclick="deleteOrder(<?= $order['order_id'] ?>, this)" style="background: linear-gradient(135deg, #ef4444, #dc2626); width: 100%;">
+                                                <i class="fas fa-trash-alt"></i> Delete Order
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1166,6 +1250,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                 <th>Discount (%)</th>
                                 <th>Price / Discount</th>
                                 <th>Edit / Delete</th>
+                                <th>Badges</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1237,6 +1322,14 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                         </a>
                                         <button class="btn-remove-discount" onclick="deleteProduct(<?= $product['id'] ?>, this)" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
                                             <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button class="btn-update" id="rec-btn-<?= $product['id'] ?>" onclick="toggleRecommended(<?= $product['id'] ?>, this)" style="margin-bottom:.4rem;width:100%;background:<?= !empty($product['is_recommended']) ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#e5e7eb' ?>;color:<?= !empty($product['is_recommended']) ? '#fff' : '#666' ?>;font-size:.78rem;">
+                                            <i class="fas fa-star"></i> <?= !empty($product['is_recommended']) ? 'Recommended ✓' : 'Set Recommended' ?>
+                                        </button>
+                                        <button class="btn-update" id="best-btn-<?= $product['id'] ?>" onclick="toggleBestSeller(<?= $product['id'] ?>, this)" style="width:100%;background:<?= !empty($product['is_best_seller']) ? 'linear-gradient(135deg,#ef4444,#dc2626)' : '#e5e7eb' ?>;color:<?= !empty($product['is_best_seller']) ? '#fff' : '#666' ?>;font-size:.78rem;">
+                                            <i class="fas fa-fire"></i> <?= !empty($product['is_best_seller']) ? 'Best Seller ✓' : 'Set Best Seller' ?>
                                         </button>
                                     </td>
                                 </tr>
@@ -1625,6 +1718,91 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 showAlert('users', '❌ Error: ' + error.message, false);
                 button.disabled = false;
                 button.textContent = 'Update';
+            }
+        }
+
+        async function deleteOrder(orderId, btn) {
+            if (!confirm('Permanently delete Order #' + orderId + '? This will remove all order data from the database. This cannot be undone.')) return;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            try {
+                const fd = new FormData();
+                fd.append('action', 'delete_order');
+                fd.append('order_id', orderId);
+                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    btn.closest('tr').style.opacity = '0';
+                    btn.closest('tr').style.transition = 'opacity .4s';
+                    setTimeout(() => btn.closest('tr').remove(), 400);
+                    showAlert('orders', '✅ ' + data.message, true);
+                } else {
+                    showAlert('orders', '❌ ' + (data.error || 'Delete failed'), false);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Order';
+                }
+            } catch (e) {
+                showAlert('orders', '❌ Network error', false);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Order';
+            }
+        }
+
+        async function toggleRecommended(productId, btn) {
+            btn.disabled = true;
+            try {
+                const fd = new FormData();
+                fd.append('action', 'toggle_recommended');
+                fd.append('product_id', productId);
+                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.is_recommended) {
+                        btn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
+                        btn.style.color = '#fff';
+                        btn.innerHTML = '<i class="fas fa-star"></i> Recommended ✓';
+                    } else {
+                        btn.style.background = '#e5e7eb';
+                        btn.style.color = '#666';
+                        btn.innerHTML = '<i class="fas fa-star"></i> Set Recommended';
+                    }
+                    showAlert('products', '✅ Recommended status updated', true);
+                } else {
+                    showAlert('products', '❌ ' + (data.error || 'Failed'), false);
+                }
+                btn.disabled = false;
+            } catch (e) {
+                showAlert('products', '❌ Network error', false);
+                btn.disabled = false;
+            }
+        }
+
+        async function toggleBestSeller(productId, btn) {
+            btn.disabled = true;
+            try {
+                const fd = new FormData();
+                fd.append('action', 'toggle_best_seller');
+                fd.append('product_id', productId);
+                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.is_best_seller) {
+                        btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+                        btn.style.color = '#fff';
+                        btn.innerHTML = '<i class="fas fa-fire"></i> Best Seller ✓';
+                    } else {
+                        btn.style.background = '#e5e7eb';
+                        btn.style.color = '#666';
+                        btn.innerHTML = '<i class="fas fa-fire"></i> Set Best Seller';
+                    }
+                    showAlert('products', '✅ Best seller status updated', true);
+                } else {
+                    showAlert('products', '❌ ' + (data.error || 'Failed'), false);
+                }
+                btn.disabled = false;
+            } catch (e) {
+                showAlert('products', '❌ Network error', false);
+                btn.disabled = false;
             }
         }
     </script>

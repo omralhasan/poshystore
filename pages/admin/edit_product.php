@@ -526,19 +526,19 @@ if (is_dir($img_folder)) {
             <div class="form-grid">
                 <div class="form-group">
                     <label>Product Name (English) <span class="required">*</span></label>
-                    <input type="text" name="name_en" required value="<?= htmlspecialchars($product['name_en']) ?>">
+                    <input type="text" name="name_en" id="nameEn" required value="<?= htmlspecialchars($product['name_en']) ?>">
                 </div>
                 <div class="form-group">
                     <label>Product Name (Arabic)</label>
-                    <input type="text" name="name_ar" dir="rtl" value="<?= htmlspecialchars($product['name_ar'] ?? '') ?>">
+                    <input type="text" name="name_ar" id="nameAr" dir="rtl" value="<?= htmlspecialchars($product['name_ar'] ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label>Short Description (English)</label>
-                    <input type="text" name="short_description_en" maxlength="255" value="<?= htmlspecialchars($product['short_description_en'] ?? '') ?>">
+                    <input type="text" name="short_description_en" id="shortDescEn" maxlength="255" value="<?= htmlspecialchars($product['short_description_en'] ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label>Short Description (Arabic)</label>
-                    <input type="text" name="short_description_ar" dir="rtl" maxlength="255" value="<?= htmlspecialchars($product['short_description_ar'] ?? '') ?>">
+                    <input type="text" name="short_description_ar" id="shortDescAr" dir="rtl" maxlength="255" value="<?= htmlspecialchars($product['short_description_ar'] ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label>Category / Subcategory</label>
@@ -620,27 +620,27 @@ if (is_dir($img_folder)) {
             <div class="form-grid">
                 <div class="form-group full-width">
                     <label>Full Description (English)</label>
-                    <textarea name="description" rows="4"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+                    <textarea name="description" id="descEn" rows="4"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
                 </div>
                 <div class="form-group full-width">
                     <label>Full Description (Arabic)</label>
-                    <textarea name="description_ar" rows="4" dir="rtl"><?= htmlspecialchars($product['description_ar'] ?? '') ?></textarea>
+                    <textarea name="description_ar" id="descAr" rows="4" dir="rtl"><?= htmlspecialchars($product['description_ar'] ?? '') ?></textarea>
                 </div>
                 <div class="form-group full-width">
                     <label>Product Details (English)</label>
-                    <textarea name="product_details" rows="4"><?= htmlspecialchars($product['product_details'] ?? '') ?></textarea>
+                    <textarea name="product_details" id="detailsEn" rows="4"><?= htmlspecialchars($product['product_details'] ?? '') ?></textarea>
                 </div>
                 <div class="form-group full-width">
                     <label>Product Details (Arabic)</label>
-                    <textarea name="product_details_ar" rows="4" dir="rtl"><?= htmlspecialchars($product['product_details_ar'] ?? '') ?></textarea>
+                    <textarea name="product_details_ar" id="detailsAr" rows="4" dir="rtl"><?= htmlspecialchars($product['product_details_ar'] ?? '') ?></textarea>
                 </div>
                 <div class="form-group">
                     <label>How to Use (English)</label>
-                    <textarea name="how_to_use_en" rows="3"><?= htmlspecialchars($product['how_to_use_en'] ?? '') ?></textarea>
+                    <textarea name="how_to_use_en" id="howToUseEn" rows="3"><?= htmlspecialchars($product['how_to_use_en'] ?? '') ?></textarea>
                 </div>
                 <div class="form-group">
                     <label>How to Use (Arabic)</label>
-                    <textarea name="how_to_use_ar" rows="3" dir="rtl"><?= htmlspecialchars($product['how_to_use_ar'] ?? '') ?></textarea>
+                    <textarea name="how_to_use_ar" id="howToUseAr" rows="3" dir="rtl"><?= htmlspecialchars($product['how_to_use_ar'] ?? '') ?></textarea>
                 </div>
             </div>
         </div>
@@ -894,6 +894,48 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
             showToast('Network error: ' + err.message, 'error');
         });
 });
+
+// ====== Auto-Translate English → Arabic ======
+(function(){
+    const pairs = [
+        {en: 'nameEn', ar: 'nameAr'},
+        {en: 'shortDescEn', ar: 'shortDescAr'},
+        {en: 'descEn', ar: 'descAr'},
+        {en: 'detailsEn', ar: 'detailsAr'},
+        {en: 'howToUseEn', ar: 'howToUseAr'}
+    ];
+    const timers = {};
+
+    async function translateToArabic(text) {
+        if (!text.trim()) return '';
+        try {
+            const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=' + encodeURIComponent(text);
+            const res = await fetch(url);
+            const data = await res.json();
+            return data[0].map(s => s[0]).join('');
+        } catch(e) {
+            console.warn('Auto-translate failed:', e);
+            return '';
+        }
+    }
+
+    pairs.forEach(({en, ar}) => {
+        const enEl = document.getElementById(en);
+        const arEl = document.getElementById(ar);
+        if (!enEl || !arEl) return;
+        enEl.addEventListener('input', function(){
+            clearTimeout(timers[en]);
+            timers[en] = setTimeout(async () => {
+                const translated = await translateToArabic(enEl.value);
+                if (translated && !arEl._userEdited) {
+                    arEl.value = translated;
+                }
+            }, 800);
+        });
+        arEl.addEventListener('input', function(){ arEl._userEdited = true; });
+        arEl.addEventListener('focus', function(){ arEl._userEdited = true; });
+    });
+})();
 </script>
 </body>
 </html>

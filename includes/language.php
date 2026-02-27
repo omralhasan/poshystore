@@ -57,7 +57,7 @@ $translations = [
         
         // Home Page
         'welcome' => 'مرحباً بكم في',
-        'tagline' => 'تسوق أجمل منتجات التجميل',
+        'tagline' => 'كل ما تحتاجه في مكان واحد مع منتجاتنا الأصلية',
         'ramadan_greeting' => '🌙 رمضان كريم 🌙',
         'shop_now' => 'تسوق الآن',
         'view_all' => 'عرض الكل',
@@ -424,7 +424,7 @@ $translations = [
         
         // Home Page
         'welcome' => 'Welcome to',
-        'tagline' => 'Shop the Best Beauty Products',
+        'tagline' => 'All what you need in one place with our authentic products',
         'ramadan_greeting' => '🌙 Ramadan Kareem 🌙',
         'shop_now' => 'Shop Now',
         'view_all' => 'View All',

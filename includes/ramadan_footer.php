@@ -18,8 +18,7 @@ if (strpos($current_path, '/pages/') !== false) {
                     Poshy<br>
                     <span style="font-size: 0.7rem; letter-spacing: 5px; font-weight: 300;">STORE</span>
                 </h5>
-                <p class="mb-2">Premium cosmetics for the modern woman</p>
-                <p class="mb-0" style="font-family: 'Tajawal', sans-serif;">مستحضرات تجميل فاخرة للمرأة العصرية</p>
+                <p class="mb-2">All what you need in one place with our authentic products</p>
             </div>
             
             <div class="col-md-4 mb-4">
@@ -43,14 +42,11 @@ if (strpos($current_path, '/pages/') !== false) {
             <div class="col-md-4 mb-4">
                 <h6 class="mb-3">Connect With Us</h6>
                 <div class="d-flex gap-3 mb-3">
-                    <a href="#" class="text-decoration-none" style="color: var(--gold-light); font-size: 1.5rem;">
+                    <a href="https://www.facebook.com/share/1Am5FrXwQU/?mibextid=wwXIfr" target="_blank" rel="noopener" class="text-decoration-none" style="color: var(--gold-light); font-size: 1.5rem;">
                         <i class="fab fa-facebook"></i>
                     </a>
-                    <a href="#" class="text-decoration-none" style="color: var(--gold-light); font-size: 1.5rem;">
+                    <a href="https://www.instagram.com/posh_.lifestyle?igsh=ZWM1MmxkNno3Z3V0&utm_source=qr" target="_blank" rel="noopener" class="text-decoration-none" style="color: var(--gold-light); font-size: 1.5rem;">
                         <i class="fab fa-instagram"></i>
-                    </a>
-                    <a href="#" class="text-decoration-none" style="color: var(--gold-light); font-size: 1.5rem;">
-                        <i class="fab fa-twitter"></i>
                     </a>
                 </div>
                 <p class="mb-0">

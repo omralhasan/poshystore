@@ -326,9 +326,17 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
                     <input type="text" name="name_en" id="nameEn" required placeholder="e.g. The Ordinary Niacinamide 10%">
                 </div>
                 <div class="form-group">
+                    <label><i class="fas fa-language"></i> Product Name (Arabic) <span style="color:var(--accent-teal);font-size:.75rem;">auto-translated</span></label>
+                    <input type="text" name="name_ar" id="nameAr" dir="rtl" placeholder="سيتم الترجمة تلقائياً...">
+                </div>
+                <div class="form-group">
                     <label>Short Description (English)</label>
-                    <input type="text" name="short_description_en" placeholder="Brief one-line description" maxlength="255">
+                    <input type="text" name="short_description_en" id="shortDescEn" placeholder="Brief one-line description" maxlength="255">
                     <div class="help-text">Max 255 characters. Shown on product cards.</div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-language"></i> Short Description (Arabic) <span style="color:var(--accent-teal);font-size:.75rem;">auto-translated</span></label>
+                    <input type="text" name="short_description_ar" id="shortDescAr" dir="rtl" placeholder="سيتم الترجمة تلقائياً..." maxlength="255">
                 </div>
                 <div class="form-group">
                     <label>Category / Subcategory</label>
@@ -401,21 +409,32 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
 
         <!-- Section 3: Description & Details -->
         <div class="form-card">
-            <h2><i class="fas fa-align-left"></i> Description & Details</h2>
+            <h2><i class="fas fa-align-left"></i> Description & Details <span style="color:var(--accent-teal);font-size:.8rem;font-weight:400;margin-left:8px;"><i class="fas fa-language"></i> Arabic fields auto-filled</span></h2>
             <div class="form-grid">
                 <div class="form-group full-width">
                     <label>Full Description (English)</label>
-                    <textarea name="description" rows="4" placeholder="Detailed product description in English..."></textarea>
+                    <textarea name="description" id="descEn" rows="4" placeholder="Detailed product description in English..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label><i class="fas fa-language"></i> Full Description (Arabic)</label>
+                    <textarea name="description_ar" id="descAr" rows="4" dir="rtl" placeholder="سيتم الترجمة تلقائياً..."></textarea>
                 </div>
                 <div class="form-group full-width">
                     <label>Product Details (English)</label>
-                    <textarea name="product_details" rows="4" placeholder="Ingredients, specifications, etc..."></textarea>
+                    <textarea name="product_details" id="detailsEn" rows="4" placeholder="Ingredients, specifications, etc..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label><i class="fas fa-language"></i> Product Details (Arabic)</label>
+                    <textarea name="product_details_ar" id="detailsAr" rows="4" dir="rtl" placeholder="سيتم الترجمة تلقائياً..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>How to Use (English)</label>
-                    <textarea name="how_to_use_en" rows="3" placeholder="Usage instructions in English..."></textarea>
+                    <textarea name="how_to_use_en" id="howToUseEn" rows="3" placeholder="Usage instructions in English..."></textarea>
                 </div>
-
+                <div class="form-group">
+                    <label><i class="fas fa-language"></i> How to Use (Arabic)</label>
+                    <textarea name="how_to_use_ar" id="howToUseAr" rows="3" dir="rtl" placeholder="سيتم الترجمة تلقائياً..."></textarea>
+                </div>
             </div>
         </div>
 
@@ -576,6 +595,49 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
             showToast('Network error: ' + err.message, 'error');
         });
 });
+
+// ====== Auto-Translate English → Arabic ======
+(function(){
+    const pairs = [
+        {en: 'nameEn', ar: 'nameAr'},
+        {en: 'shortDescEn', ar: 'shortDescAr'},
+        {en: 'descEn', ar: 'descAr'},
+        {en: 'detailsEn', ar: 'detailsAr'},
+        {en: 'howToUseEn', ar: 'howToUseAr'}
+    ];
+    const timers = {};
+
+    async function translateToArabic(text) {
+        if (!text.trim()) return '';
+        try {
+            const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=' + encodeURIComponent(text);
+            const res = await fetch(url);
+            const data = await res.json();
+            return data[0].map(s => s[0]).join('');
+        } catch(e) {
+            console.warn('Auto-translate failed:', e);
+            return '';
+        }
+    }
+
+    pairs.forEach(({en, ar}) => {
+        const enEl = document.getElementById(en);
+        const arEl = document.getElementById(ar);
+        if (!enEl || !arEl) return;
+        enEl.addEventListener('input', function(){
+            clearTimeout(timers[en]);
+            timers[en] = setTimeout(async () => {
+                const translated = await translateToArabic(enEl.value);
+                if (translated && !arEl._userEdited) {
+                    arEl.value = translated;
+                }
+            }, 800);
+        });
+        // If user manually edits Arabic, don't overwrite
+        arEl.addEventListener('input', function(){ arEl._userEdited = true; });
+        arEl.addEventListener('focus', function(){ arEl._userEdited = true; });
+    });
+})();
 </script>
 </body>
 </html>

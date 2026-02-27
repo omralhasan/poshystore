@@ -732,6 +732,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                                 __DIR__ . '/../..'
                                             );
                                         }
+                                        // Ensure absolute path from domain root
+                                        if (!empty($img_url) && $img_url[0] !== '/' && !str_starts_with($img_url, 'http')) {
+                                            $img_url = '/' . $img_url;
+                                        }
                                         ?>
                                         <?php if (!empty($img_url)): ?>
                                             <img src="<?= htmlspecialchars($img_url) ?>" 

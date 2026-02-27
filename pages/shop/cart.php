@@ -633,15 +633,19 @@ $total_items = $cart['total_items'] ?? 0;
                                                 __DIR__ . '/../..'
                                             );
                                         }
+                                        // Ensure absolute path from domain root
+                                        if (!empty($cart_img) && $cart_img[0] !== '/' && !str_starts_with($cart_img, 'http')) {
+                                            $cart_img = '/' . $cart_img;
+                                        }
                                     ?>
-                                    <?php if (!empty($cart_img) && $cart_img !== 'images/placeholder-cosmetics.svg'): ?>
+                                    <?php if (!empty($cart_img) && $cart_img !== '/images/placeholder-cosmetics.svg'): ?>
                                         <img src="<?= htmlspecialchars($cart_img) ?>" 
                                              alt="<?= htmlspecialchars($item['name_en']) ?>"
                                              style="width:100%; height:100%; object-fit:cover; border-radius:12px;"
                                              loading="lazy"
-                                             onerror="this.onerror=null; this.src='<?= $base_url ?>/images/placeholder-cosmetics.svg';">
+                                             onerror="this.onerror=null; this.src='/images/placeholder-cosmetics.svg';">
                                     <?php else: ?>
-                                        <img src="<?= htmlspecialchars($cart_img ?: ($base_url . '/images/placeholder-cosmetics.svg')) ?>" 
+                                        <img src="/images/placeholder-cosmetics.svg" 
                                              alt="<?= htmlspecialchars($item['name_en']) ?>"
                                              style="width:100%; height:100%; object-fit:cover; border-radius:12px;"
                                              loading="lazy">
