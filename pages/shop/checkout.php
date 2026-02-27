@@ -85,6 +85,10 @@ function processCheckout($user_id = null, $additional_data = []) {
             $total_amount = max(0, $total_amount - $coupon_discount);
         }
         
+        // Apply delivery fee: 2 JOD, free for orders >= 35 JOD (after coupon)
+        $delivery_fee = ($total_amount >= 35) ? 0 : 2;
+        $total_amount += $delivery_fee;
+        
         // Process wallet balance if user wants to use it
         if (!empty($additional_data['use_wallet'])) {
             require_once __DIR__ . '/../../includes/points_wallet_handler.php';

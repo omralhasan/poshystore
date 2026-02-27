@@ -39,6 +39,10 @@ $coupon_discount = $applied_coupon['discount'] ?? 0;
 $cart_total = $cart['total_amount'];
 $cart_total_after_coupon = max(0, $cart_total - $coupon_discount);
 
+// Delivery fee: 2 JOD, free for orders above 35 JOD
+$delivery_fee = ($cart_total_after_coupon >= 35) ? 0 : 2;
+$cart_total_with_delivery = $cart_total_after_coupon + $delivery_fee;
+
 // Process checkout
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
     // Validate phone number
@@ -793,8 +797,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                             <?php endif; ?>
                             <div class="d-flex justify-content-between mb-2" style="font-size: 0.95rem;">
                                 <span style="color: #666;"><i class="fas fa-truck me-1"></i><?= t('shipping_label') ?>:</span>
-                                <span style="color: #28a745; font-weight: 600;"><?= t('free') ?></span>
+                                <?php if ($delivery_fee > 0): ?>
+                                    <span style="color: var(--purple-color); font-weight: 600;"><?= formatJOD($delivery_fee) ?></span>
+                                <?php else: ?>
+                                    <span style="color: #28a745; font-weight: 600;"><i class="fas fa-check-circle me-1"></i><?= t('free') ?></span>
+                                <?php endif; ?>
                             </div>
+                            <?php if ($delivery_fee > 0): ?>
+                            <div style="background: linear-gradient(135deg, #fff3e0, #fff8e1); padding: 0.5rem 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                                <small style="color: #e65100; font-weight: 600;">
+                                    <i class="fas fa-info-circle me-1"></i><?= ($current_lang === 'ar') ? 'أضف ' . formatJOD(35 - $cart_total_after_coupon) . ' للحصول على توصيل مجاني' : 'Add ' . formatJOD(35 - $cart_total_after_coupon) . ' more for free delivery!' ?>
+                                </small>
+                            </div>
+                            <?php endif; ?>
                         </div>
                         
                         <?php if ($wallet_balance > 0): ?>
@@ -814,7 +829,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                             <div class="form-check" style="background: white; padding: 0.75rem; border-radius: 8px;">
                                 <input class="form-check-input" type="checkbox" name="use_wallet" value="1" id="useWalletCheckbox" 
                                        style="width: 20px; height: 20px; border: 2px solid #1890ff; cursor: pointer;"
-                                       <?= $wallet_balance >= $cart_total_after_coupon ? 'checked' : '' ?>
+                                       <?= $wallet_balance >= $cart_total_with_delivery ? 'checked' : '' ?>
                                        onchange="updateTotal()">
                                 <label class="form-check-label" for="useWalletCheckbox" style="color: var(--purple-color); font-weight: 600; margin-left: 0.5rem; cursor: pointer;">
                                     <i class="fas fa-check-circle me-1" style="color: #28a745;"></i>
@@ -823,10 +838,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                             </div>
                             <small style="color: #666; display: block; margin-top: 0.75rem; font-size: 0.85rem;">
                                 <i class="fas fa-info-circle me-1" style="color: #1890ff;"></i>
-                                <?php if ($wallet_balance >= $cart_total_after_coupon): ?>
+                                    <?php if ($wallet_balance >= $cart_total_with_delivery): ?>
                                     <?= t('wallet_covers_full_amount') ?>
                                 <?php else: ?>
-                                    <?= t('wallet_applied_pay_remaining') ?>: <strong><?= formatJOD($cart_total_after_coupon - $wallet_balance) ?></strong>
+                                    <?= t('wallet_applied_pay_remaining') ?>: <strong><?= formatJOD($cart_total_with_delivery - $wallet_balance) ?></strong>
                                 <?php endif; ?>
                             </small>
                         </div>
@@ -837,7 +852,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                             <span style="color: white; font-size: 1.4rem; font-weight: 700;">
                                 <i class="fas fa-coins me-2" style="color: var(--gold-color);"></i><?= t('total_to_pay') ?>:
                             </span>
-                            <span id="finalTotal" style="color: var(--gold-color); font-size: 1.6rem; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.2);"><?= formatJOD($cart_total_after_coupon) ?></span>
+                            <span id="finalTotal" style="color: var(--gold-color); font-size: 1.6rem; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.2);"><?= formatJOD($cart_total_with_delivery) ?></span>
                         </div>
                         
                         <?php if ($wallet_balance > 0): ?>
@@ -849,8 +864,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                         <?php endif; ?>
                         
                         <script>
-                        const cartTotal = <?= $cart_total_after_coupon ?>;
+                        const cartTotal = <?= $cart_total_with_delivery ?>;
                         const walletBalance = <?= $wallet_balance ?>;
+                        const deliveryFee = <?= $delivery_fee ?>;
                         
                         function updateTotal() {
                             const useWallet = document.getElementById('useWalletCheckbox')?.checked || false;

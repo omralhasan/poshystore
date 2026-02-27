@@ -150,10 +150,10 @@ while ($p = $result->fetch_assoc()):
     // ── Image link (absolute URL) ──────────────────────────────────────
     $image_link = '';
     if (!empty($p['image_link'])) {
-        $img = $p['image_link'];
-        // Already absolute?
+        $img = trim($p['image_link']);
+        // Already absolute? Replace domain to ensure canonical poshystore.com domain
         if (preg_match('#^https?://#i', $img)) {
-            $image_link = $img;
+            $image_link = preg_replace('#^https?://[^/]+#i', $site_url, $img);
         } else {
             $image_link = $site_url . '/' . ltrim($img, '/');
         }
@@ -191,7 +191,7 @@ while ($p = $result->fetch_assoc()):
     if (isset($extra_images[(int)$p['id']])) {
         foreach ($extra_images[(int)$p['id']] as $ai) {
             if (preg_match('#^https?://#i', $ai)) {
-                $additional_images[] = $ai;
+                $additional_images[] = preg_replace('#^https?://[^/]+#i', $site_url, $ai);
             } else {
                 $additional_images[] = $site_url . '/' . ltrim($ai, '/');
             }
