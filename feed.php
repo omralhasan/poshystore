@@ -78,6 +78,8 @@ if ($img_check && $img_check->num_rows > 0) {
 header('Content-Type: application/xml; charset=UTF-8');
 
 $site_url = rtrim(SITE_URL, '/');
+// Canonical domain for feed URLs (Google/Meta require consistent domain)
+$feed_domain = 'https://poshystore.com';
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 ?>
@@ -86,9 +88,9 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
      xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Poshy Lifestyle Store – Product Feed</title>
-    <link><?= htmlspecialchars($site_url) ?></link>
+    <link><?= htmlspecialchars($feed_domain) ?></link>
     <description>Poshy Lifestyle Store product catalog for Google Merchant Center and Meta Commerce Manager.</description>
-    <atom:link href="<?= htmlspecialchars($site_url . '/feed.php') ?>" rel="self" type="application/rss+xml"/>
+    <atom:link href="<?= htmlspecialchars($feed_domain . '/feed.php') ?>" rel="self" type="application/rss+xml"/>
 <?php
 while ($p = $result->fetch_assoc()):
 
@@ -140,7 +142,7 @@ while ($p = $result->fetch_assoc()):
     $availability = ((int)$p['stock_quantity'] > 0) ? 'in_stock' : 'out_of_stock';
 
     // ── Product link ───────────────────────────────────────────────────
-    $link = $site_url;
+    $link = $feed_domain;
     if (!empty($p['slug'])) {
         $link .= '/' . urlencode($p['slug']);
     } else {
@@ -153,9 +155,9 @@ while ($p = $result->fetch_assoc()):
         $img = trim($p['image_link']);
         // Already absolute? Replace domain to ensure canonical poshystore.com domain
         if (preg_match('#^https?://#i', $img)) {
-            $image_link = preg_replace('#^https?://[^/]+#i', $site_url, $img);
+            $image_link = preg_replace('#^https?://[^/]+#i', $feed_domain, $img);
         } else {
-            $image_link = $site_url . '/' . ltrim($img, '/');
+            $image_link = $feed_domain . '/' . ltrim($img, '/');
         }
     }
 
@@ -191,9 +193,9 @@ while ($p = $result->fetch_assoc()):
     if (isset($extra_images[(int)$p['id']])) {
         foreach ($extra_images[(int)$p['id']] as $ai) {
             if (preg_match('#^https?://#i', $ai)) {
-                $additional_images[] = preg_replace('#^https?://[^/]+#i', $site_url, $ai);
+                $additional_images[] = preg_replace('#^https?://[^/]+#i', $feed_domain, $ai);
             } else {
-                $additional_images[] = $site_url . '/' . ltrim($ai, '/');
+                $additional_images[] = $feed_domain . '/' . ltrim($ai, '/');
             }
         }
     }
