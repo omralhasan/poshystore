@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                 $mail->Password   = 'omarabudiak';
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
+                $mail->Timeout    = 10;
                 $mail->CharSet    = 'UTF-8';
 
                 $mail->setFrom('mate7762s@gmail.com', 'Poshy Store');

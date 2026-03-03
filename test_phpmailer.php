@@ -37,8 +37,9 @@ try {
     $mail->Password   = 'omarabudiak';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port       = 587;
+    $mail->Timeout    = 10;
     $mail->SMTPDebug  = 2;
-    $mail->Debugoutput = function($str, $level) { echo "   DEBUG[$level]: $str"; };
+    $mail->Debugoutput = function($str, $level) { echo "   DEBUG[$level]: " . htmlspecialchars($str); };
     $mail->CharSet    = 'UTF-8';
 
     $mail->setFrom('mate7762s@gmail.com', 'Poshy Store');
