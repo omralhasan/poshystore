@@ -37,6 +37,12 @@ $return_code = 0;
 // Make sure we're in the right directory
 chdir($web_root);
 
+// Backup .env before git reset (preserves server-specific secrets)
+$env_backup = '/tmp/.poshy_env_backup';
+if (file_exists("$web_root/.env")) {
+    copy("$web_root/.env", $env_backup);
+}
+
 // Run git reset and pull
 $commands = [
     "git fetch origin 2>&1",
@@ -52,6 +58,12 @@ foreach ($commands as $cmd) {
     if (strpos($result, 'fatal') !== false || strpos($result, 'error') !== false) {
         $success = false;
     }
+}
+
+// Restore .env from backup (git reset may have overwritten server-specific values)
+if (file_exists($env_backup)) {
+    copy($env_backup, "$web_root/.env");
+    unlink($env_backup);
 }
 
 // Fix file permissions after pull
