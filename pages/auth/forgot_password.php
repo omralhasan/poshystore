@@ -1,11 +1,16 @@
 <?php
 /**
- * Forgot Password – Send reset link via email
+ * Forgot Password – Send reset link via Gmail SMTP (PHPMailer)
  */
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/language.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 $success = '';
 $error = '';
@@ -51,9 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             // Build reset link
             $reset_link = 'https://poshystore.com/pages/auth/reset_password.php?token=' . $token;
 
-            // Send email
-            $to = $email;
-            $subject = 'Poshy Store – Reset Your Password';
+            // Send email via PHPMailer (Gmail SMTP)
             $firstname = htmlspecialchars($user['firstname']);
 
             $html_body = "
@@ -82,17 +85,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                 </div>
             </div>";
 
-            $headers  = "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: Poshy Store <noreply@poshystore.com>\r\n";
-            $headers .= "Reply-To: info@poshystore.com\r\n";
+            $mail = new PHPMailer(true);
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'mate7762s@gmail.com';
+                $mail->Password   = 'omarabudiak';
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+                $mail->CharSet    = 'UTF-8';
 
-            $sent = @mail($to, $subject, $html_body, $headers);
+                $mail->setFrom('mate7762s@gmail.com', 'Poshy Store');
+                $mail->addReplyTo('info@poshystore.com', 'Poshy Store');
+                $mail->addAddress($email, $firstname);
 
-            if ($sent) {
+                $mail->isHTML(true);
+                $mail->Subject = 'Poshy Store – Reset Your Password';
+                $mail->Body    = $html_body;
+                $mail->AltBody = "Hi {$firstname},\n\nReset your password: {$reset_link}\n\nThis link expires in 1 hour.\n\nPoshy Store";
+
+                $mail->send();
                 $success = 'Password reset link has been sent to your email!';
-            } else {
+            } catch (Exception $e) {
                 $error = 'Failed to send email. Please try again or contact support.';
+                error_log('PHPMailer Error (forgot_password): ' . $mail->ErrorInfo);
             }
         } else {
             // Don't reveal if email exists — show same success message
