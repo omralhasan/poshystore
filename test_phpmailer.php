@@ -1,57 +1,49 @@
 <?php
 /**
- * PHPMailer test – delete after testing
+ * Brevo Email API test – delete after testing
  */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 echo "<pre>\n";
 
-// Test 1: Check autoload
-echo "1. Autoload: ";
-$autoload = __DIR__ . '/vendor/autoload.php';
-if (file_exists($autoload)) {
-    require_once $autoload;
-    echo "OK\n";
+$brevo_api_key = getenv('BREVO_API_KEY') ?: '';
+
+$payload = json_encode([
+    'sender' => ['name' => 'Poshy Store', 'email' => 'mate7762s@gmail.com'],
+    'to' => [['email' => 'mate7762s@gmail.com', 'name' => 'Test']],
+    'subject' => 'Poshy Store - Test Email',
+    'htmlContent' => '<h1>Test Email</h1><p>If you see this, Brevo API works!</p>',
+    'textContent' => 'Test email from Poshy Store'
+]);
+
+echo "Sending via Brevo API...\n";
+
+$ch = curl_init('https://api.brevo.com/v3/smtp/email');
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $payload,
+    CURLOPT_HTTPHEADER => [
+        'accept: application/json',
+        'api-key: ' . $brevo_api_key,
+        'content-type: application/json'
+    ],
+    CURLOPT_TIMEOUT => 15,
+]);
+
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curl_err = curl_error($ch);
+curl_close($ch);
+
+echo "HTTP Status: $http_code\n";
+echo "Response: $response\n";
+if ($curl_err) echo "cURL Error: $curl_err\n";
+
+if ($http_code >= 200 && $http_code < 300) {
+    echo "\nRESULT: SUCCESS - Email sent!\n";
 } else {
-    echo "MISSING ($autoload)\n";
-    exit;
-}
-
-// Test 2: Check class
-echo "2. PHPMailer class: ";
-echo class_exists('PHPMailer\PHPMailer\PHPMailer') ? "OK\n" : "NOT FOUND\n";
-
-// Test 3: Try sending
-echo "3. SMTP Test:\n";
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-$mail = new PHPMailer(true);
-try {
-    $mail->isSMTP();
-    $mail->Host       = 'smtp.gmail.com';
-    $mail->SMTPAuth   = true;
-    $mail->Username   = 'mate7762s@gmail.com';
-    $mail->Password   = 'omarabudiak';
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-    $mail->Port       = 465;
-    $mail->Timeout    = 10;
-    $mail->SMTPDebug  = 2;
-    $mail->Debugoutput = function($str, $level) { echo "   DEBUG[$level]: " . htmlspecialchars($str); };
-    $mail->CharSet    = 'UTF-8';
-
-    $mail->setFrom('mate7762s@gmail.com', 'Poshy Store');
-    $mail->addAddress('mate7762s@gmail.com', 'Test');
-
-    $mail->isHTML(true);
-    $mail->Subject = 'Poshy Store SMTP Test';
-    $mail->Body    = '<h1>Test Email</h1><p>If you see this, PHPMailer works!</p>';
-
-    $mail->send();
-    echo "\n   RESULT: SUCCESS - Email sent!\n";
-} catch (Exception $e) {
-    echo "\n   RESULT: FAILED - " . $mail->ErrorInfo . "\n";
+    echo "\nRESULT: FAILED\n";
 }
 echo "</pre>";

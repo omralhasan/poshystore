@@ -1,16 +1,11 @@
 <?php
 /**
- * Forgot Password – Send reset link via Gmail SMTP (PHPMailer)
+ * Forgot Password – Send reset link via Brevo HTTP API
  */
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/language.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
 
 $success = '';
 $error = '';
@@ -56,7 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             // Build reset link
             $reset_link = 'https://poshystore.com/pages/auth/reset_password.php?token=' . $token;
 
-            // Send email via PHPMailer (Gmail SMTP)
             $firstname = htmlspecialchars($user['firstname']);
 
             $html_body = "
@@ -81,36 +75,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                     </p>
                 </div>
                 <div style='background:#f0ecf5;padding:16px;text-align:center;'>
-                    <small style='color:#888;'>© " . date('Y') . " Poshy Store. All rights reserved.</small>
+                    <small style='color:#888;'>&copy; " . date('Y') . " Poshy Store. All rights reserved.</small>
                 </div>
             </div>";
 
-            $mail = new PHPMailer(true);
-            try {
-                $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'mate7762s@gmail.com';
-                $mail->Password   = 'omarabudiak';
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-                $mail->Port       = 465;
-                $mail->Timeout    = 10;
-                $mail->CharSet    = 'UTF-8';
+            // Send email via Brevo HTTP API (bypasses SMTP port blocks)
+            $brevo_api_key = getenv('BREVO_API_KEY') ?: '';
 
-                $mail->setFrom('mate7762s@gmail.com', 'Poshy Store');
-                $mail->addReplyTo('info@poshystore.com', 'Poshy Store');
-                $mail->addAddress($email, $firstname);
+            $payload = json_encode([
+                'sender' => ['name' => 'Poshy Store', 'email' => 'mate7762s@gmail.com'],
+                'to' => [['email' => $email, 'name' => $firstname]],
+                'subject' => 'Poshy Store – Reset Your Password',
+                'htmlContent' => $html_body,
+                'textContent' => "Hi {$firstname},\n\nReset your password: {$reset_link}\n\nThis link expires in 1 hour.\n\nPoshy Store"
+            ]);
 
-                $mail->isHTML(true);
-                $mail->Subject = 'Poshy Store – Reset Your Password';
-                $mail->Body    = $html_body;
-                $mail->AltBody = "Hi {$firstname},\n\nReset your password: {$reset_link}\n\nThis link expires in 1 hour.\n\nPoshy Store";
+            $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => [
+                    'accept: application/json',
+                    'api-key: ' . $brevo_api_key,
+                    'content-type: application/json'
+                ],
+                CURLOPT_TIMEOUT => 15,
+            ]);
 
-                $mail->send();
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_err = curl_error($ch);
+            curl_close($ch);
+
+            if ($http_code >= 200 && $http_code < 300) {
                 $success = 'Password reset link has been sent to your email!';
-            } catch (Exception $e) {
+            } else {
                 $error = 'Failed to send email. Please try again or contact support.';
-                error_log('PHPMailer Error (forgot_password): ' . $mail->ErrorInfo);
+                error_log("Brevo API Error (forgot_password): HTTP $http_code - $response - $curl_err");
             }
         } else {
             // Don't reveal if email exists — show same success message
