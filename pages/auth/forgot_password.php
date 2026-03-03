@@ -92,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                 $mail->SMTPAuth   = true;
                 $mail->Username   = 'mate7762s@gmail.com';
                 $mail->Password   = 'omarabudiak';
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587;
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port       = 465;
                 $mail->Timeout    = 10;
                 $mail->CharSet    = 'UTF-8';
 

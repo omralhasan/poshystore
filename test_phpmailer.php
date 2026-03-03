@@ -35,8 +35,8 @@ try {
     $mail->SMTPAuth   = true;
     $mail->Username   = 'mate7762s@gmail.com';
     $mail->Password   = 'omarabudiak';
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = 465;
     $mail->Timeout    = 10;
     $mail->SMTPDebug  = 2;
     $mail->Debugoutput = function($str, $level) { echo "   DEBUG[$level]: " . htmlspecialchars($str); };
