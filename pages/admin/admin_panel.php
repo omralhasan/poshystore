@@ -37,16 +37,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $order_type = $_POST['order_type'] ?? '';
         
         if ($order_id > 0 && in_array($order_type, ['customer', 'supplier'])) {
-            $sql = "UPDATE orders SET order_type = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param('si', $order_type, $order_id);
-            
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Order type updated successfully']);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Failed to update order type']);
+            // Start transaction to update order type AND recalculate total
+            $conn->begin_transaction();
+            try {
+                // Update order type
+                $sql = "UPDATE orders SET order_type = ? WHERE id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('si', $order_type, $order_id);
+                $stmt->execute();
+                $stmt->close();
+                
+                // Recalculate: update each order item's price based on new order type
+                $items_sql = "SELECT oi.id, oi.product_id, oi.quantity FROM order_items oi WHERE oi.order_id = ?";
+                $items_stmt = $conn->prepare($items_sql);
+                $items_stmt->bind_param('i', $order_id);
+                $items_stmt->execute();
+                $items_result = $items_stmt->get_result();
+                
+                $new_total = 0;
+                $update_item_sql = "UPDATE order_items SET price_per_item = ?, subtotal = ? WHERE id = ?";
+                $update_item_stmt = $conn->prepare($update_item_sql);
+                
+                while ($item = $items_result->fetch_assoc()) {
+                    // Get product prices
+                    $p_stmt = $conn->prepare("SELECT price_jod, supplier_cost FROM products WHERE id = ?");
+                    $p_stmt->bind_param('i', $item['product_id']);
+                    $p_stmt->execute();
+                    $product = $p_stmt->get_result()->fetch_assoc();
+                    $p_stmt->close();
+                    
+                    if ($product) {
+                        // Use supplier_cost for supplier orders, price_jod for customer orders
+                        if ($order_type === 'supplier' && !empty($product['supplier_cost']) && $product['supplier_cost'] > 0) {
+                            $new_price = $product['supplier_cost'];
+                        } else {
+                            $new_price = $product['price_jod'];
+                        }
+                        
+                        $new_subtotal = $new_price * $item['quantity'];
+                        $update_item_stmt->bind_param('ddi', $new_price, $new_subtotal, $item['id']);
+                        $update_item_stmt->execute();
+                        $new_total += $new_subtotal;
+                    }
+                }
+                $items_stmt->close();
+                $update_item_stmt->close();
+                
+                // Update order total
+                $update_total_sql = "UPDATE orders SET total_amount = ? WHERE id = ?";
+                $update_total_stmt = $conn->prepare($update_total_sql);
+                $update_total_stmt->bind_param('di', $new_total, $order_id);
+                $update_total_stmt->execute();
+                $update_total_stmt->close();
+                
+                $conn->commit();
+                echo json_encode([
+                    'success' => true, 
+                    'message' => 'Order type updated and total recalculated',
+                    'new_total' => number_format($new_total, 3) . ' JOD'
+                ]);
+            } catch (Exception $e) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'error' => 'Failed: ' . $e->getMessage()]);
             }
-            $stmt->close();
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
         }

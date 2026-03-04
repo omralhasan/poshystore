@@ -64,7 +64,7 @@ $supplier_revenue = 0;
 while ($order = $result->fetch_assoc()) {
     // Get order items with cost information
     $items_sql = "SELECT oi.quantity, oi.price_per_item, oi.subtotal,
-                         oi.cost_per_item, p.cost, p.supplier_cost, p.public_price_min
+                         oi.cost_per_item, p.cost, p.supplier_cost
                   FROM order_items oi
                   LEFT JOIN products p ON oi.product_id = p.id
                   WHERE oi.order_id = ?";
@@ -75,19 +75,24 @@ while ($order = $result->fetch_assoc()) {
     $items_result = $items_stmt->get_result();
     
     $order_cost = 0;
-    $order_revenue = 0;
+    $items_subtotal = 0;
     
     while ($item = $items_result->fetch_assoc()) {
         // Use cost_per_item snapshot if available, otherwise fall back to product cost, then supplier_cost
         $unit_cost = $item['cost_per_item'] ?? $item['cost'] ?? $item['supplier_cost'] ?? 0;
         $item_cost = $unit_cost * $item['quantity'];
         $order_cost += $item_cost;
-        $order_revenue += $item['subtotal'];
+        $items_subtotal += $item['subtotal'];
     }
     $items_stmt->close();
     
+    // Revenue = what was actually paid (total_amount from orders table)
+    // This reflects coupons, delivery fees, wallet usage — the real amount charged
+    $order_revenue = floatval($order['total_amount']);
+    
     $order['cost'] = $order_cost;
     $order['revenue'] = $order_revenue;
+    $order['items_subtotal'] = $items_subtotal;
     $order['profit'] = $order_revenue - $order_cost;
     $order['profit_margin'] = $order_revenue > 0 ? (($order_revenue - $order_cost) / $order_revenue * 100) : 0;
     

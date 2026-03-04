@@ -182,7 +182,7 @@ function processCheckout($user_id = null, $additional_data = []) {
             
             // Save order item
             $item_stmt->bind_param(
-                'iissiddi',
+                'iissiddd',
                 $order_id,
                 $item['product_id'],
                 $item['name_en'],
