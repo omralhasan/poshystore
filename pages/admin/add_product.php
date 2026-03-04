@@ -35,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $brand_id   = intval($_POST['brand_id'] ?? 0) ?: null;
     $tags_raw   = trim($_POST['tags'] ?? '');
     $sup_cost   = ($_POST['supplier_price'] ?? '') !== '' ? floatval($_POST['supplier_price']) : null;
-    $orig_price = ($_POST['original_price'] ?? '') !== '' ? floatval($_POST['original_price']) : $price;
+    $cost_price = ($_POST['cost'] ?? '') !== '' ? floatval($_POST['cost']) : null;
+    $orig_price = $price;
     $discount   = floatval($_POST['discount_percentage'] ?? 0);
     $has_disc   = ($discount > 0) ? 1 : 0;
 
@@ -91,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $sql = "INSERT INTO products (name_en, name_ar, slug, short_description_en, short_description_ar,
             description, description_ar, product_details, product_details_ar, how_to_use_en, how_to_use_ar, video_review_url,
             price_jod, stock_quantity, image_link, subcategory_id, brand_id,
-            supplier_cost,
+            supplier_cost, cost,
             original_price, discount_percentage, has_discount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -101,11 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit();
     }
 
-    $stmt->bind_param('ssssssssssssdisiidddi',
+    $stmt->bind_param('ssssssssssssdisiiddddi',
         $name_en, $name_ar, $slug, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar, $how_en, $how_ar, $video_url,
         $price, $stock, $image_link, $subcat_id, $brand_id,
-        $sup_cost,
+        $sup_cost, $cost_price,
         $orig_price, $discount, $has_disc
     );
 
@@ -389,9 +390,9 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
                     <div class="help-text">Price shown to supplier accounts.</div>
                 </div>
                 <div class="form-group">
-                    <label>Original Price (JOD)</label>
-                    <input type="number" name="original_price" step="0.001" min="0" placeholder="0.000">
-                    <div class="help-text">Leave empty to use customer price.</div>
+                    <label>Cost (JOD)</label>
+                    <input type="number" name="cost" step="0.001" min="0" placeholder="0.000">
+                    <div class="help-text">Actual cost of the product (for profit calculation).</div>
                 </div>
                 <div class="form-group">
                     <label>Stock Quantity <span class="required">*</span></label>

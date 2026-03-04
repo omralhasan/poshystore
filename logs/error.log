@@ -48,3 +48,53 @@ Stack trace:
 #3 Command line code(8): include('...')
 #4 {main}
   thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:06:50 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 Command line code(2): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:06:56 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 Command line code(2): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:07:02 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/diagnostics.php(6): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:07:34 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/run_cost_migration.php(3): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:07:40 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/run_cost_migration.php(3): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:08:04 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 /home/omar/poshystore/run_cost_migration.php(4): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:08:10 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/omar/poshystore/config.php on line 57
+[04-Mar-2026 21:08:17 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/omar/poshystore/config.php on line 57
+[04-Mar-2026 21:08:17 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in /home/omar/poshystore/includes/db_connect.php:15
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(15): mysqli->__construct()
+#1 Command line code(1): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 15
+[04-Mar-2026 21:08:24 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/omar/poshystore/config.php on line 57
+[04-Mar-2026 21:08:24 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' (using password: YES) in Command line code:7
+Stack trace:
+#0 Command line code(7): mysqli->__construct()
+#1 {main}
+  thrown in Command line code on line 7

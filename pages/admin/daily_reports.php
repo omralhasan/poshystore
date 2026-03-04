@@ -64,7 +64,7 @@ $supplier_revenue = 0;
 while ($order = $result->fetch_assoc()) {
     // Get order items with cost information
     $items_sql = "SELECT oi.quantity, oi.price_per_item, oi.subtotal,
-                         p.supplier_cost, p.public_price_min
+                         oi.cost_per_item, p.cost, p.supplier_cost, p.public_price_min
                   FROM order_items oi
                   LEFT JOIN products p ON oi.product_id = p.id
                   WHERE oi.order_id = ?";
@@ -78,7 +78,9 @@ while ($order = $result->fetch_assoc()) {
     $order_revenue = 0;
     
     while ($item = $items_result->fetch_assoc()) {
-        $item_cost = ($item['supplier_cost'] ?? 0) * $item['quantity'];
+        // Use cost_per_item snapshot if available, otherwise fall back to product cost, then supplier_cost
+        $unit_cost = $item['cost_per_item'] ?? $item['cost'] ?? $item['supplier_cost'] ?? 0;
+        $item_cost = $unit_cost * $item['quantity'];
         $order_cost += $item_cost;
         $order_revenue += $item['subtotal'];
     }

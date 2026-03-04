@@ -158,8 +158,8 @@ function processCheckout($user_id = null, $additional_data = []) {
         $order_stmt->close();
         
         // Insert order items into order_items table
-        $item_sql = "INSERT INTO order_items (order_id, product_id, product_name_en, product_name_ar, quantity, price_per_item, subtotal) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $item_sql = "INSERT INTO order_items (order_id, product_id, product_name_en, product_name_ar, quantity, price_per_item, cost_per_item, subtotal) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $item_stmt = $conn->prepare($item_sql);
         
         // Process each cart item
@@ -172,15 +172,24 @@ function processCheckout($user_id = null, $additional_data = []) {
                 throw new Exception("Failed to update stock for product " . $item['product_id']);
             }
             
+            // Fetch product cost for snapshot
+            $cost_stmt = $conn->prepare("SELECT cost, supplier_cost FROM products WHERE id = ?");
+            $cost_stmt->bind_param('i', $item['product_id']);
+            $cost_stmt->execute();
+            $cost_row = $cost_stmt->get_result()->fetch_assoc();
+            $cost_stmt->close();
+            $item_cost = $cost_row['cost'] ?? $cost_row['supplier_cost'] ?? null;
+            
             // Save order item
             $item_stmt->bind_param(
-                'iissidi',
+                'iissiddi',
                 $order_id,
                 $item['product_id'],
                 $item['name_en'],
                 $item['name_ar'],
                 $item['quantity'],
                 $item['price'],
+                $item_cost,
                 $item['subtotal']
             );
             
