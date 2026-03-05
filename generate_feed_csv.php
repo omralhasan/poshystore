@@ -25,8 +25,8 @@ require_once $root . '/config.php';
 require_once $root . '/includes/db_connect.php';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-$CURRENCY       = 'SAR';        // Meta Commerce Manager requires SAR
-$SAR_RATE       = 5.15;         // JOD → SAR conversion rate
+$CURRENCY       = 'JOD';        // Jordanian Dinar
+$SAR_RATE       = 5.15;         // JOD → SAR conversion rate (unused when JOD)
 $LANG           = 'en';         // 'en' or 'ar'
 $OUTPUT_DIR     = $root . '/feeds';
 $OUTPUT_FILE    = $OUTPUT_DIR . '/products.csv';
@@ -170,8 +170,8 @@ while ($p = $result->fetch_assoc()) {
         $price_str = number_format($has_disc ? $full_val : $sale_val, 2, '.', '') . ' SAR';
         $sale_str  = $has_disc ? number_format($sale_val, 2, '.', '') . ' SAR' : '';
     } else {
-        $price_str = number_format($has_disc ? $orig_jod : $price_jod, 3, '.', '') . ' JOD';
-        $sale_str  = $has_disc ? number_format($price_jod, 3, '.', '') . ' JOD' : '';
+        $price_str = number_format($has_disc ? $orig_jod : $price_jod, 2, '.', '') . ' JOD';
+        $sale_str  = $has_disc ? number_format($price_jod, 2, '.', '') . ' JOD' : '';
     }
 
     // brand
