@@ -174,10 +174,8 @@ while ($p = $result->fetch_assoc()) {
         $sale_str  = $has_disc ? number_format($price_jod, 2, '.', '') . ' JOD' : '';
     }
 
-    // brand
-    $brand = ($LANG === 'ar' && !empty($p['brand_ar']))
-        ? $p['brand_ar']
-        : $p['brand_en'];
+    // brand — Meta requires consistent brand; always 'Poshy Store'
+    $brand = 'Poshy Store';
 
     // google_product_category (best-effort)
     $cat_lower = strtolower($p['category_en']);
