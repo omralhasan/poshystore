@@ -21,6 +21,14 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
+// Auto-login from "remember me" cookie
+require_once __DIR__ . '/../../includes/auth_functions.php';
+if (autoLoginFromRememberMe()) {
+    $redirect = ($_SESSION['role'] === 'admin') ? BASE_PATH . '/pages/admin/admin_panel.php' : BASE_PATH . '/index.php';
+    header('Location: ' . $redirect);
+    exit();
+}
+
 // Process login form submission BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
     // Load database connection
@@ -79,6 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
             $_SESSION['role'] = $user['role'];
             $_SESSION['logged_in'] = true;
             $_SESSION['login_time'] = time();
+            
+            // Handle "Remember Me" checkbox
+            if (!empty($_POST['remember_me'])) {
+                require_once __DIR__ . '/../../includes/auth_functions.php';
+                setRememberMeCookie($user['id'], 30);
+            }
             
             $stmt->close();
             $conn->close();
@@ -331,7 +345,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                             <div class="mb-4">
                                 <label for="password" class="form-label" style="color: var(--gold-color); font-weight: 500;"><?= t('password') ?></label>
                                 <input type="password" id="password" name="password" class="form-control-ramadan" required placeholder="<?= t('enter_password') ?>">
-                                <div style="text-align: right; margin-top: 6px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: var(--gold-color); font-weight: 500; user-select: none;">
+                                        <input type="checkbox" name="remember_me" value="1" style="width: 18px; height: 18px; accent-color: var(--royal-gold); cursor: pointer;">
+                                        <?= function_exists('t') ? t('remember_me') : 'Remember me' ?>
+                                    </label>
                                     <a href="forgot_password.php" style="color: var(--gold-color); font-size: 0.85rem; text-decoration: none; font-weight: 500;">
                                         <i class="fas fa-lock" style="font-size: 0.75rem;"></i> Forgot password?
                                     </a>

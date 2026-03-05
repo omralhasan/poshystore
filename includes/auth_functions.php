@@ -304,8 +304,154 @@ function logoutUser() {
         setcookie(session_name(), '', time() - 3600, '/');
     }
     
+    // Clear remember me cookie and token
+    if (isset($_COOKIE['remember_me'])) {
+        clearRememberMeToken($_COOKIE['remember_me']);
+        setcookie('remember_me', '', time() - 3600, '/', '', true, true);
+    }
+    
     // Destroy the session
     session_destroy();
+}
+
+// ─── Remember Me Functions ─────────────────────────────────────────────────────
+
+/**
+ * Create a "remember me" token and set a cookie.
+ *
+ * @param int $user_id  The user to remember
+ * @param int $days     How many days the cookie should last (default 30)
+ */
+function setRememberMeCookie($user_id, $days = 30) {
+    global $conn;
+    
+    // Generate a secure random token
+    $token = bin2hex(random_bytes(32));
+    $token_hash = hash('sha256', $token);
+    $expires_at = date('Y-m-d H:i:s', time() + ($days * 86400));
+    
+    // Store token hash in database
+    $stmt = $conn->prepare('INSERT INTO remember_me_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)');
+    if ($stmt) {
+        $stmt->bind_param('iss', $user_id, $token_hash, $expires_at);
+        $stmt->execute();
+        $stmt->close();
+    }
+    
+    // Clean up old expired tokens for this user
+    $conn->query("DELETE FROM remember_me_tokens WHERE user_id = $user_id AND expires_at < NOW()");
+    
+    // Set cookie: value = "user_id:token"
+    $cookie_value = $user_id . ':' . $token;
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    setcookie('remember_me', $cookie_value, [
+        'expires'  => time() + ($days * 86400),
+        'path'     => '/',
+        'secure'   => $secure,
+        'httponly'  => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+/**
+ * Attempt to auto-login a user from their "remember me" cookie.
+ * Call this early in your bootstrap (after session_start) on every page load.
+ *
+ * @return bool True if auto-login succeeded
+ */
+function autoLoginFromRememberMe() {
+    global $conn;
+    
+    // Already logged in — nothing to do
+    if (isset($_SESSION['user_id'])) {
+        return true;
+    }
+    
+    if (empty($_COOKIE['remember_me'])) {
+        return false;
+    }
+    
+    $parts = explode(':', $_COOKIE['remember_me'], 2);
+    if (count($parts) !== 2) {
+        // Malformed cookie — clear it
+        setcookie('remember_me', '', time() - 3600, '/');
+        return false;
+    }
+    
+    $user_id = intval($parts[0]);
+    $token   = $parts[1];
+    $token_hash = hash('sha256', $token);
+    
+    // Look up the token in the database
+    $stmt = $conn->prepare('SELECT id FROM remember_me_tokens WHERE user_id = ? AND token_hash = ? AND expires_at > NOW()');
+    if (!$stmt) { return false; }
+    
+    $stmt->bind_param('is', $user_id, $token_hash);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        // Invalid or expired token — clear cookie
+        setcookie('remember_me', '', time() - 3600, '/');
+        return false;
+    }
+    $token_row = $result->fetch_assoc();
+    $stmt->close();
+    
+    // Token is valid — load the user
+    $user_stmt = $conn->prepare('SELECT id, firstname, lastname, email, phonenumber, role FROM users WHERE id = ?');
+    if (!$user_stmt) { return false; }
+    
+    $user_stmt->bind_param('i', $user_id);
+    $user_stmt->execute();
+    $user_result = $user_stmt->get_result();
+    
+    if ($user_result->num_rows !== 1) {
+        $user_stmt->close();
+        return false;
+    }
+    
+    $user = $user_result->fetch_assoc();
+    $user_stmt->close();
+    
+    // Recreate the session
+    $_SESSION['user_id']     = $user['id'];
+    $_SESSION['firstname']   = $user['firstname'];
+    $_SESSION['lastname']    = $user['lastname'];
+    $_SESSION['email']       = $user['email'];
+    $_SESSION['phonenumber'] = $user['phonenumber'];
+    $_SESSION['role']        = $user['role'];
+    $_SESSION['logged_in']   = true;
+    $_SESSION['login_time']  = time();
+    
+    // Rotate token for security (invalidate old, issue new)
+    $conn->query("DELETE FROM remember_me_tokens WHERE id = " . intval($token_row['id']));
+    setRememberMeCookie($user_id);
+    
+    return true;
+}
+
+/**
+ * Clear a specific remember-me token by cookie value.
+ *
+ * @param string $cookie_value The "user_id:token" cookie value
+ */
+function clearRememberMeToken($cookie_value) {
+    global $conn;
+    
+    $parts = explode(':', $cookie_value, 2);
+    if (count($parts) !== 2) return;
+    
+    $user_id    = intval($parts[0]);
+    $token_hash = hash('sha256', $parts[1]);
+    
+    $stmt = $conn->prepare('DELETE FROM remember_me_tokens WHERE user_id = ? AND token_hash = ?');
+    if ($stmt) {
+        $stmt->bind_param('is', $user_id, $token_hash);
+        $stmt->execute();
+        $stmt->close();
+    }
 }
 
 /**
@@ -319,5 +465,11 @@ function jsonResponse($data, $status_code = 200) {
     header('Content-Type: application/json');
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit();
+}
+
+// ─── Auto-login from "Remember Me" cookie on every page load ───────────────────
+// Runs once when this file is included, after all functions are defined.
+if (!isset($_SESSION['user_id']) && !empty($_COOKIE['remember_me'])) {
+    autoLoginFromRememberMe();
 }
 ?>

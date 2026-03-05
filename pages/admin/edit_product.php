@@ -327,6 +327,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if ($stmt->execute()) {
         $stmt->close();
 
+        // If product name changed, rename the image folder and update image_link
+        $old_name_stmt = $conn->prepare('SELECT name_en, image_link FROM products WHERE id = ?');
+        // The name is already updated, get it back to compare with the folder
+        // We need to check if there's an old folder that doesn't match the new name
+        $img_base_dir = __DIR__ . '/../../images/';
+        $new_folder = $img_base_dir . $name_en;
+        // Find the old folder by checking if it doesn't match and still exists
+        if (!is_dir($new_folder)) {
+            // The folder with the new name doesn't exist — look for one with the old name
+            // Get the old image_link to figure out the old folder name
+            $il_stmt = $conn->prepare('SELECT image_link FROM products WHERE id = ?');
+            $il_stmt->bind_param('i', $pid);
+            $il_stmt->execute();
+            $il_row = $il_stmt->get_result()->fetch_assoc();
+            $il_stmt->close();
+            $old_image_link = $il_row['image_link'] ?? '';
+
+            // Try to extract old folder name from image_link (format: images/OldName/1.jpg)
+            $old_folder_name = '';
+            if (!empty($old_image_link) && preg_match('#^images/(.+)/[^/]+$#', $old_image_link, $m)) {
+                $old_folder_name = $m[1];
+            }
+
+            if (!empty($old_folder_name) && is_dir($img_base_dir . $old_folder_name) && $old_folder_name !== $name_en) {
+                // Rename the folder
+                @rename($img_base_dir . $old_folder_name, $new_folder);
+
+                // Update image_link to point to the new folder
+                $old_files = glob($new_folder . '/*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+                sort($old_files);
+                if (!empty($old_files)) {
+                    $new_link = 'images/' . $name_en . '/' . basename($old_files[0]);
+                    $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
+                }
+            }
+        }
+
         // Handle tags — clear old, insert new
         $conn->query("DELETE FROM product_tags WHERE product_id = $pid");
         if (!empty($tags_raw)) {

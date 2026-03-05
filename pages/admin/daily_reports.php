@@ -41,19 +41,24 @@ switch ($period) {
         break;
 }
 
-// Get orders for the selected period
+// Get orders for the selected period — single efficient query with pre-aggregated costs
 $sql = "SELECT o.id as order_id, o.user_id, o.total_amount, o.status, o.order_type,
                o.order_date,
-               u.firstname, u.lastname, u.email, u.phonenumber
+               u.firstname, u.lastname, u.email, u.phonenumber,
+               COALESCE(items.total_cost, 0) AS order_cost,
+               COALESCE(items.items_subtotal, 0) AS items_subtotal
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
+        LEFT JOIN (
+            SELECT oi.order_id,
+                   SUM(COALESCE(oi.cost_per_item, p.cost, p.supplier_cost, 0) * oi.quantity) AS total_cost,
+                   SUM(oi.subtotal) AS items_subtotal
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            GROUP BY oi.order_id
+        ) items ON items.order_id = o.id
         WHERE DATE(o.order_date) BETWEEN ? AND ?
         ORDER BY o.order_date DESC";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param('ss', $start_date, $end_date);
-$stmt->execute();
-$result = $stmt->get_result();
 
 $orders = [];
 $total_revenue = 0;
@@ -61,53 +66,41 @@ $total_cost = 0;
 $customer_revenue = 0;
 $supplier_revenue = 0;
 
-while ($order = $result->fetch_assoc()) {
-    // Get order items with cost information
-    $items_sql = "SELECT oi.quantity, oi.price_per_item, oi.subtotal,
-                         oi.cost_per_item, p.cost, p.supplier_cost
-                  FROM order_items oi
-                  LEFT JOIN products p ON oi.product_id = p.id
-                  WHERE oi.order_id = ?";
-    
-    $items_stmt = $conn->prepare($items_sql);
-    $items_stmt->bind_param('i', $order['order_id']);
-    $items_stmt->execute();
-    $items_result = $items_stmt->get_result();
-    
-    $order_cost = 0;
-    $items_subtotal = 0;
-    
-    while ($item = $items_result->fetch_assoc()) {
-        // Use cost_per_item snapshot if available, otherwise fall back to product cost, then supplier_cost
-        $unit_cost = $item['cost_per_item'] ?? $item['cost'] ?? $item['supplier_cost'] ?? 0;
-        $item_cost = $unit_cost * $item['quantity'];
-        $order_cost += $item_cost;
-        $items_subtotal += $item['subtotal'];
+try {
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception('SQL prepare failed: ' . $conn->error);
     }
-    $items_stmt->close();
-    
-    // Revenue = what was actually paid (total_amount from orders table)
-    // This reflects coupons, delivery fees, wallet usage — the real amount charged
-    $order_revenue = floatval($order['total_amount']);
-    
-    $order['cost'] = $order_cost;
-    $order['revenue'] = $order_revenue;
-    $order['items_subtotal'] = $items_subtotal;
-    $order['profit'] = $order_revenue - $order_cost;
-    $order['profit_margin'] = $order_revenue > 0 ? (($order_revenue - $order_cost) / $order_revenue * 100) : 0;
-    
-    $total_revenue += $order_revenue;
-    $total_cost += $order_cost;
-    
-    if ($order['order_type'] === 'customer') {
-        $customer_revenue += $order_revenue;
-    } else {
-        $supplier_revenue += $order_revenue;
+    $stmt->bind_param('ss', $start_date, $end_date);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($order = $result->fetch_assoc()) {
+        $order_revenue = floatval($order['total_amount']);
+        $order_cost_val = floatval($order['order_cost']);
+
+        $order['cost'] = $order_cost_val;
+        $order['revenue'] = $order_revenue;
+        $order['items_subtotal'] = floatval($order['items_subtotal']);
+        $order['profit'] = $order_revenue - $order_cost_val;
+        $order['profit_margin'] = $order_revenue > 0 ? (($order_revenue - $order_cost_val) / $order_revenue * 100) : 0;
+
+        $total_revenue += $order_revenue;
+        $total_cost += $order_cost_val;
+
+        if (($order['order_type'] ?? 'customer') === 'customer') {
+            $customer_revenue += $order_revenue;
+        } else {
+            $supplier_revenue += $order_revenue;
+        }
+
+        $orders[] = $order;
     }
-    
-    $orders[] = $order;
+    $stmt->close();
+} catch (Exception $e) {
+    error_log('Daily reports error: ' . $e->getMessage());
+    $orders = [];
 }
-$stmt->close();
 
 $total_profit = $total_revenue - $total_cost;
 $profit_margin = $total_revenue > 0 ? (($total_revenue - $total_cost) / $total_revenue * 100) : 0;
@@ -325,7 +318,9 @@ $total_orders = count($orders);
         
         .badge-pending { background: #fef3c7; color: #92400e; }
         .badge-processing { background: #dbeafe; color: #1e40af; }
+        .badge-shipped { background: #dbeafe; color: #1e40af; }
         .badge-completed { background: #d1fae5; color: #065f46; }
+        .badge-delivered { background: #d1fae5; color: #065f46; }
         .badge-cancelled { background: #fee2e2; color: #991b1b; }
         
         .profit-positive {

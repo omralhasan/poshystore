@@ -297,6 +297,7 @@ $translations = [
         // Auth Pages
         'sign_in' => 'تسجيل الدخول',
         'sign_up' => 'إنشاء حساب',
+        'remember_me' => 'تذكرني',
         'first_name' => 'الاسم الأول',
         'last_name' => 'اسم العائلة',
         'phone_number' => 'رقم الهاتف',
@@ -664,6 +665,7 @@ $translations = [
         // Auth Pages
         'sign_in' => 'Sign In',
         'sign_up' => 'Sign Up',
+        'remember_me' => 'Remember me',
         'first_name' => 'First Name',
         'last_name' => 'Last Name',
         'phone_number' => 'Phone Number',
