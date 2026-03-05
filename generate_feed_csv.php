@@ -25,7 +25,7 @@ require_once $root . '/config.php';
 require_once $root . '/includes/db_connect.php';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-$CURRENCY       = 'JOD';        // Change to 'SAR' if needed
+$CURRENCY       = 'SAR';        // Meta Commerce Manager requires SAR
 $SAR_RATE       = 5.15;         // JOD → SAR conversion rate
 $LANG           = 'en';         // 'en' or 'ar'
 $OUTPUT_DIR     = $root . '/feeds';
@@ -128,27 +128,36 @@ while ($p = $result->fetch_assoc()) {
             : $p['description'];
     }
     $desc = strip_tags((string)$desc);
+    // Fallback: use product title if description is empty
+    if (empty(trim($desc))) {
+        $desc = $title;
+    }
     $desc = mb_substr($desc, 0, 5000, 'UTF-8');   // Google max length
 
-    // product URL — use canonical domain
+    // product URL — always absolute with canonical domain
     $link = !empty($p['slug'])
-        ? $feed_domain . '/' . $p['slug']
+        ? $feed_domain . '/' . rawurlencode($p['slug'])
         : $feed_domain . '/product.php?id=' . (int)$p['id'];
 
-    // image URL — always use canonical domain so Google/Meta can verify ownership
+    // image URL — always full absolute URL with canonical domain
     $image_link = '';
     if (!empty($p['image_link'])) {
         $img = trim($p['image_link']);
+        // Strip leading protocol-relative slashes (//storage/...)
+        $img = preg_replace('#^//+#', '', $img);
         if (preg_match('#^https?://#i', $img)) {
             // Replace any IP-based URL with the canonical domain
             $image_link = preg_replace('#^https?://[^/]+#i', $feed_domain, $img);
         } else {
+            // Relative path — prepend full domain
             $image_link = $feed_domain . '/' . ltrim($img, '/');
         }
+        // URL-encode spaces in path for valid URL
+        $image_link = str_replace(' ', '%20', $image_link);
     }
 
-    // availability
-    $availability = ((int)$p['stock_quantity'] > 0) ? 'in_stock' : 'out_of_stock';
+    // availability — Meta requires 'in stock' (with space), not 'in_stock'
+    $availability = ((int)$p['stock_quantity'] > 0) ? 'in stock' : 'out of stock';
 
     // price & sale_price
     $price_jod  = (float)$p['price_jod'];
