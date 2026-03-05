@@ -112,10 +112,13 @@ $count       = 0;
 
 while ($p = $result->fetch_assoc()) {
 
-    // title
+    // title — fix ALL CAPS (Meta flags this as error)
     $title = ($LANG === 'ar' && !empty($p['name_ar']))
         ? $p['name_ar']
         : $p['name_en'];
+    if (mb_strtoupper($title, 'UTF-8') === $title && preg_match('/[A-Za-z]/', $title)) {
+        $title = mb_convert_case($title, MB_CASE_TITLE, 'UTF-8');
+    }
 
     // description (prefer short → full, strip HTML)
     if ($LANG === 'ar') {
@@ -128,6 +131,10 @@ while ($p = $result->fetch_assoc()) {
             : $p['description'];
     }
     $desc = strip_tags((string)$desc);
+    // Fix ALL CAPS descriptions
+    if (mb_strtoupper($desc, 'UTF-8') === $desc && preg_match('/[A-Za-z]/', $desc)) {
+        $desc = mb_convert_case($desc, MB_CASE_TITLE, 'UTF-8');
+    }
     // Fallback: use product title if description is empty
     if (empty(trim($desc))) {
         $desc = $title;
