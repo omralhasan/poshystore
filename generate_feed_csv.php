@@ -116,8 +116,15 @@ while ($p = $result->fetch_assoc()) {
     $title = ($LANG === 'ar' && !empty($p['name_ar']))
         ? $p['name_ar']
         : $p['name_en'];
-    if (mb_strtoupper($title, 'UTF-8') === $title && preg_match('/[A-Za-z]/', $title)) {
-        $title = mb_convert_case($title, MB_CASE_TITLE, 'UTF-8');
+    // Convert to Title Case if more than half of alpha chars are uppercase
+    if (preg_match('/[A-Za-z]/', $title)) {
+        preg_match_all('/[A-Z]/', $title, $up);
+        preg_match_all('/[a-z]/', $title, $lo);
+        $upper_count = count($up[0]);
+        $lower_count = count($lo[0]);
+        if ($upper_count > 0 && $upper_count >= $lower_count) {
+            $title = mb_convert_case(mb_strtolower($title, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+        }
     }
 
     // description (prefer short → full, strip HTML)
@@ -132,8 +139,12 @@ while ($p = $result->fetch_assoc()) {
     }
     $desc = strip_tags((string)$desc);
     // Fix ALL CAPS descriptions
-    if (mb_strtoupper($desc, 'UTF-8') === $desc && preg_match('/[A-Za-z]/', $desc)) {
-        $desc = mb_convert_case($desc, MB_CASE_TITLE, 'UTF-8');
+    if (preg_match('/[A-Za-z]/', $desc)) {
+        preg_match_all('/[A-Z]/', $desc, $up);
+        preg_match_all('/[a-z]/', $desc, $lo);
+        if (count($up[0]) > 0 && count($up[0]) >= count($lo[0])) {
+            $desc = mb_convert_case(mb_strtolower($desc, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+        }
     }
     // Fallback: use product title if description is empty
     if (empty(trim($desc))) {
