@@ -51,7 +51,7 @@ $sql = "SELECT o.id as order_id, o.user_id, o.total_amount, o.status, o.order_ty
         LEFT JOIN users u ON o.user_id = u.id
         LEFT JOIN (
             SELECT oi.order_id,
-                   SUM(COALESCE(oi.cost_per_item, p.cost, p.supplier_cost, 0) * oi.quantity) AS total_cost,
+                   SUM(COALESCE(p.supplier_cost, 0) * oi.quantity) AS total_cost,
                    SUM(oi.subtotal) AS items_subtotal
             FROM order_items oi
             LEFT JOIN products p ON oi.product_id = p.id
