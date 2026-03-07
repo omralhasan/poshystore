@@ -212,7 +212,7 @@ while ($p = $result->fetch_assoc()) {
     }
 
     fputcsv($fh, [
-        $count + 1,  // Sequential ID: product 85→1, 86→2, etc.
+        (int)$p['id'],  // Raw database ID for Meta Pixel content_ids matching
         $title,
         $desc,
         $link,
