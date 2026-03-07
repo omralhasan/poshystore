@@ -192,8 +192,10 @@ while ($p = $result->fetch_assoc()) {
         $sale_str  = $has_disc ? number_format($price_jod, 2, '.', '') . ' JOD' : '';
     }
 
-    // brand — Meta requires consistent brand; always 'Poshy Store'
-    $brand = 'Poshy Store';
+    // brand — use actual brand from DB, fallback to 'Poshy Store'
+    $brand = ($LANG === 'ar' && !empty($p['brand_ar']))
+        ? $p['brand_ar']
+        : (!empty($p['brand_en']) ? $p['brand_en'] : 'Poshy Store');
 
     // google_product_category (best-effort)
     $cat_lower = strtolower($p['category_en']);
@@ -210,7 +212,7 @@ while ($p = $result->fetch_assoc()) {
     }
 
     fputcsv($fh, [
-        (int)$p['id'],
+        $count + 1,  // Sequential ID: product 85→1, 86→2, etc.
         $title,
         $desc,
         $link,
