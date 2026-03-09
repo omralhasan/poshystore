@@ -97,8 +97,8 @@ while ($p = $result->fetch_assoc()):
     // ── Title & Description ────────────────────────────────────────────
     $title = ($lang === 'ar' && !empty($p['name_ar']))
         ? $p['name_ar']
-        : $p['name_en'];
-
+        : $p['name_en'];    // Fix ALL CAPS titles (Meta flags as spammy, lowers quality score)
+    $title = feed_fix_caps($title);
     $description = '';
     if ($lang === 'ar') {
         $description = !empty($p['short_description_ar'])
@@ -111,6 +111,8 @@ while ($p = $result->fetch_assoc()):
     }
     // Strip HTML tags for clean feed content
     $description = strip_tags($description);
+    // Fix ALL CAPS descriptions
+    $description = feed_fix_caps($description);
     // Limit to 5000 chars (Google max)
     $description = mb_substr($description, 0, 5000, 'UTF-8');
 
@@ -225,3 +227,16 @@ while ($p = $result->fetch_assoc()):
 <?php endwhile; ?>
   </channel>
 </rss>
+<?php
+/**
+ * Convert ALL-CAPS or mostly-uppercase text to Title Case.
+ */
+function feed_fix_caps(string $text): string {
+    if (!preg_match('/[A-Za-z]/', $text)) return $text;
+    preg_match_all('/[A-Z]/', $text, $up);
+    preg_match_all('/[a-z]/', $text, $lo);
+    if (count($up[0]) >= 3 && count($up[0]) > count($lo[0])) {
+        $text = mb_convert_case(mb_strtolower($text, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+    }
+    return $text;
+}

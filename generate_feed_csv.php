@@ -112,20 +112,11 @@ $count       = 0;
 
 while ($p = $result->fetch_assoc()) {
 
-    // title — fix ALL CAPS (Meta flags this as error)
+    // title — fix ALL CAPS (Meta flags this as error / lowers quality score)
     $title = ($LANG === 'ar' && !empty($p['name_ar']))
         ? $p['name_ar']
         : $p['name_en'];
-    // Convert to Title Case if more than half of alpha chars are uppercase
-    if (preg_match('/[A-Za-z]/', $title)) {
-        preg_match_all('/[A-Z]/', $title, $up);
-        preg_match_all('/[a-z]/', $title, $lo);
-        $upper_count = count($up[0]);
-        $lower_count = count($lo[0]);
-        if ($upper_count > 0 && $upper_count >= $lower_count) {
-            $title = mb_convert_case(mb_strtolower($title, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
-        }
-    }
+    $title = fix_capitalization($title);
 
     // description (prefer short → full, strip HTML)
     if ($LANG === 'ar') {
@@ -139,13 +130,7 @@ while ($p = $result->fetch_assoc()) {
     }
     $desc = strip_tags((string)$desc);
     // Fix ALL CAPS descriptions
-    if (preg_match('/[A-Za-z]/', $desc)) {
-        preg_match_all('/[A-Z]/', $desc, $up);
-        preg_match_all('/[a-z]/', $desc, $lo);
-        if (count($up[0]) > 0 && count($up[0]) >= count($lo[0])) {
-            $desc = mb_convert_case(mb_strtolower($desc, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
-        }
-    }
+    $desc = fix_capitalization($desc);
     // Fallback: use product title if description is empty
     if (empty(trim($desc))) {
         $desc = $title;
@@ -212,7 +197,7 @@ while ($p = $result->fetch_assoc()) {
     }
 
     fputcsv($fh, [
-        $count + 1,  // Sequential ID: 1, 2, 3...
+        (int)$p['id'],  // Real DB product ID (must match Meta Pixel content_ids)
         $title,
         $desc,
         $link,
@@ -240,7 +225,29 @@ $size = round(filesize($OUTPUT_FILE) / 1024, 1);
 log_msg('Success: ' . $count . ' products written to products.csv (' . $size . ' KB)');
 log_msg('Info: URL → ' . $feed_domain . '/feeds/products.csv');
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Convert ALL-CAPS or mostly-uppercase text to Title Case.
+ * Handles brand names like "SEOUL 1988", "THE ORDINARY", etc.
+ * Words of 3 chars or fewer (of, the, for, etc.) are lowercased unless first word.
+ */
+function fix_capitalization(string $text): string {
+    if (!preg_match('/[A-Za-z]/', $text)) {
+        return $text; // No Latin characters (Arabic-only), skip
+    }
+    // Count uppercase vs lowercase
+    preg_match_all('/[A-Z]/', $text, $up);
+    preg_match_all('/[a-z]/', $text, $lo);
+    $upper_count = count($up[0]);
+    $lower_count = count($lo[0]);
+    // If 3+ consecutive uppercase letters exist, or more uppercase than lowercase → fix
+    if ($upper_count >= 3 && $upper_count > $lower_count) {
+        $text = mb_convert_case(mb_strtolower($text, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+    }
+    return $text;
+}
+
 function log_msg(string $msg): void {
     global $LOG_FILE;
     $line = '[' . date('Y-m-d H:i:s') . '] Feed CSV: ' . $msg . PHP_EOL;
