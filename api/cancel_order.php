@@ -69,6 +69,13 @@ if ($order['status'] !== 'pending') {
 }
 
 // Update order status to cancelled
-$cancel_result = updateOrderStatus($order_id, 'cancelled');
-
-echo json_encode($cancel_result);
+try {
+    $cancel_result = updateOrderStatus($order_id, 'cancelled');
+    echo json_encode($cancel_result);
+} catch (Exception $e) {
+    error_log("Cancel order error: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error' => 'Failed to cancel order. Please try again.'
+    ]);
+}

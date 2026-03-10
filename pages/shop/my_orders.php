@@ -848,9 +848,9 @@ unset($order); // Break reference
                                                          alt="<?= htmlspecialchars($item['product_name_en']) ?>"
                                                          style="width: 100%; height: 100%; object-fit: cover;"
                                                          loading="lazy"
-                                                         onerror="this.onerror=null; this.src='<?= $base_url ?>/images/placeholder-cosmetics.svg';">
+                                                         onerror="this.onerror=null; this.src='/images/placeholder-cosmetics.svg';">
                                                 <?php else: ?>
-                                                    <img src="<?= $base_url ?>/images/placeholder-cosmetics.svg" 
+                                                    <img src="/images/placeholder-cosmetics.svg" 
                                                          alt="Placeholder"
                                                          style="width: 100%; height: 100%; object-fit: cover;">
                                                 <?php endif; ?>
