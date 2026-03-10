@@ -6,7 +6,7 @@
 
 set -e
 
-WEBHOOK_URL="http://159.223.180.154/deploy_webhook.php?token=poshy_deploy_2026_secure"
+WEBHOOK_URL="https://poshystore.com/deploy_webhook.php?token=poshy_deploy_2026_secure"
 REPO_DIR="/home/omar/poshystore"
 REMOTE_NAME="origin"
 BRANCH="main"
@@ -72,7 +72,7 @@ fi
 
 # ─── Step 5: Trigger production deploy ──────────────────────
 echo -e "\n${BOLD}🌐 Deploying to production (159.223.180.154)...${NC}"
-RESPONSE=$(curl -s --max-time 30 "$WEBHOOK_URL" 2>&1)
+RESPONSE=$(curl -skL --max-time 30 "$WEBHOOK_URL" 2>&1)
 
 if echo "$RESPONSE" | grep -q '"success": true'; then
     DEPLOYED=$(echo "$RESPONSE" | grep '"deployed"' | cut -d'"' -f4)

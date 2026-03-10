@@ -94,6 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                 setRememberMeCookie($user['id'], 30);
             }
             
+            // Merge guest cart into user cart on login
+            require_once __DIR__ . '/../../includes/guest_cart_handler.php';
+            mergeGuestCartToUser($user['id']);
+            
             $stmt->close();
             $conn->close();
             

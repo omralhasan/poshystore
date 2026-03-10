@@ -11,6 +11,7 @@ if (!defined('SITE_URL')) {
     require_once __DIR__ . '/config.php';
 }
 require_once __DIR__ . '/includes/db_connect.php';
+require_once __DIR__ . '/includes/text_formatter.php';
 
 $slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
 
@@ -95,8 +96,16 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
             line-height: 1.8;
             color: #374151;
             margin-bottom: 3rem;
-            white-space: pre-line;
         }
+        .podcast-description h1 { font-size: 1.8rem; font-weight: 700; color: var(--purple-color, #483670); margin: 1.5rem 0 1rem; }
+        .podcast-description h2 { font-size: 1.5rem; font-weight: 700; color: var(--purple-color, #483670); margin: 1.3rem 0 0.8rem; }
+        .podcast-description h3 { font-size: 1.3rem; font-weight: 600; color: var(--purple-color, #483670); margin: 1.2rem 0 0.7rem; }
+        .podcast-description h4 { font-size: 1.2rem; font-weight: 600; color: var(--purple-color, #483670); margin: 1rem 0 0.6rem; }
+        .podcast-description h5 { font-size: 1.1rem; font-weight: 600; color: var(--purple-color, #483670); margin: 1rem 0 0.5rem; }
+        .podcast-description p { margin-bottom: 1rem; }
+        .podcast-description ul, .podcast-description ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+        .podcast-description li { margin-bottom: 0.5rem; }
+        .podcast-description hr { border: none; border-top: 2px solid rgba(201,168,106,0.4); margin: 1.5rem 0; }
         .podcast-gallery {
             margin-bottom: 3rem;
         }
@@ -219,8 +228,8 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
         <?php endif; ?>
 
         <?php if (!empty($podcast['description'])): ?>
-            <div class="podcast-description">
-                <?php echo nl2br(htmlspecialchars($podcast['description'])); ?>
+            <div class="podcast-description rich-content">
+                <?php echo formatRichContent($podcast['description']); ?>
             </div>
         <?php endif; ?>
 

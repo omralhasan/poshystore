@@ -1386,7 +1386,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                                 __DIR__
                             );
                         ?>
-                        <a href="<?= htmlspecialchars($product['slug'] ?? '#') ?>">
+                        <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>">
                             <img 
                                 src="<?= htmlspecialchars($image_src) ?>" 
                                 alt="<?= htmlspecialchars($product['name_en']) ?>"
@@ -1397,7 +1397,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     </div>
 
                     <div class="p-card-body">
-                        <a href="<?= htmlspecialchars($product['slug'] ?? '#') ?>" style="text-decoration:none; color:inherit;">
+                        <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>" style="text-decoration:none; color:inherit;">
                             <div class="p-card-name"><?= htmlspecialchars($lang === 'ar' ? ($product['name_ar'] ?: $product['name_en']) : $product['name_en']) ?></div>
                             <div class="p-card-name-ar"><?= htmlspecialchars($lang === 'ar' ? $product['name_en'] : ($product['name_ar'] ?? '')) ?></div>
                         </a>
@@ -1444,7 +1444,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                                     <span><?= t('login') ?></span>
                                 </a>
                             <?php endif; ?>
-                            <a href="<?= htmlspecialchars($product['slug'] ?? '#') ?>" class="btn-view" title="<?= t('details') ?>">
+                            <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>" class="btn-view" title="<?= t('details') ?>">
                                 <i class="fas fa-eye"></i>
                             </a>
                         </div>

@@ -5,6 +5,8 @@ require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/../../includes/auto_translate.php';
+require_once __DIR__ . '/../../includes/product_options_display.php';
+require_once __DIR__ . '/../../includes/text_formatter.php';
 
 // Base URL for absolute paths – uses central config constant
 $base_url = BASE_PATH;
@@ -523,6 +525,59 @@ if ($is_logged_in) {
         .tab-pane ul li {
             margin-bottom: 0.75rem;
         }
+
+        /* Rich Content Typography */
+        .tab-pane h1 {
+            color: var(--purple-color);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 1.5rem 0 1rem;
+            line-height: 1.3;
+        }
+        .tab-pane h2 {
+            color: var(--purple-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 1.3rem 0 0.8rem;
+            line-height: 1.35;
+        }
+        .tab-pane h3 {
+            color: var(--purple-color);
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 1.2rem 0 0.7rem;
+            line-height: 1.4;
+        }
+        .tab-pane h5 {
+            color: var(--purple-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1rem 0 0.5rem;
+        }
+        .tab-pane h1:first-child,
+        .tab-pane h2:first-child,
+        .tab-pane h3:first-child,
+        .tab-pane h4:first-child,
+        .tab-pane h5:first-child {
+            margin-top: 0;
+        }
+        .tab-pane ol {
+            color: #555;
+            line-height: 1.8;
+            font-size: 1.05rem;
+            padding-left: 1.5rem;
+        }
+        .tab-pane ol li {
+            margin-bottom: 0.75rem;
+        }
+        .tab-pane hr {
+            border: none;
+            border-top: 2px solid var(--gold-color);
+            opacity: 0.4;
+            margin: 1.5rem 0;
+        }
+        .tab-pane strong { font-weight: 700; }
+        .tab-pane em { font-style: italic; }
         
         .product-description {
             font-size: 1.1rem;
@@ -1523,6 +1578,14 @@ if ($is_logged_in) {
                     </div>
                     <?php endif; ?>
                     
+                    <?php
+                    // Load and render product options (size, color, etc.) if available
+                    $product_options = getProductOptionsForDisplay($product_id, $conn);
+                    if (!empty($product_options)) {
+                        renderProductOptions($product_options, $current_lang, $product['price_jod']);
+                    }
+                    ?>
+                    
                     <div class="d-flex gap-2">
                         <?php if ($is_logged_in): ?>
                             <?php if ($product_in_cart_quantity > 0): ?>
@@ -1553,9 +1616,17 @@ if ($is_logged_in) {
                                 </button>
                             <?php endif; ?>
                         <?php else: ?>
-                            <a href="<?= $base_url ?>/pages/auth/signin.php" class="btn-ramadan flex-grow-1" style="text-decoration: none; display: block; text-align: center;">
-                                <i class="fas fa-sign-in-alt me-2"></i><?= t('sign_in_purchase') ?>
-                            </a>
+                            <!-- Guest: show Add to Cart + sign in link -->
+                            <button 
+                                id="addToCartBtn"
+                                class="btn-ramadan flex-grow-1" 
+                                onclick="guestAddToCart(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name_en']) ?>')"
+                                <?= !$product['in_stock'] ? 'disabled' : '' ?>
+                                style="<?= !$product['in_stock'] ? 'opacity: 0.5; cursor: not-allowed;' : '' ?>"
+                            >
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                <?= $product['in_stock'] ? t('add_to_cart') : t('out_of_stock') ?>
+                            </button>
                         <?php endif; ?>
                         <a href="<?= $base_url ?>/" class="btn-ramadan-secondary" style="text-decoration: none; padding: 0.75rem 1.5rem;">
                             <i class="fas fa-shopping-bag me-2"></i><?= t('shop_button') ?>
@@ -1644,8 +1715,8 @@ if ($is_logged_in) {
                         }
                     ?>
                     <?php if (!empty($details_content)): ?>
-                        <div style="line-height: 1.8;">
-                            <?= nl2br(htmlspecialchars($details_content)) ?>
+                        <div class="rich-content" style="line-height: 1.8;">
+                            <?= formatRichContent($details_content) ?>
                         </div>
                     <?php else: ?>
                         <div style="line-height: 1.8;">
@@ -1677,8 +1748,8 @@ if ($is_logged_in) {
                         }
                     ?>
                     <?php if (!empty($desc_content)): ?>
-                        <div style="line-height: 1.8;">
-                            <?= nl2br(htmlspecialchars($desc_content)) ?>
+                        <div class="rich-content" style="line-height: 1.8;">
+                            <?= formatRichContent($desc_content) ?>
                         </div>
                     <?php else: ?>
                         <p><?= t('default_description') ?></p>
@@ -1701,8 +1772,8 @@ if ($is_logged_in) {
                         }
                     ?>
                     <?php if (!empty($how_to_use_content)): ?>
-                        <div style="line-height: 1.8;">
-                            <?= nl2br(htmlspecialchars($how_to_use_content)) ?>
+                        <div class="rich-content" style="line-height: 1.8;">
+                            <?= formatRichContent($how_to_use_content) ?>
                         </div>
                     <?php else: ?>
                         <div style="line-height: 1.8;">
@@ -1929,7 +2000,48 @@ if ($is_logged_in) {
         // Base URL for API calls (works from both direct and clean URL access)
         const BASE_URL = '<?= $base_url ?>';
         
-        // Add to Cart
+        // Guest Add to Cart
+        function guestAddToCart(productId, productName) {
+            const btn = document.getElementById('addToCartBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i><?= $current_lang === "ar" ? "جاري الإضافة..." : "Adding..." ?>';
+            }
+            
+            fetch(BASE_URL + '/api/guest_cart_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=add&product_id=' + productId + '&quantity=1'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '<?= $current_lang === "ar" ? "تمت الإضافة! يمكنك إتمام الطلب كزائر" : "Added! You can checkout as guest" ?>');
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-check me-2"></i><?= $current_lang === "ar" ? "تمت الإضافة ✓" : "Added ✓" ?>';
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i><?= t("add_to_cart") ?>';
+                        }, 2000);
+                    }
+                } else {
+                    showAlert('error', data.error || 'Failed to add to cart');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i><?= t("add_to_cart") ?>';
+                    }
+                }
+            })
+            .catch(error => {
+                showAlert('error', error.message || 'Network error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i><?= t("add_to_cart") ?>';
+                }
+            });
+        }
+        
+        // Add to Cart (logged in)
         function addToCart(productId, productName) {
             const btn = document.getElementById('addToCartBtn');
             

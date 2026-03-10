@@ -410,6 +410,14 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
         <!-- Section 3: Description & Details -->
         <div class="form-card">
             <h2><i class="fas fa-align-left"></i> Description & Details <span style="color:var(--accent-teal);font-size:.8rem;font-weight:400;margin-left:8px;"><i class="fas fa-language"></i> Arabic fields auto-filled</span></h2>
+            <p style="color:var(--text-gray);margin-bottom:1rem;font-size:.85rem;">
+                <i class="fas fa-info-circle"></i>
+                <strong>Formatting tips:</strong>
+                Use <code># Heading</code> for H1, <code>## Heading</code> for H2, up to <code>##### H5</code>.
+                Use <code>**bold**</code> for <strong>bold</strong>, <code>*italic*</code> for <em>italic</em>.
+                Use <code>- item</code> for bullet lists, <code>1. item</code> for numbered lists.
+                Empty lines create paragraphs.
+            </p>
             <div class="form-grid">
                 <div class="form-group full-width">
                     <label>Full Description (English)</label>

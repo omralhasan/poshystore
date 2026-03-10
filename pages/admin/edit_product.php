@@ -279,6 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $brand_id   = intval($_POST['brand_id'] ?? 0) ?: null;
     $tags_raw   = trim($_POST['tags'] ?? '');
     $sup_cost   = ($_POST['supplier_price'] ?? '') !== '' ? floatval($_POST['supplier_price']) : null;
+    $product_cost = ($_POST['cost'] ?? '') !== '' ? floatval($_POST['cost']) : null;
     $orig_price = ($_POST['original_price'] ?? '') !== '' ? floatval($_POST['original_price']) : $price;
     $discount   = floatval($_POST['discount_percentage'] ?? 0);
     $has_disc   = ($discount > 0) ? 1 : 0;
@@ -307,16 +308,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 description=?, description_ar=?, product_details=?, product_details_ar=?,
                 how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
                 price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
-                supplier_cost=?,
+                supplier_cost=?, cost=?,
                 original_price=?, discount_percentage=?, has_discount=?
             WHERE id=?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('sssssssssssdiiidddii',
+    $stmt->bind_param('sssssssssssdiiiddddii',
         $name_en, $name_ar, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar,
         $how_en, $how_ar, $video_url,
         $price, $stock, $subcat_id, $brand_id,
-        $sup_cost,
+        $sup_cost, $product_cost,
         $orig_price, $discount, $has_disc,
         $pid
     );
@@ -630,6 +631,11 @@ if (is_dir($img_folder)) {
                     <div class="help-text">Price shown to regular customers.</div>
                 </div>
                 <div class="form-group">
+                    <label>Product Cost (JOD)</label>
+                    <input type="number" name="cost" step="0.001" min="0" value="<?= $product['cost'] ?? '' ?>">
+                    <div class="help-text">Actual cost of goods for profit calculation.</div>
+                </div>
+                <div class="form-group">
                     <label>Supplier Price (JOD)</label>
                     <input type="number" name="supplier_price" step="0.001" min="0" value="<?= $product['supplier_cost'] ?? '' ?>">
                     <div class="help-text">Price shown to supplier accounts.</div>
@@ -650,6 +656,14 @@ if (is_dir($img_folder)) {
         <!-- Descriptions -->
         <div class="form-card">
             <h2><i class="fas fa-align-left"></i> Description & Details</h2>
+            <p style="color:var(--text-gray);margin-bottom:1rem;font-size:.85rem;">
+                <i class="fas fa-info-circle"></i>
+                <strong>Formatting tips:</strong>
+                Use <code># Heading</code> for H1, <code>## Heading</code> for H2, up to <code>##### H5</code>.
+                Use <code>**bold**</code> for <strong>bold</strong>, <code>*italic*</code> for <em>italic</em>.
+                Use <code>- item</code> for bullet lists, <code>1. item</code> for numbered lists.
+                Empty lines create paragraphs.
+            </p>
             <div class="form-grid">
                 <div class="form-group full-width">
                     <label>Full Description (English)</label>
@@ -725,6 +739,46 @@ if (is_dir($img_folder)) {
                 <p style="color:var(--text-gray);font-size:.9rem;"><strong>Add more images</strong> — click or drag to append new photos</p>
             </div>
             <div class="image-preview" id="imagePreview"></div>
+        </div>
+
+        <!-- Product Options / Variants (Size, Color, etc.) -->
+        <div class="form-card">
+            <h2><i class="fas fa-sliders-h"></i> Product Options (Size, Color, etc.) <span style="font-size:.75rem;color:var(--text-gray);font-weight:400;">— Optional</span></h2>
+            <p style="color:var(--text-gray);margin-bottom:1rem;font-size:.85rem;">
+                <i class="fas fa-info-circle"></i>
+                Add variant options like Size (30ml, 60ml) or Color. Each value can have its own price. These are <strong>optional</strong> — only products with options will show them.
+            </p>
+            
+            <div id="optionsContainer">
+                <!-- Options loaded via JS -->
+                <div style="text-align:center;color:var(--text-gray);padding:1rem;" id="optionsLoading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading options...
+                </div>
+            </div>
+            
+            <div style="margin-top:1rem;border-top:1px solid var(--border-color);padding-top:1rem;">
+                <h3 style="font-size:.95rem;margin-bottom:.75rem;"><i class="fas fa-plus-circle" style="color:var(--accent-teal);"></i> Add New Option</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:.75rem;align-items:end;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:.8rem;">Option Name (EN)</label>
+                        <input type="text" id="newOptNameEn" placeholder="e.g. Size, Color">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:.8rem;">Option Name (AR)</label>
+                        <input type="text" id="newOptNameAr" dir="rtl" placeholder="مثل: الحجم، اللون">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:.8rem;">Type</label>
+                        <select id="newOptType" style="padding:.5rem;">
+                            <option value="select">Dropdown</option>
+                            <option value="color">Color Swatch</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addNewOption()" style="height:38px;">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Submit -->
@@ -969,6 +1023,178 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
         arEl.addEventListener('focus', function(){ arEl._userEdited = true; });
     });
 })();
+
+// ====== Product Options Management ======
+const OPTIONS_API = '/api/product_options_api.php';
+const PRODUCT_ID = <?= $product_id ?>;
+
+async function loadOptions() {
+    try {
+        const r = await fetch(`${OPTIONS_API}?action=get_options&product_id=${PRODUCT_ID}`);
+        const d = await r.json();
+        if (d.success) {
+            renderOptions(d.options);
+        } else {
+            document.getElementById('optionsLoading').innerHTML = '<p style="color:var(--danger);">Failed to load options</p>';
+        }
+    } catch(e) {
+        document.getElementById('optionsLoading').innerHTML = '<p style="color:var(--text-gray);"><i class="fas fa-info-circle"></i> No options yet. Add one below.</p>';
+    }
+}
+
+function renderOptions(options) {
+    const container = document.getElementById('optionsContainer');
+    if (!options.length) {
+        container.innerHTML = '<p style="color:var(--text-gray);font-size:.9rem;"><i class="fas fa-info-circle"></i> No options yet. Add one below to enable variants.</p>';
+        return;
+    }
+    
+    let html = '';
+    options.forEach(opt => {
+        html += `<div class="form-card" style="background:#f8fafc;border:1px solid var(--border-color);padding:1rem;margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+                <h3 style="font-size:1rem;margin:0;"><i class="fas fa-${opt.option_type === 'color' ? 'palette' : 'list'}" style="color:var(--accent-purple);"></i> ${escHtml(opt.option_name_en)} ${opt.option_name_ar ? '<small style="color:var(--text-gray);">(' + escHtml(opt.option_name_ar) + ')</small>' : ''}</h3>
+                <div style="display:flex;gap:.5rem;">
+                    <span class="badge" style="background:${opt.option_type === 'color' ? 'var(--accent-purple)' : 'var(--accent-blue)'};color:#fff;padding:.25rem .5rem;border-radius:4px;font-size:.7rem;">${opt.option_type}</span>
+                    <button type="button" class="img-action-btn delete" title="Delete option" onclick="deleteOption(${opt.id})" style="width:24px;height:24px;font-size:.65rem;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <table style="width:100%;font-size:.85rem;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:var(--primary-dark);color:#fff;">
+                        <th style="padding:.4rem .6rem;text-align:left;">Value (EN)</th>
+                        <th style="padding:.4rem .6rem;text-align:left;">Value (AR)</th>
+                        ${opt.option_type === 'color' ? '<th style="padding:.4rem .6rem;">Color</th>' : ''}
+                        <th style="padding:.4rem .6rem;">Price (JOD)</th>
+                        <th style="padding:.4rem .6rem;">Stock</th>
+                        <th style="padding:.4rem .6rem;width:60px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        
+        if (opt.values.length) {
+            opt.values.forEach(val => {
+                html += `<tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:.4rem .6rem;">${escHtml(val.value_en)} ${val.is_default == 1 ? '<span style="color:var(--accent-teal);font-size:.7rem;">★ default</span>' : ''}</td>
+                    <td style="padding:.4rem .6rem;" dir="rtl">${escHtml(val.value_ar || '')}</td>
+                    ${opt.option_type === 'color' ? `<td style="padding:.4rem .6rem;text-align:center;"><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${val.color_hex || '#ccc'};border:1px solid #999;"></span></td>` : ''}
+                    <td style="padding:.4rem .6rem;text-align:center;">${val.price_jod !== null ? parseFloat(val.price_jod).toFixed(3) : '<span style="color:var(--text-gray);">base</span>'}</td>
+                    <td style="padding:.4rem .6rem;text-align:center;">${val.stock_quantity !== null ? val.stock_quantity : '<span style="color:var(--text-gray);">—</span>'}</td>
+                    <td style="padding:.4rem .6rem;text-align:center;">
+                        <button type="button" class="img-action-btn delete" onclick="deleteOptionValue(${val.id}, ${opt.id})" style="width:22px;height:22px;font-size:.6rem;" title="Delete"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+        } else {
+            html += `<tr><td colspan="6" style="padding:.6rem;text-align:center;color:var(--text-gray);">No values yet</td></tr>`;
+        }
+        
+        html += `</tbody></table>
+            <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px dashed var(--border-color);">
+                <div style="display:grid;grid-template-columns:${opt.option_type === 'color' ? '1fr 1fr 80px 100px auto' : '1fr 1fr 100px auto'};gap:.5rem;align-items:end;">
+                    <div><label style="font-size:.75rem;">Value (EN)</label><input type="text" id="valEn_${opt.id}" placeholder="e.g. 30ml" style="font-size:.85rem;padding:.4rem;"></div>
+                    <div><label style="font-size:.75rem;">Value (AR)</label><input type="text" id="valAr_${opt.id}" dir="rtl" placeholder="مثل: 30 مل" style="font-size:.85rem;padding:.4rem;"></div>
+                    ${opt.option_type === 'color' ? `<div><label style="font-size:.75rem;">Color</label><input type="color" id="valColor_${opt.id}" style="height:35px;padding:2px;"></div>` : ''}
+                    <div><label style="font-size:.75rem;">Price (JOD)</label><input type="number" id="valPrice_${opt.id}" step="0.001" min="0" placeholder="Optional" style="font-size:.85rem;padding:.4rem;"></div>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addOptionValue(${opt.id})" style="height:35px;font-size:.8rem;"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
+}
+
+function escHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+async function addNewOption() {
+    const nameEn = document.getElementById('newOptNameEn').value.trim();
+    const nameAr = document.getElementById('newOptNameAr').value.trim();
+    const type = document.getElementById('newOptType').value;
+    
+    if (!nameEn) { showToast('Option name (English) is required', 'error'); return; }
+    
+    const fd = new FormData();
+    fd.append('action', 'add_option');
+    fd.append('product_id', PRODUCT_ID);
+    fd.append('option_name_en', nameEn);
+    fd.append('option_name_ar', nameAr);
+    fd.append('option_type', type);
+    
+    try {
+        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) {
+            showToast('Option added!');
+            document.getElementById('newOptNameEn').value = '';
+            document.getElementById('newOptNameAr').value = '';
+            loadOptions();
+        } else {
+            showToast(d.error || 'Failed', 'error');
+        }
+    } catch(e) { showToast('Network error', 'error'); }
+}
+
+async function deleteOption(optionId) {
+    if (!confirm('Delete this option and all its values?')) return;
+    const fd = new FormData();
+    fd.append('action', 'delete_option');
+    fd.append('option_id', optionId);
+    
+    try {
+        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) { showToast('Option deleted'); loadOptions(); }
+        else showToast(d.error || 'Failed', 'error');
+    } catch(e) { showToast('Network error', 'error'); }
+}
+
+async function addOptionValue(optionId) {
+    const valueEn = document.getElementById(`valEn_${optionId}`).value.trim();
+    const valueAr = document.getElementById(`valAr_${optionId}`).value.trim();
+    const colorEl = document.getElementById(`valColor_${optionId}`);
+    const priceEl = document.getElementById(`valPrice_${optionId}`);
+    
+    if (!valueEn) { showToast('Value (English) is required', 'error'); return; }
+    
+    const fd = new FormData();
+    fd.append('action', 'add_value');
+    fd.append('option_id', optionId);
+    fd.append('value_en', valueEn);
+    fd.append('value_ar', valueAr);
+    if (colorEl) fd.append('color_hex', colorEl.value);
+    if (priceEl && priceEl.value) fd.append('price_jod', priceEl.value);
+    
+    try {
+        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) { showToast('Value added!'); loadOptions(); }
+        else showToast(d.error || 'Failed', 'error');
+    } catch(e) { showToast('Network error', 'error'); }
+}
+
+async function deleteOptionValue(valueId, optionId) {
+    if (!confirm('Delete this value?')) return;
+    const fd = new FormData();
+    fd.append('action', 'delete_value');
+    fd.append('value_id', valueId);
+    
+    try {
+        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) { showToast('Value deleted'); loadOptions(); }
+        else showToast(d.error || 'Failed', 'error');
+    } catch(e) { showToast('Network error', 'error'); }
+}
+
+// Load options on page load
+loadOptions();
 </script>
 </body>
 </html>

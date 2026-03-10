@@ -51,6 +51,26 @@ RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
+# ─── Arabic URL Routes ───────────────────────────────────────────────
+# Arabic product URLs: /منتج/product-slug → product.php?slug=product-slug&lang=ar
+RewriteRule ^%D9%85%D9%86%D8%AA%D8%AC/(.+?)/?$ product.php?slug=$1&lang=ar [L,QSA]
+# Alternative: direct UTF-8 match
+RewriteRule ^منتج/(.+?)/?$ product.php?slug=$1&lang=ar [L,QSA]
+
+# Arabic podcast URLs: /بودكاست → podcast.php?lang=ar
+RewriteRule ^%D8%A8%D9%88%D8%AF%D9%83%D8%A7%D8%B3%D8%AA/?$ podcast.php?lang=ar [L,QSA]
+RewriteRule ^بودكاست/?$ podcast.php?lang=ar [L,QSA]
+RewriteRule ^%D8%A8%D9%88%D8%AF%D9%83%D8%A7%D8%B3%D8%AA/(.+?)/?$ podcast.php?slug=$1&lang=ar [L,QSA]
+RewriteRule ^بودكاست/(.+?)/?$ podcast.php?slug=$1&lang=ar [L,QSA]
+
+# Arabic category browsing: /متجر → index.php?lang=ar
+RewriteRule ^%D9%85%D8%AA%D8%AC%D8%B1/?$ index.php?lang=ar [L,QSA]
+RewriteRule ^متجر/?$ index.php?lang=ar [L,QSA]
+
+# Arabic cart: /سلة → pages/shop/guest_checkout.php?lang=ar
+RewriteRule ^%D8%B3%D9%84%D8%A9/?$ pages/shop/guest_checkout.php?lang=ar [L,QSA]
+RewriteRule ^سلة/?$ pages/shop/guest_checkout.php?lang=ar [L,QSA]
+
 # ─── Podcast URLs ────────────────────────────────────────────────────
 # /podcast → podcast.php (listing)
 # /podcast/my-episode-slug → podcast.php?slug=my-episode-slug

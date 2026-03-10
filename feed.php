@@ -125,6 +125,7 @@ while ($p = $result->fetch_assoc()):
     } else {
         $price_str = number_format($price_jod, 3, '.', '') . ' JOD';
     }
+https://poshystore.com/feeds/products.csv
 
     // Sale price (if product has a discount)
     $sale_price_str = '';

@@ -22,6 +22,15 @@ if ($is_logged_in) {
             $cart_count = $cart_info['count'] ?? 0;
         }
     }
+} else {
+    // Guest cart count
+    if (file_exists(__DIR__ . '/guest_cart_handler.php')) {
+        require_once __DIR__ . '/guest_cart_handler.php';
+        if (function_exists('guestGetCartCount')) {
+            $guest_cart_info = guestGetCartCount();
+            $cart_count = $guest_cart_info['count'] ?? 0;
+        }
+    }
 }
 
 // Calculate proper base path
@@ -95,6 +104,12 @@ if (strpos($current_path, '/pages/') !== false) {
                         <i class="fas fa-sign-out-alt"></i>
                     </a>
                 <?php else: ?>
+                    <a href="<?= $base_path ?>pages/shop/guest_checkout.php" class="nav-icon-ramadan position-relative">
+                        <i class="fas fa-shopping-cart"></i>
+                        <?php if ($cart_count > 0): ?>
+                            <span class="cart-badge"><?= $cart_count ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a href="<?= $base_path ?>pages/auth/signin.php" class="nav-icon-ramadan">
                         <i class="fas fa-user"></i>
                     </a>

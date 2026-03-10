@@ -38,6 +38,50 @@ if (isset($_GET['lang'])) {
 $current_lang = $_SESSION['language'];
 
 /**
+ * Generate Arabic-aware product URL
+ * In Arabic mode: /منتج/product-slug
+ * In English mode: /product-slug
+ */
+function getProductUrl($slug, $lang = null) {
+    global $current_lang;
+    $lang = $lang ?? $current_lang;
+    $base = defined('BASE_PATH') ? BASE_PATH : '';
+    
+    if ($lang === 'ar') {
+        return $base . '/منتج/' . $slug;
+    }
+    return $base . '/' . $slug;
+}
+
+/**
+ * Generate Arabic-aware podcast URL
+ */
+function getPodcastUrl($slug = null, $lang = null) {
+    global $current_lang;
+    $lang = $lang ?? $current_lang;
+    $base = defined('BASE_PATH') ? BASE_PATH : '';
+    
+    if ($lang === 'ar') {
+        return $base . '/بودكاست' . ($slug ? '/' . $slug : '');
+    }
+    return $base . '/podcast' . ($slug ? '/' . $slug : '');
+}
+
+/**
+ * Generate Arabic-aware shop URL
+ */
+function getShopUrl($lang = null) {
+    global $current_lang;
+    $lang = $lang ?? $current_lang;
+    $base = defined('BASE_PATH') ? BASE_PATH : '';
+    
+    if ($lang === 'ar') {
+        return $base . '/متجر';
+    }
+    return $base . '/';
+}
+
+/**
  * Translation arrays
  */
 $translations = [
