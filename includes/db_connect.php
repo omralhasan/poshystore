@@ -8,6 +8,10 @@
  * Credentials loaded from .env via config.php → db_config.php
  */
 
+// Prevent double-include
+if (defined('POSHY_DB_LOADED')) return;
+define('POSHY_DB_LOADED', true);
+
 // Load database configuration
 $db_config = require_once __DIR__ . '/db_config.php';
 
