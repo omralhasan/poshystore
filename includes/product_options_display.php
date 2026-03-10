@@ -9,27 +9,32 @@
 
 function getProductOptionsForDisplay($product_id, $conn) {
     $options = [];
-    $stmt = $conn->prepare("SELECT * FROM product_options WHERE product_id = ? ORDER BY sort_order, id");
-    if (!$stmt) return [];
-    $stmt->bind_param('i', $product_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    try {
+        $stmt = $conn->prepare("SELECT * FROM product_options WHERE product_id = ? ORDER BY sort_order, id");
+        if (!$stmt) return [];
+        $stmt->bind_param('i', $product_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
     
-    while ($opt = $result->fetch_assoc()) {
-        $val_stmt = $conn->prepare("SELECT * FROM product_option_values WHERE option_id = ? ORDER BY sort_order, id");
-        $val_stmt->bind_param('i', $opt['id']);
-        $val_stmt->execute();
-        $val_result = $val_stmt->get_result();
-        $opt['values'] = [];
-        while ($val = $val_result->fetch_assoc()) {
-            $opt['values'][] = $val;
+        while ($opt = $result->fetch_assoc()) {
+            $val_stmt = $conn->prepare("SELECT * FROM product_option_values WHERE option_id = ? ORDER BY sort_order, id");
+            $val_stmt->bind_param('i', $opt['id']);
+            $val_stmt->execute();
+            $val_result = $val_stmt->get_result();
+            $opt['values'] = [];
+            while ($val = $val_result->fetch_assoc()) {
+                $opt['values'][] = $val;
+            }
+            $val_stmt->close();
+            if (!empty($opt['values'])) {
+                $options[] = $opt;
+            }
         }
-        $val_stmt->close();
-        if (!empty($opt['values'])) {
-            $options[] = $opt;
-        }
+        $stmt->close();
+    } catch (\Exception $e) {
+        // Table might not exist yet — degrade gracefully
+        error_log('product_options_display: ' . $e->getMessage());
     }
-    $stmt->close();
     return $options;
 }
 

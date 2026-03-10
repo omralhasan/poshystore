@@ -312,6 +312,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 original_price=?, discount_percentage=?, has_discount=?
             WHERE id=?";
     $stmt = $conn->prepare($sql);
+    if (!$stmt) { echo json_encode(['success' => false, 'error' => 'DB prepare error: ' . $conn->error]); exit(); }
+
     $stmt->bind_param('sssssssssssdiiiddddii',
         $name_en, $name_ar, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar,
@@ -321,8 +323,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         $orig_price, $discount, $has_disc,
         $pid
     );
-
-    if (!$stmt) { echo json_encode(['success' => false, 'error' => 'DB prepare error: ' . $conn->error]); exit(); }
 
     if ($stmt->execute()) {
         $stmt->close();

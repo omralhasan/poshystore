@@ -2431,7 +2431,7 @@ if ($is_logged_in) {
                 
                 <!-- Action Buttons -->
                 <div class="modal-actions">
-                    <a href="<?= $base_url ?>/pages/shop/cart.php" class="modal-action-btn modal-btn-cart">
+                    <a href="<?= $base_url ?>/pages/shop/<?= $is_logged_in ? 'cart.php' : 'guest_checkout.php' ?>" class="modal-action-btn modal-btn-cart">
                         <i class="fas fa-shopping-cart"></i> <?= t('go_to_cart') ?>
                     </a>
                     <button class="modal-action-btn modal-btn-continue" onclick="closeCartModal()">
