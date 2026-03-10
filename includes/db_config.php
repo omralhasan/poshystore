@@ -18,6 +18,6 @@ return [
     'port'     => (int)(getenv('DB_PORT') ?: 3306),
     'user'     => getenv('DB_USER')     ?: 'poshy_user',
     'password' => getenv('DB_PASS')     ?: 'Poshy2026secure!',
-    'database' => getenv('DB_NAME')     ?: 'poshy_lifestyle',
+    'database' => getenv('DB_NAME')     ?: 'poshy_db',
     'charset'  => 'utf8mb4'
 ];

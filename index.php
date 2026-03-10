@@ -31,6 +31,7 @@ require_once __DIR__ . '/includes/language.php';
 require_once __DIR__ . '/includes/auth_functions.php';
 require_once __DIR__ . '/includes/product_manager.php';
 require_once __DIR__ . '/includes/cart_handler.php';
+require_once __DIR__ . '/includes/guest_cart_handler.php';
 require_once __DIR__ . '/includes/db_connect.php';
 require_once __DIR__ . '/includes/product_image_helper.php';
 
@@ -59,6 +60,14 @@ if ($is_logged_in) {
         }
     } catch (Exception $e) {
         error_log("Homepage user data error: " . $e->getMessage());
+    }
+} else {
+    // Guest cart count
+    try {
+        $guest_cart_info = guestGetCartCount();
+        $cart_count = $guest_cart_info['count'] ?? 0;
+    } catch (Exception $e) {
+        // guest_cart table might not exist yet
     }
 }
 
@@ -1433,16 +1442,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                                     <i class="fas fa-ban"></i>
                                     <span><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
                                 </button>
-                            <?php elseif ($is_logged_in): ?>
+                            <?php else: ?>
                                 <button class="btn-cart" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
                                     <i class="fas fa-cart-plus"></i>
                                     <span><?= t('add_to_cart') ?></span>
                                 </button>
-                            <?php else: ?>
-                                <a href="pages/auth/signin.php" class="btn-cart">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                    <span><?= t('login') ?></span>
-                                </a>
                             <?php endif; ?>
                             <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>" class="btn-view" title="<?= t('details') ?>">
                                 <i class="fas fa-eye"></i>
@@ -1602,12 +1606,12 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 
                 // Actions
                 let actionsHtml = '';
-                if (IS_LOGGED_IN) {
+                if (product.stock_quantity <= 0) {
+                    actionsHtml = '<button class="btn-cart" disabled style="opacity:0.6;cursor:not-allowed;background:#999;">' +
+                        '<i class="fas fa-ban"></i><span>' + (CURRENT_LANG === 'ar' ? 'نفذت الكمية' : 'Out of Stock') + '</span></button>';
+                } else {
                     actionsHtml = '<button class="btn-cart" onclick="addToCart(' + product.id + ', this)">' +
                         '<i class="fas fa-cart-plus"></i><span>' + ADD_TO_CART_TEXT + '</span></button>';
-                } else {
-                    actionsHtml = '<a href="pages/auth/signin.php" class="btn-cart">' +
-                        '<i class="fas fa-sign-in-alt"></i><span>' + LOGIN_TEXT + '</span></a>';
                 }
                 actionsHtml += '<a href="' + product.slug + '" class="btn-view" title="' + DETAILS_TEXT + '">' +
                     '<i class="fas fa-eye"></i></a>';
@@ -1666,10 +1670,16 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-        fetch('api/add_to_cart_api.php', {
+        // Use guest cart API for non-logged-in users, regular API for logged-in
+        const apiUrl = IS_LOGGED_IN ? 'api/add_to_cart_api.php' : 'api/guest_cart_api.php';
+        const bodyParams = IS_LOGGED_IN 
+            ? 'product_id=' + encodeURIComponent(productId) + '&quantity=1'
+            : 'action=add&product_id=' + encodeURIComponent(productId) + '&quantity=1';
+
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'product_id=' + encodeURIComponent(productId) + '&quantity=1'
+            body: bodyParams
         })
         .then(response => {
             if (!response.ok) throw new Error('Server error');

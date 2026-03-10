@@ -46,13 +46,17 @@ $sql = "SELECT o.id as order_id, o.user_id, o.total_amount, o.status, o.order_ty
                o.order_date,
                u.firstname, u.lastname, u.email, u.phonenumber,
                COALESCE(items.total_cost, 0) AS order_cost,
-               COALESCE(items.items_subtotal, 0) AS items_subtotal
+               COALESCE(items.items_subtotal, 0) AS items_subtotal,
+               COALESCE(items.total_customer_price, 0) AS total_customer_price,
+               COALESCE(items.total_supplier_price, 0) AS total_supplier_price
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
         LEFT JOIN (
             SELECT oi.order_id,
-                   SUM(COALESCE(p.supplier_cost, 0) * oi.quantity) AS total_cost,
-                   SUM(oi.subtotal) AS items_subtotal
+                   SUM(COALESCE(p.cost, COALESCE(p.supplier_cost, 0)) * oi.quantity) AS total_cost,
+                   SUM(oi.subtotal) AS items_subtotal,
+                   SUM(COALESCE(p.price_jod, 0) * oi.quantity) AS total_customer_price,
+                   SUM(COALESCE(p.supplier_cost, 0) * oi.quantity) AS total_supplier_price
             FROM order_items oi
             LEFT JOIN products p ON oi.product_id = p.id
             GROUP BY oi.order_id
@@ -65,6 +69,8 @@ $total_revenue = 0;
 $total_cost = 0;
 $customer_revenue = 0;
 $supplier_revenue = 0;
+$total_customer_price = 0;
+$total_supplier_price = 0;
 
 try {
     $stmt = $conn->prepare($sql);
@@ -82,11 +88,15 @@ try {
         $order['cost'] = $order_cost_val;
         $order['revenue'] = $order_revenue;
         $order['items_subtotal'] = floatval($order['items_subtotal']);
+        $order['customer_price_total'] = floatval($order['total_customer_price']);
+        $order['supplier_price_total'] = floatval($order['total_supplier_price']);
         $order['profit'] = $order_revenue - $order_cost_val;
         $order['profit_margin'] = $order_revenue > 0 ? (($order_revenue - $order_cost_val) / $order_revenue * 100) : 0;
 
         $total_revenue += $order_revenue;
         $total_cost += $order_cost_val;
+        $total_customer_price += floatval($order['total_customer_price']);
+        $total_supplier_price += floatval($order['total_supplier_price']);
 
         if (($order['order_type'] ?? 'customer') === 'customer') {
             $customer_revenue += $order_revenue;
@@ -385,26 +395,44 @@ $total_orders = count($orders);
                 <div class="stat-icon revenue">
                     <i class="fas fa-dollar-sign"></i>
                 </div>
-                <div class="stat-label">Total Revenue</div>
+                <div class="stat-label">Total Revenue (Sold At)</div>
                 <div class="stat-value"><?= formatJOD($total_revenue) ?></div>
                 <div class="stat-subtitle">From <?= $total_orders ?> orders</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white;">
+                    <i class="fas fa-tag"></i>
+                </div>
+                <div class="stat-label">Customer Price Total</div>
+                <div class="stat-value"><?= formatJOD($total_customer_price) ?></div>
+                <div class="stat-subtitle">Revenue: <?= formatJOD($customer_revenue) ?></div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #ec4899, #db2777); color: white;">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="stat-label">Supplier Price Total</div>
+                <div class="stat-value"><?= formatJOD($total_supplier_price) ?></div>
+                <div class="stat-subtitle">Revenue: <?= formatJOD($supplier_revenue) ?></div>
             </div>
             
             <div class="stat-card">
                 <div class="stat-icon cost">
                     <i class="fas fa-shopping-cart"></i>
                 </div>
-                <div class="stat-label">Total Cost</div>
+                <div class="stat-label">Total Cost (Purchase Cost)</div>
                 <div class="stat-value"><?= formatJOD($total_cost) ?></div>
-                <div class="stat-subtitle">Product costs</div>
+                <div class="stat-subtitle">Actual product costs</div>
             </div>
             
             <div class="stat-card">
                 <div class="stat-icon profit">
                     <i class="fas fa-chart-line"></i>
                 </div>
-                <div class="stat-label">Net Profit</div>
-                <div class="stat-value profit-positive"><?= formatJOD($total_profit) ?></div>
+                <div class="stat-label">Net Profit (Revenue - Cost)</div>
+                <div class="stat-value <?= $total_profit >= 0 ? 'profit-positive' : 'profit-negative' ?>"><?= formatJOD($total_profit) ?></div>
                 <div class="stat-subtitle">Margin: <?= number_format($profit_margin, 1) ?>%</div>
             </div>
             
@@ -442,7 +470,9 @@ $total_orders = count($orders);
                             <th>Customer</th>
                             <th>Type</th>
                             <th>Status</th>
-                            <th>Revenue</th>
+                            <th>Customer Price</th>
+                            <th>Supplier Price</th>
+                            <th>Revenue (Sold At)</th>
                             <th>Cost</th>
                             <th>Profit</th>
                             <th>Margin</th>
@@ -472,8 +502,10 @@ $total_orders = count($orders);
                                         <?= ucfirst($order['status']) ?>
                                     </span>
                                 </td>
-                                <td><?= formatJOD($order['revenue']) ?></td>
-                                <td><?= formatJOD($order['cost']) ?></td>
+                                <td><?= formatJOD($order['customer_price_total']) ?></td>
+                                <td><?= formatJOD($order['supplier_price_total']) ?></td>
+                                <td><strong><?= formatJOD($order['revenue']) ?></strong></td>
+                                <td style="color: #ef4444;"><?= formatJOD($order['cost']) ?></td>
                                 <td class="<?= $order['profit'] >= 0 ? 'profit-positive' : 'profit-negative' ?>">
                                     <?= formatJOD($order['profit']) ?>
                                 </td>
@@ -484,9 +516,11 @@ $total_orders = count($orders);
                     <tfoot>
                         <tr style="background: #f9fafb; font-weight: 700;">
                             <td colspan="4">TOTAL</td>
+                            <td><?= formatJOD($total_customer_price) ?></td>
+                            <td><?= formatJOD($total_supplier_price) ?></td>
                             <td><?= formatJOD($total_revenue) ?></td>
-                            <td><?= formatJOD($total_cost) ?></td>
-                            <td class="profit-positive"><?= formatJOD($total_profit) ?></td>
+                            <td style="color: #ef4444;"><?= formatJOD($total_cost) ?></td>
+                            <td class="<?= $total_profit >= 0 ? 'profit-positive' : 'profit-negative' ?>"><?= formatJOD($total_profit) ?></td>
                             <td><?= number_format($profit_margin, 1) ?>%</td>
                         </tr>
                     </tfoot>

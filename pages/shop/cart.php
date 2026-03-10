@@ -3,10 +3,11 @@ require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/../../includes/product_image_helper.php';
+require_once __DIR__ . '/../../includes/guest_cart_handler.php';
 
-// Check if user is logged in
+// If not logged in, redirect to guest checkout (guests can add to cart)
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/signin.php');
+    header('Location: guest_checkout.php');
     exit;
 }
 

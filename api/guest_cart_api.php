@@ -29,6 +29,10 @@ switch ($action) {
     case 'POST':
         $quantity = intval($_POST['quantity'] ?? 1);
         $result = guestAddToCart($product_id, $quantity);
+        if ($result['success']) {
+            $count_info = guestGetCartCount();
+            $result['cart_count'] = $count_info['count'] ?? 0;
+        }
         echo json_encode($result);
         break;
         
