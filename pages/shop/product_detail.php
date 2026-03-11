@@ -1529,7 +1529,7 @@ if ($is_logged_in) {
                                 <span style="text-decoration: line-through; color: #999; font-size: 1.2rem; margin-right: 1rem;">
                                     <?= formatJOD($product['original_price']) ?>
                                 </span>
-                                <span style="color: var(--purple-color); font-size: 1.8rem; font-weight: bold;">
+                                <span data-product-price style="color: var(--purple-color); font-size: 1.8rem; font-weight: bold;">
                                     <?= $detail_display_formatted ?>
                                 </span>
                             </div>
@@ -1537,7 +1537,7 @@ if ($is_logged_in) {
                                 💰 <?= t('you_save') ?> <?= formatJOD($product['original_price'] - $detail_display_price) ?>!
                             </div>
                         <?php else: ?>
-                            <div style="color: var(--purple-color); font-size: 1.8rem; font-weight: bold;">
+                            <div data-product-price style="color: var(--purple-color); font-size: 1.8rem; font-weight: bold;">
                                 <?= $detail_display_formatted ?>
                             </div>
                         <?php endif; ?>
