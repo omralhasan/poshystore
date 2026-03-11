@@ -770,8 +770,9 @@ if (is_dir($img_folder)) {
                     <div class="form-group" style="margin:0;">
                         <label style="font-size:.8rem;">Type</label>
                         <select id="newOptType" style="padding:.5rem;">
-                            <option value="select">Dropdown</option>
+                            <option value="size">Size</option>
                             <option value="color">Color Swatch</option>
+                            <option value="custom">Custom</option>
                         </select>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" onclick="addNewOption()" style="height:38px;">

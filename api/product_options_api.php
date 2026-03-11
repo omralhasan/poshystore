@@ -117,7 +117,7 @@ function updateOption() {
     
     $name_en = trim($_POST['option_name_en'] ?? '');
     $name_ar = trim($_POST['option_name_ar'] ?? '');
-    $type = in_array($_POST['option_type'] ?? '', ['select', 'color']) ? $_POST['option_type'] : 'select';
+    $type = in_array($_POST['option_type'] ?? '', ['size', 'color', 'custom']) ? $_POST['option_type'] : 'custom';
     $required = intval($_POST['is_required'] ?? 0);
     
     $stmt = $conn->prepare("UPDATE product_options SET option_name_en=?, option_name_ar=?, option_type=?, is_required=? WHERE id=?");
@@ -176,7 +176,6 @@ function addOptionValue() {
     $value_en = trim($_POST['value_en'] ?? '');
     $value_ar = trim($_POST['value_ar'] ?? '');
     $color_hex = trim($_POST['color_hex'] ?? '') ?: null;
-    $price_jod = ($_POST['price_jod'] ?? '') !== '' ? floatval($_POST['price_jod']) : null;
     $price_adj = floatval($_POST['price_adjustment'] ?? 0);
     $stock = ($_POST['stock_quantity'] ?? '') !== '' ? intval($_POST['stock_quantity']) : null;
     $is_default = intval($_POST['is_default'] ?? 0);
@@ -186,8 +185,8 @@ function addOptionValue() {
         return;
     }
     
-    $stmt = $conn->prepare("INSERT INTO product_option_values (option_id, value_en, value_ar, color_hex, price_jod, price_adjustment, stock_quantity, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param('isssddii', $option_id, $value_en, $value_ar, $color_hex, $price_jod, $price_adj, $stock, $is_default);
+    $stmt = $conn->prepare("INSERT INTO product_option_values (option_id, value_en, value_ar, color_hex, price_adjustment, stock_quantity, is_default) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('isssdii', $option_id, $value_en, $value_ar, $color_hex, $price_adj, $stock, $is_default);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'value_id' => $stmt->insert_id, 'message' => 'Value added']);
@@ -208,13 +207,12 @@ function updateOptionValue() {
     $value_en = trim($_POST['value_en'] ?? '');
     $value_ar = trim($_POST['value_ar'] ?? '');
     $color_hex = trim($_POST['color_hex'] ?? '') ?: null;
-    $price_jod = ($_POST['price_jod'] ?? '') !== '' ? floatval($_POST['price_jod']) : null;
     $price_adj = floatval($_POST['price_adjustment'] ?? 0);
     $stock = ($_POST['stock_quantity'] ?? '') !== '' ? intval($_POST['stock_quantity']) : null;
     $is_default = intval($_POST['is_default'] ?? 0);
     
-    $stmt = $conn->prepare("UPDATE product_option_values SET value_en=?, value_ar=?, color_hex=?, price_jod=?, price_adjustment=?, stock_quantity=?, is_default=? WHERE id=?");
-    $stmt->bind_param('sssddiil', $value_en, $value_ar, $color_hex, $price_jod, $price_adj, $stock, $is_default, $value_id);
+    $stmt = $conn->prepare("UPDATE product_option_values SET value_en=?, value_ar=?, color_hex=?, price_adjustment=?, stock_quantity=?, is_default=? WHERE id=?");
+    $stmt->bind_param('sssdiil', $value_en, $value_ar, $color_hex, $price_adj, $stock, $is_default, $value_id);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Value updated']);
