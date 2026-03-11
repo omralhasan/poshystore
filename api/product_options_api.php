@@ -4,8 +4,8 @@
  * AJAX endpoints for managing product variants (size, color, etc.)
  */
 session_start();
-require_once __DIR__ . '/../../includes/db_connect.php';
-require_once __DIR__ . '/../../includes/auth_functions.php';
+require_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/../includes/auth_functions.php';
 
 header('Content-Type: application/json');
 

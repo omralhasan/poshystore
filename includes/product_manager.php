@@ -94,8 +94,8 @@ function getAllProducts($filters = [], $limit = 50, $offset = 0) {
         $params[] = $tag_search;
     }
     
-    // Add ordering
-    $sql .= " ORDER BY p.id DESC LIMIT ? OFFSET ?";
+    // Add ordering — recommended & best sellers first
+    $sql .= " ORDER BY (p.is_recommended = 1 OR p.is_best_seller = 1) DESC, p.is_recommended DESC, p.is_best_seller DESC, p.id DESC LIMIT ? OFFSET ?";
     $types .= 'ii';
     $params[] = $limit;
     $params[] = $offset;
@@ -859,13 +859,14 @@ function getProductsByTag($tag_slug, $limit = 50) {
     $sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
                    p.price_jod, p.stock_quantity, p.image_link,
                    p.original_price, p.discount_percentage, p.has_discount,
+                   p.is_recommended, p.is_best_seller,
                    b.name_en AS brand_en, b.name_ar AS brand_ar
             FROM products p
             JOIN product_tags pt ON p.id = pt.product_id
             JOIN tags t ON pt.tag_id = t.id
             LEFT JOIN brands b ON p.brand_id = b.id
             WHERE t.slug = ?
-            ORDER BY p.id DESC
+            ORDER BY (p.is_recommended = 1 OR p.is_best_seller = 1) DESC, p.is_recommended DESC, p.is_best_seller DESC, p.id DESC
             LIMIT ?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) return [];
