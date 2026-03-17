@@ -13,6 +13,12 @@ require_once __DIR__ . '/config.php';
 $request_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 $request_path = rtrim($request_path, '/');
 
+// Serve the new luxury homepage on root URL
+if ($request_path === '' || $request_path === '/') {
+    require __DIR__ . '/poshy-luxury-home.html';
+    exit;
+}
+
 // A slug looks like /some-product-name (lowercase, digits, hyphens only)
 // Exclude known paths: /index.php, /pages/..., /api/..., /images/..., etc.
 if (

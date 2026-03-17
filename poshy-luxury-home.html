@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Poshy Store | تجربة تجميل فاخرة</title>
-  <meta name="description" content="الصفحة الرئيسية الفاخرة لمتجر Poshy Store بتجربة تسوق عصرية وأنيقة." />
+  <title>Poshy Store | Luxury Beauty Experience</title>
+  <meta name="description" content="The premium homepage for Poshy Store with a modern luxury shopping experience." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -161,6 +161,18 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    .cart-count-badge {
+      position: absolute;
+      inset-block-start: -0.5rem;
+      inset-inline-end: -0.75rem;
+    }
+
+    .quick-view-btn {
+      position: absolute;
+      inset-block-end: 0.75rem;
+      inset-inline-start: 0.75rem;
+    }
   </style>
 </head>
 
@@ -168,50 +180,51 @@
   <header id="mainHeader" class="header-glass fixed top-0 inset-x-0 z-50">
     <div class="mx-auto max-w-7xl px-4 lg:px-8">
       <div class="h-20 flex items-center justify-between">
-        <button id="searchBtn" class="text-sm font-medium hover:text-gold transition">بحث</button>
+        <button id="searchBtn" class="text-sm font-medium hover:text-gold transition" data-i18n="search_btn">Search</button>
 
         <a href="#" class="font-heading text-2xl tracking-[0.2em]">POSHY STORE</a>
 
         <div class="flex items-center gap-4 text-sm">
-          <a href="#" class="hover:text-gold transition">المفضلة</a>
-          <a href="#" class="hover:text-gold transition relative">السلة
-            <span class="absolute -top-2 -left-3 bg-gold text-charcoal text-[10px] px-1.5 py-0.5 rounded-full font-semibold">2</span>
+          <a href="#" class="hover:text-gold transition" data-i18n="wishlist">Wishlist</a>
+          <a href="#" class="hover:text-gold transition relative"><span data-i18n="cart">Cart</span>
+            <span class="cart-count-badge bg-gold text-charcoal text-[10px] px-1.5 py-0.5 rounded-full font-semibold">2</span>
           </a>
+          <button id="langToggle" class="px-2 py-1 border border-black/20 rounded-md hover:border-gold hover:text-gold transition" data-i18n="lang_toggle">العربية</button>
         </div>
       </div>
 
       <nav class="hidden md:flex items-center justify-center gap-10 pb-4 text-sm font-medium">
-        <a href="#" class="hover:text-gold transition">الجديد</a>
-        <button id="megaMenuBtn" class="hover:text-gold transition">الفئات</button>
-        <a href="#" class="hover:text-gold transition">العروض</a>
-        <a href="#" class="hover:text-gold transition">الأكثر مبيعاً</a>
+        <a href="#" class="hover:text-gold transition" data-i18n="nav_new">New Arrivals</a>
+        <button id="megaMenuBtn" class="hover:text-gold transition" data-i18n="nav_categories">Categories</button>
+        <a href="#" class="hover:text-gold transition" data-i18n="nav_offers">Offers</a>
+        <a href="#" class="hover:text-gold transition" data-i18n="nav_best">Best Sellers</a>
       </nav>
     </div>
 
     <div id="megaMenu" class="mega-menu absolute top-full inset-x-0 bg-white/98 border-y border-black/10 shadow-luxury">
       <div class="mx-auto max-w-7xl px-4 lg:px-8 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
         <div>
-          <h3 class="font-heading text-lg mb-3">العناية بالبشرة</h3>
+          <h3 class="font-heading text-lg mb-3" data-i18n="mega_skin">Skincare</h3>
           <ul class="space-y-2 text-black/75">
-            <li><a href="#" class="hover:text-gold">غسول</a></li>
-            <li><a href="#" class="hover:text-gold">سيروم</a></li>
-            <li><a href="#" class="hover:text-gold">مرطبات</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_skin_1">Cleansers</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_skin_2">Serums</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_skin_3">Moisturizers</a></li>
           </ul>
         </div>
         <div>
-          <h3 class="font-heading text-lg mb-3">العناية بالشعر</h3>
+          <h3 class="font-heading text-lg mb-3" data-i18n="mega_hair">Haircare</h3>
           <ul class="space-y-2 text-black/75">
-            <li><a href="#" class="hover:text-gold">شامبو</a></li>
-            <li><a href="#" class="hover:text-gold">ماسكات</a></li>
-            <li><a href="#" class="hover:text-gold">زيوت</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_hair_1">Shampoo</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_hair_2">Masks</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_hair_3">Oils</a></li>
           </ul>
         </div>
         <div>
-          <h3 class="font-heading text-lg mb-3">مجموعة فاخرة</h3>
+          <h3 class="font-heading text-lg mb-3" data-i18n="mega_lux">Luxury Collection</h3>
           <ul class="space-y-2 text-black/75">
-            <li><a href="#" class="hover:text-gold">هدايا</a></li>
-            <li><a href="#" class="hover:text-gold">إصدارات محدودة</a></li>
-            <li><a href="#" class="hover:text-gold">عطور</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_lux_1">Gifts</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_lux_2">Limited Editions</a></li>
+            <li><a href="#" class="hover:text-gold" data-i18n="mega_lux_3">Perfumes</a></li>
           </ul>
         </div>
         <div class="rounded-2xl overflow-hidden border border-black/10">
@@ -224,8 +237,8 @@
   <div id="searchOverlay" class="search-overlay fixed inset-0 bg-black/60 z-[60] flex items-start justify-center p-4 pt-24">
     <div class="w-full max-w-2xl bg-white rounded-2xl p-5 shadow-luxury">
       <div class="flex items-center gap-3">
-        <input type="search" placeholder="ابحثي عن منتج، ماركة أو مجموعة..." class="w-full border border-black/15 rounded-xl px-4 py-3 focus:outline-none focus:border-gold" />
-        <button id="closeSearch" class="px-4 py-3 rounded-xl border border-black/15 hover:bg-black hover:text-white transition">إغلاق</button>
+        <input id="searchInput" type="search" placeholder="Search for a product, brand, or collection..." class="w-full border border-black/15 rounded-xl px-4 py-3 focus:outline-none focus:border-gold" />
+        <button id="closeSearch" class="px-4 py-3 rounded-xl border border-black/15 hover:bg-black hover:text-white transition" data-i18n="close">Close</button>
       </div>
     </div>
   </div>
@@ -241,8 +254,8 @@
               <div class="slide-content text-white max-w-xl">
                 <p class="uppercase tracking-[0.3em] text-xs mb-4 text-gold">Poshy Luxury Edit</p>
                 <h1 class="font-heading text-4xl md:text-6xl leading-tight">The New Silk Collection</h1>
-                <p class="mt-4 text-white/90">منتجات فاخرة تمنحك إشراقة ناعمة بلمسة راقية.</p>
-                <a href="#top-sellers" class="inline-block mt-8 px-8 py-3 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full shadow-[0_0_24px_rgba(197,160,89,0.35)]">تسوقي الآن</a>
+                <p class="mt-4 text-white/90" data-i18n="hero_desc_1">Luxury products that give your skin a refined and radiant glow.</p>
+                <a href="#top-sellers" class="inline-block mt-8 px-8 py-3 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full shadow-[0_0_24px_rgba(197,160,89,0.35)]" data-i18n="shop_now">Shop Now</a>
               </div>
             </div>
           </div>
@@ -254,8 +267,8 @@
               <div class="slide-content text-white max-w-xl">
                 <p class="uppercase tracking-[0.3em] text-xs mb-4 text-gold">Premium Rituals</p>
                 <h2 class="font-heading text-4xl md:text-6xl leading-tight">Glow. Lift. Renew.</h2>
-                <p class="mt-4 text-white/90">روتين متكامل لبشرة أكثر شباباً وتوهجاً.</p>
-                <a href="#stories" class="inline-block mt-8 px-8 py-3 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full shadow-[0_0_24px_rgba(197,160,89,0.35)]">اكتشفي المجموعات</a>
+                <p class="mt-4 text-white/90" data-i18n="hero_desc_2">A complete routine for younger-looking, luminous skin.</p>
+                <a href="#stories" class="inline-block mt-8 px-8 py-3 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full shadow-[0_0_24px_rgba(197,160,89,0.35)]" data-i18n="discover_collections">Discover Collections</a>
               </div>
             </div>
           </div>
@@ -268,7 +281,7 @@
     <section id="stories" class="mx-auto max-w-7xl px-4 lg:px-8 py-10">
       <div class="flex items-center justify-between mb-6">
         <h2 class="font-heading text-3xl">Luxury Stories</h2>
-        <a href="#" class="text-sm hover:text-gold">عرض الكل</a>
+        <a href="#" class="text-sm hover:text-gold" data-i18n="view_all">View All</a>
       </div>
 
       <div class="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-6 text-center">
@@ -314,16 +327,16 @@
     <section id="top-sellers" class="mx-auto max-w-7xl px-4 lg:px-8 py-8">
       <div class="flex items-end justify-between mb-6">
         <h2 class="font-heading text-3xl">Top Sellers</h2>
-        <a href="#" class="text-sm hover:text-gold">تسوقي كل المنتجات</a>
+        <a href="#" class="text-sm hover:text-gold" data-i18n="shop_all">Shop All Products</a>
       </div>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_1}}" data-price="{{product_price_1}}" data-image="{{product_img_1}}" data-desc="تركيبة فاخرة تمنحك نعومة وإشراقة فورية.">
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_1}}" data-price="{{product_price_1}}" data-image="{{product_img_1}}" data-desc-en="A premium formula that delivers smoothness and instant glow." data-desc-ar="تركيبة فاخرة تمنحك نعومة وإشراقة فورية.">
           <div class="relative aspect-[3/4] overflow-hidden">
             <img src="{{product_img_1}}" alt="{{product_name_1}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
             <img src="{{product_hover_img_1}}" alt="{{product_name_1}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
             <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-20%</span>
-            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+            <button class="quick-view quick-view-btn text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100" data-i18n="quick_view">Quick View</button>
           </div>
           <div class="p-3">
             <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_1}}</h3>
@@ -331,12 +344,12 @@
           </div>
         </article>
 
-        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_2}}" data-price="{{product_price_2}}" data-image="{{product_img_2}}" data-desc="مناسب للبشرة الحساسة مع ملمس حريري.">
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_2}}" data-price="{{product_price_2}}" data-image="{{product_img_2}}" data-desc-en="Ideal for sensitive skin with a silky touch." data-desc-ar="مناسب للبشرة الحساسة مع ملمس حريري.">
           <div class="relative aspect-[3/4] overflow-hidden">
             <img src="{{product_img_2}}" alt="{{product_name_2}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
             <img src="{{product_hover_img_2}}" alt="{{product_name_2}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
             <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-15%</span>
-            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+            <button class="quick-view quick-view-btn text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100" data-i18n="quick_view">Quick View</button>
           </div>
           <div class="p-3">
             <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_2}}</h3>
@@ -344,12 +357,12 @@
           </div>
         </article>
 
-        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_3}}" data-price="{{product_price_3}}" data-image="{{product_img_3}}" data-desc="نتائج واضحة ولمعان أنيق طوال اليوم.">
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_3}}" data-price="{{product_price_3}}" data-image="{{product_img_3}}" data-desc-en="Visible results and elegant shine all day." data-desc-ar="نتائج واضحة ولمعان أنيق طوال اليوم.">
           <div class="relative aspect-[3/4] overflow-hidden">
             <img src="{{product_img_3}}" alt="{{product_name_3}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
             <img src="{{product_hover_img_3}}" alt="{{product_name_3}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
             <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-30%</span>
-            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+            <button class="quick-view quick-view-btn text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100" data-i18n="quick_view">Quick View</button>
           </div>
           <div class="p-3">
             <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_3}}</h3>
@@ -357,12 +370,12 @@
           </div>
         </article>
 
-        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_4}}" data-price="{{product_price_4}}" data-image="{{product_img_4}}" data-desc="تركيبة متوازنة بلمسة راقية.">
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_4}}" data-price="{{product_price_4}}" data-image="{{product_img_4}}" data-desc-en="A balanced formula with a refined finish." data-desc-ar="تركيبة متوازنة بلمسة راقية.">
           <div class="relative aspect-[3/4] overflow-hidden">
             <img src="{{product_img_4}}" alt="{{product_name_4}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
             <img src="{{product_hover_img_4}}" alt="{{product_name_4}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
             <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-10%</span>
-            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+            <button class="quick-view quick-view-btn text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100" data-i18n="quick_view">Quick View</button>
           </div>
           <div class="p-3">
             <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_4}}</h3>
@@ -381,9 +394,9 @@
 
         <div class="relative z-10 p-8 md:p-14 text-white max-w-2xl">
           <p class="uppercase text-xs tracking-[0.3em] text-gold mb-4">Poshy's Choice</p>
-          <h2 class="font-heading text-4xl md:text-5xl leading-tight">لمسة فاخرة لبشرتك اليومية</h2>
-          <p class="mt-4 text-white/85">منتج مختار بعناية من فريق Poshy للحصول على مظهر صحي ومشرق مع قوام مخملي.</p>
-          <a href="#" class="inline-block mt-8 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full px-7 py-3">اكتشفي المنتج</a>
+          <h2 class="font-heading text-4xl md:text-5xl leading-tight" data-i18n="choice_title">A Luxurious Touch for Everyday Skin</h2>
+          <p class="mt-4 text-white/85" data-i18n="choice_desc">Handpicked by Poshy experts for healthy glow and silky texture.</p>
+          <a href="#" class="inline-block mt-8 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full px-7 py-3" data-i18n="discover_product">Discover Product</a>
         </div>
       </div>
     </section>
@@ -393,24 +406,24 @@
     <div class="mx-auto max-w-7xl px-4 lg:px-8 py-12 grid md:grid-cols-3 gap-10">
       <div>
         <h3 class="font-heading text-3xl">POSHY STORE</h3>
-        <p class="text-white/70 mt-4 leading-7">تجربة تسوق فاخرة لمنتجات الجمال والعناية الشخصية في الأردن.</p>
+        <p class="text-white/70 mt-4 leading-7" data-i18n="footer_about">A premium shopping experience for beauty and personal care in Jordan.</p>
       </div>
 
       <div>
         <h4 class="font-semibold text-lg mb-3">Newsletter</h4>
         <form class="space-y-4">
-          <input type="email" class="underline-input" placeholder="أدخلي بريدك الإلكتروني" required />
+          <input id="newsletterInput" type="email" class="underline-input" placeholder="Enter your email" required />
           <button type="submit" class="text-gold hover:text-white transition">Subscribe →</button>
         </form>
       </div>
 
       <div>
-        <h4 class="font-semibold text-lg mb-3">روابط سريعة</h4>
+        <h4 class="font-semibold text-lg mb-3" data-i18n="quick_links">Quick Links</h4>
         <ul class="space-y-2 text-white/70">
-          <li><a href="#" class="hover:text-gold">عن المتجر</a></li>
-          <li><a href="#" class="hover:text-gold">سياسة الشحن</a></li>
-          <li><a href="#" class="hover:text-gold">الاستبدال والاسترجاع</a></li>
-          <li><a href="#" class="hover:text-gold">تواصل معنا</a></li>
+          <li><a href="#" class="hover:text-gold" data-i18n="link_about">About Us</a></li>
+          <li><a href="#" class="hover:text-gold" data-i18n="link_shipping">Shipping Policy</a></li>
+          <li><a href="#" class="hover:text-gold" data-i18n="link_returns">Returns & Exchanges</a></li>
+          <li><a href="#" class="hover:text-gold" data-i18n="link_contact">Contact Us</a></li>
         </ul>
       </div>
     </div>
@@ -425,8 +438,8 @@
           <p id="modalPrice" class="font-bold text-lg mt-2 text-gold"></p>
           <p id="modalDesc" class="mt-3 text-sm text-black/70"></p>
           <div class="mt-6 flex gap-3">
-            <button class="flex-1 bg-charcoal text-white py-3 rounded-xl hover:bg-black transition">إضافة إلى السلة</button>
-            <button id="closeModal" class="px-4 py-3 rounded-xl border border-black/15 hover:bg-black hover:text-white transition">إغلاق</button>
+            <button id="modalAddToCart" class="flex-1 bg-charcoal text-white py-3 rounded-xl hover:bg-black transition" data-i18n="add_to_cart">Add to Cart</button>
+            <button id="closeModal" class="px-4 py-3 rounded-xl border border-black/15 hover:bg-black hover:text-white transition" data-i18n="close">Close</button>
           </div>
         </div>
       </div>
@@ -441,8 +454,124 @@
     const searchBtn = document.getElementById('searchBtn');
     const searchOverlay = document.getElementById('searchOverlay');
     const closeSearch = document.getElementById('closeSearch');
+    const langToggle = document.getElementById('langToggle');
+    const searchInput = document.getElementById('searchInput');
+    const newsletterInput = document.getElementById('newsletterInput');
     const modal = document.getElementById('quickViewModal');
     const closeModal = document.getElementById('closeModal');
+    let currentLanguage = 'en';
+
+    const i18n = {
+      en: {
+        title: 'Poshy Store | Luxury Beauty Experience',
+        description: 'The premium homepage for Poshy Store with a modern luxury shopping experience.',
+        search_btn: 'Search',
+        wishlist: 'Wishlist',
+        cart: 'Cart',
+        lang_toggle: 'العربية',
+        nav_new: 'New Arrivals',
+        nav_categories: 'Categories',
+        nav_offers: 'Offers',
+        nav_best: 'Best Sellers',
+        mega_skin: 'Skincare',
+        mega_skin_1: 'Cleansers',
+        mega_skin_2: 'Serums',
+        mega_skin_3: 'Moisturizers',
+        mega_hair: 'Haircare',
+        mega_hair_1: 'Shampoo',
+        mega_hair_2: 'Masks',
+        mega_hair_3: 'Oils',
+        mega_lux: 'Luxury Collection',
+        mega_lux_1: 'Gifts',
+        mega_lux_2: 'Limited Editions',
+        mega_lux_3: 'Perfumes',
+        close: 'Close',
+        hero_desc_1: 'Luxury products that give your skin a refined and radiant glow.',
+        hero_desc_2: 'A complete routine for younger-looking, luminous skin.',
+        shop_now: 'Shop Now',
+        discover_collections: 'Discover Collections',
+        view_all: 'View All',
+        shop_all: 'Shop All Products',
+        quick_view: 'Quick View',
+        choice_title: 'A Luxurious Touch for Everyday Skin',
+        choice_desc: 'Handpicked by Poshy experts for healthy glow and silky texture.',
+        discover_product: 'Discover Product',
+        footer_about: 'A premium shopping experience for beauty and personal care in Jordan.',
+        quick_links: 'Quick Links',
+        link_about: 'About Us',
+        link_shipping: 'Shipping Policy',
+        link_returns: 'Returns & Exchanges',
+        link_contact: 'Contact Us',
+        add_to_cart: 'Add to Cart',
+        search_placeholder: 'Search for a product, brand, or collection...',
+        newsletter_placeholder: 'Enter your email'
+      },
+      ar: {
+        title: 'Poshy Store | تجربة تجميل فاخرة',
+        description: 'الصفحة الرئيسية الفاخرة لمتجر Poshy Store بتجربة تسوق عصرية وأنيقة.',
+        search_btn: 'بحث',
+        wishlist: 'المفضلة',
+        cart: 'السلة',
+        lang_toggle: 'English',
+        nav_new: 'الجديد',
+        nav_categories: 'الفئات',
+        nav_offers: 'العروض',
+        nav_best: 'الأكثر مبيعاً',
+        mega_skin: 'العناية بالبشرة',
+        mega_skin_1: 'غسول',
+        mega_skin_2: 'سيروم',
+        mega_skin_3: 'مرطبات',
+        mega_hair: 'العناية بالشعر',
+        mega_hair_1: 'شامبو',
+        mega_hair_2: 'ماسكات',
+        mega_hair_3: 'زيوت',
+        mega_lux: 'مجموعة فاخرة',
+        mega_lux_1: 'هدايا',
+        mega_lux_2: 'إصدارات محدودة',
+        mega_lux_3: 'عطور',
+        close: 'إغلاق',
+        hero_desc_1: 'منتجات فاخرة تمنحك إشراقة ناعمة بلمسة راقية.',
+        hero_desc_2: 'روتين متكامل لبشرة أكثر شباباً وتوهجاً.',
+        shop_now: 'تسوقي الآن',
+        discover_collections: 'اكتشفي المجموعات',
+        view_all: 'عرض الكل',
+        shop_all: 'تسوقي كل المنتجات',
+        quick_view: 'عرض سريع',
+        choice_title: 'لمسة فاخرة لبشرتك اليومية',
+        choice_desc: 'منتج مختار بعناية من فريق Poshy للحصول على مظهر صحي ومشرق مع قوام مخملي.',
+        discover_product: 'اكتشفي المنتج',
+        footer_about: 'تجربة تسوق فاخرة لمنتجات الجمال والعناية الشخصية في الأردن.',
+        quick_links: 'روابط سريعة',
+        link_about: 'عن المتجر',
+        link_shipping: 'سياسة الشحن',
+        link_returns: 'الاستبدال والاسترجاع',
+        link_contact: 'تواصل معنا',
+        add_to_cart: 'إضافة إلى السلة',
+        search_placeholder: 'ابحثي عن منتج، ماركة أو مجموعة...',
+        newsletter_placeholder: 'أدخلي بريدك الإلكتروني'
+      }
+    };
+
+    function applyLanguage(language) {
+      currentLanguage = language;
+      const dictionary = i18n[language];
+      document.documentElement.lang = language;
+      document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      document.title = dictionary.title;
+
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) metaDescription.setAttribute('content', dictionary.description);
+
+      document.querySelectorAll('[data-i18n]').forEach((element) => {
+        const key = element.getAttribute('data-i18n');
+        if (dictionary[key]) element.textContent = dictionary[key];
+      });
+
+      searchInput.setAttribute('placeholder', dictionary.search_placeholder);
+      newsletterInput.setAttribute('placeholder', dictionary.newsletter_placeholder);
+
+      localStorage.setItem('poshy_language', language);
+    }
 
     window.addEventListener('scroll', () => {
       header.classList.toggle('scrolled', window.scrollY > 32);
@@ -473,11 +602,18 @@
         const card = button.closest('.product-card');
         document.getElementById('modalTitle').textContent = card.dataset.name;
         document.getElementById('modalPrice').textContent = card.dataset.price;
-        document.getElementById('modalDesc').textContent = card.dataset.desc;
+        document.getElementById('modalDesc').textContent = currentLanguage === 'ar' ? card.dataset.descAr : card.dataset.descEn;
         document.getElementById('modalImage').src = card.dataset.image;
         modal.classList.add('open');
       });
     });
+
+    langToggle.addEventListener('click', () => {
+      applyLanguage(currentLanguage === 'en' ? 'ar' : 'en');
+    });
+
+    const savedLanguage = localStorage.getItem('poshy_language');
+    applyLanguage(savedLanguage === 'ar' ? 'ar' : 'en');
 
     closeModal.addEventListener('click', () => modal.classList.remove('open'));
     modal.addEventListener('click', (e) => {
