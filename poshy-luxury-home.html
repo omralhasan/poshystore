@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poshy Store | تجربة تجميل فاخرة</title>
+  <meta name="description" content="الصفحة الرئيسية الفاخرة لمتجر Poshy Store بتجربة تسوق عصرية وأنيقة." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#F9F9F9',
+            charcoal: '#111111',
+            gold: '#C5A059'
+          },
+          fontFamily: {
+            heading: ['Playfair Display', 'serif'],
+            body: ['Inter', 'sans-serif']
+          },
+          boxShadow: {
+            luxury: '0 10px 35px rgba(0,0,0,0.12)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { background: #F9F9F9; }
+
+    .header-glass {
+      background: transparent;
+      border-bottom: 1px solid transparent;
+      transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease;
+    }
+
+    .header-glass.scrolled {
+      background: rgba(249, 249, 249, 0.95);
+      border-color: rgba(0,0,0,0.08);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      backdrop-filter: blur(6px);
+    }
+
+    .hero-swiper,
+    .hero-swiper .swiper-slide {
+      height: 100vh;
+      min-height: 640px;
+    }
+
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.08);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.55));
+    }
+
+    .slide-content {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+
+    .swiper-slide-active .slide-content {
+      animation: fadeUp .9s ease forwards;
+    }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .story-ring {
+      position: relative;
+      padding: 3px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #C5A059, #d7be89, #C5A059);
+      animation: ringSpin 3.5s linear infinite;
+    }
+
+    .story-ring::before {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,0.7);
+      pointer-events: none;
+    }
+
+    @keyframes ringSpin {
+      to { filter: hue-rotate(360deg); }
+    }
+
+    .mega-menu {
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .mega-menu.open {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .search-overlay {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    .search-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .product-card img {
+      transition: opacity .35s ease, transform .45s ease;
+    }
+
+    .product-card:hover .img-primary { opacity: 0; transform: scale(1.04); }
+    .product-card:hover .img-secondary { opacity: 1; transform: scale(1.03); }
+
+    .underline-input {
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.35);
+      background: transparent;
+      outline: none;
+      color: #fff;
+      width: 100%;
+      padding: 10px 0;
+    }
+
+    .underline-input::placeholder { color: rgba(255,255,255,0.6); }
+
+    .modal {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    .modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+
+<body class="font-body text-charcoal">
+  <header id="mainHeader" class="header-glass fixed top-0 inset-x-0 z-50">
+    <div class="mx-auto max-w-7xl px-4 lg:px-8">
+      <div class="h-20 flex items-center justify-between">
+        <button id="searchBtn" class="text-sm font-medium hover:text-gold transition">بحث</button>
+
+        <a href="#" class="font-heading text-2xl tracking-[0.2em]">POSHY STORE</a>
+
+        <div class="flex items-center gap-4 text-sm">
+          <a href="#" class="hover:text-gold transition">المفضلة</a>
+          <a href="#" class="hover:text-gold transition relative">السلة
+            <span class="absolute -top-2 -left-3 bg-gold text-charcoal text-[10px] px-1.5 py-0.5 rounded-full font-semibold">2</span>
+          </a>
+        </div>
+      </div>
+
+      <nav class="hidden md:flex items-center justify-center gap-10 pb-4 text-sm font-medium">
+        <a href="#" class="hover:text-gold transition">الجديد</a>
+        <button id="megaMenuBtn" class="hover:text-gold transition">الفئات</button>
+        <a href="#" class="hover:text-gold transition">العروض</a>
+        <a href="#" class="hover:text-gold transition">الأكثر مبيعاً</a>
+      </nav>
+    </div>
+
+    <div id="megaMenu" class="mega-menu absolute top-full inset-x-0 bg-white/98 border-y border-black/10 shadow-luxury">
+      <div class="mx-auto max-w-7xl px-4 lg:px-8 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+        <div>
+          <h3 class="font-heading text-lg mb-3">العناية بالبشرة</h3>
+          <ul class="space-y-2 text-black/75">
+            <li><a href="#" class="hover:text-gold">غسول</a></li>
+            <li><a href="#" class="hover:text-gold">سيروم</a></li>
+            <li><a href="#" class="hover:text-gold">مرطبات</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-heading text-lg mb-3">العناية بالشعر</h3>
+          <ul class="space-y-2 text-black/75">
+            <li><a href="#" class="hover:text-gold">شامبو</a></li>
+            <li><a href="#" class="hover:text-gold">ماسكات</a></li>
+            <li><a href="#" class="hover:text-gold">زيوت</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-heading text-lg mb-3">مجموعة فاخرة</h3>
+          <ul class="space-y-2 text-black/75">
+            <li><a href="#" class="hover:text-gold">هدايا</a></li>
+            <li><a href="#" class="hover:text-gold">إصدارات محدودة</a></li>
+            <li><a href="#" class="hover:text-gold">عطور</a></li>
+          </ul>
+        </div>
+        <div class="rounded-2xl overflow-hidden border border-black/10">
+          <img src="{{mega_menu_image}}" alt="Luxury Collection" class="w-full h-full object-cover" />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="searchOverlay" class="search-overlay fixed inset-0 bg-black/60 z-[60] flex items-start justify-center p-4 pt-24">
+    <div class="w-full max-w-2xl bg-white rounded-2xl p-5 shadow-luxury">
+      <div class="flex items-center gap-3">
+        <input type="search" placeholder="ابحثي عن منتج، ماركة أو مجموعة..." class="w-full border border-black/15 rounded-xl px-4 py-3 focus:outline-none focus:border-gold" />
+        <button id="closeSearch" class="px-4 py-3 rounded-xl border border-black/15 hover:bg-black hover:text-white transition">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="relative">
+      <div class="swiper hero-swiper">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide relative">
+            <div class="hero-media" data-swiper-parallax="-25%" style="background-image:url('{{hero_image_1}}')"></div>
+            <div class="hero-overlay"></div>
+            <div class="relative z-10 h-full mx-auto max-w-7xl px-4 lg:px-8 flex items-center">
+              <div class="slide-content text-white max-w-xl">
+                <p class="uppercase tracking-[0.3em] text-xs mb-4 text-gold">Poshy Luxury Edit</p>
+                <h1 class="font-heading text-4xl md:text-6xl leading-tight">The New Silk Collection</h1>
+                <p class="mt-4 text-white/90">منتجات فاخرة تمنحك إشراقة ناعمة بلمسة راقية.</p>
+                <a href="#top-sellers" class="inline-block mt-8 px-8 py-3 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full shadow-[0_0_24px_rgba(197,160,89,0.35)]">تسوقي الآن</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="swiper-slide relative">
+            <div class="hero-media" data-swiper-parallax="-25%" style="background-image:url('{{hero_image_2}}')"></div>
+            <div class="hero-overlay"></div>
+            <div class="relative z-10 h-full mx-auto max-w-7xl px-4 lg:px-8 flex items-center">
+              <div class="slide-content text-white max-w-xl">
+                <p class="uppercase tracking-[0.3em] text-xs mb-4 text-gold">Premium Rituals</p>
+                <h2 class="font-heading text-4xl md:text-6xl leading-tight">Glow. Lift. Renew.</h2>
+                <p class="mt-4 text-white/90">روتين متكامل لبشرة أكثر شباباً وتوهجاً.</p>
+                <a href="#stories" class="inline-block mt-8 px-8 py-3 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full shadow-[0_0_24px_rgba(197,160,89,0.35)]">اكتشفي المجموعات</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swiper-pagination"></div>
+      </div>
+    </section>
+
+    <section id="stories" class="mx-auto max-w-7xl px-4 lg:px-8 py-10">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-heading text-3xl">Luxury Stories</h2>
+        <a href="#" class="text-sm hover:text-gold">عرض الكل</a>
+      </div>
+
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-6 text-center">
+        <a href="#" class="group">
+          <div class="story-ring mx-auto w-24 h-24">
+            <img src="{{story_skin_img}}" alt="Skin" class="w-full h-full rounded-full object-cover border-2 border-white" />
+          </div>
+          <p class="mt-3 text-sm font-medium group-hover:text-gold transition">Skin</p>
+        </a>
+        <a href="#" class="group">
+          <div class="story-ring mx-auto w-24 h-24">
+            <img src="{{story_hair_img}}" alt="Hair" class="w-full h-full rounded-full object-cover border-2 border-white" />
+          </div>
+          <p class="mt-3 text-sm font-medium group-hover:text-gold transition">Hair</p>
+        </a>
+        <a href="#" class="group">
+          <div class="story-ring mx-auto w-24 h-24">
+            <img src="{{story_sets_img}}" alt="Luxury Sets" class="w-full h-full rounded-full object-cover border-2 border-white" />
+          </div>
+          <p class="mt-3 text-sm font-medium group-hover:text-gold transition">Luxury Sets</p>
+        </a>
+        <a href="#" class="group">
+          <div class="story-ring mx-auto w-24 h-24">
+            <img src="{{story_makeup_img}}" alt="Makeup" class="w-full h-full rounded-full object-cover border-2 border-white" />
+          </div>
+          <p class="mt-3 text-sm font-medium group-hover:text-gold transition">Makeup</p>
+        </a>
+        <a href="#" class="group">
+          <div class="story-ring mx-auto w-24 h-24">
+            <img src="{{story_perfume_img}}" alt="Perfume" class="w-full h-full rounded-full object-cover border-2 border-white" />
+          </div>
+          <p class="mt-3 text-sm font-medium group-hover:text-gold transition">Perfume</p>
+        </a>
+        <a href="#" class="group">
+          <div class="story-ring mx-auto w-24 h-24">
+            <img src="{{story_body_img}}" alt="Body" class="w-full h-full rounded-full object-cover border-2 border-white" />
+          </div>
+          <p class="mt-3 text-sm font-medium group-hover:text-gold transition">Body</p>
+        </a>
+      </div>
+    </section>
+
+    <section id="top-sellers" class="mx-auto max-w-7xl px-4 lg:px-8 py-8">
+      <div class="flex items-end justify-between mb-6">
+        <h2 class="font-heading text-3xl">Top Sellers</h2>
+        <a href="#" class="text-sm hover:text-gold">تسوقي كل المنتجات</a>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_1}}" data-price="{{product_price_1}}" data-image="{{product_img_1}}" data-desc="تركيبة فاخرة تمنحك نعومة وإشراقة فورية.">
+          <div class="relative aspect-[3/4] overflow-hidden">
+            <img src="{{product_img_1}}" alt="{{product_name_1}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
+            <img src="{{product_hover_img_1}}" alt="{{product_name_1}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
+            <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-20%</span>
+            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_1}}</h3>
+            <p class="text-charcoal font-bold mt-1">{{product_price_1}}</p>
+          </div>
+        </article>
+
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_2}}" data-price="{{product_price_2}}" data-image="{{product_img_2}}" data-desc="مناسب للبشرة الحساسة مع ملمس حريري.">
+          <div class="relative aspect-[3/4] overflow-hidden">
+            <img src="{{product_img_2}}" alt="{{product_name_2}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
+            <img src="{{product_hover_img_2}}" alt="{{product_name_2}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
+            <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-15%</span>
+            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_2}}</h3>
+            <p class="text-charcoal font-bold mt-1">{{product_price_2}}</p>
+          </div>
+        </article>
+
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_3}}" data-price="{{product_price_3}}" data-image="{{product_img_3}}" data-desc="نتائج واضحة ولمعان أنيق طوال اليوم.">
+          <div class="relative aspect-[3/4] overflow-hidden">
+            <img src="{{product_img_3}}" alt="{{product_name_3}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
+            <img src="{{product_hover_img_3}}" alt="{{product_name_3}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
+            <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-30%</span>
+            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_3}}</h3>
+            <p class="text-charcoal font-bold mt-1">{{product_price_3}}</p>
+          </div>
+        </article>
+
+        <article class="product-card bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm group" data-name="{{product_name_4}}" data-price="{{product_price_4}}" data-image="{{product_img_4}}" data-desc="تركيبة متوازنة بلمسة راقية.">
+          <div class="relative aspect-[3/4] overflow-hidden">
+            <img src="{{product_img_4}}" alt="{{product_name_4}}" class="img-primary absolute inset-0 w-full h-full object-cover" />
+            <img src="{{product_hover_img_4}}" alt="{{product_name_4}}" class="img-secondary absolute inset-0 w-full h-full object-cover opacity-0" />
+            <span class="absolute top-3 right-3 bg-gold text-charcoal text-xs font-semibold px-2 py-1 rounded">-10%</span>
+            <button class="quick-view absolute bottom-3 left-3 text-xs bg-charcoal text-white px-3 py-2 rounded-full opacity-90 hover:opacity-100">Quick View</button>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold leading-6 min-h-[48px]">{{product_name_4}}</h3>
+            <p class="text-charcoal font-bold mt-1">{{product_price_4}}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-7xl px-4 lg:px-8 py-10">
+      <div class="relative rounded-3xl overflow-hidden min-h-[420px] shadow-luxury border border-black/10">
+        <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline poster="{{choice_poster}}">
+          <source src="{{choice_video}}" type="video/mp4" />
+        </video>
+        <div class="absolute inset-0 bg-gradient-to-l from-black/30 via-black/40 to-black/70"></div>
+
+        <div class="relative z-10 p-8 md:p-14 text-white max-w-2xl">
+          <p class="uppercase text-xs tracking-[0.3em] text-gold mb-4">Poshy's Choice</p>
+          <h2 class="font-heading text-4xl md:text-5xl leading-tight">لمسة فاخرة لبشرتك اليومية</h2>
+          <p class="mt-4 text-white/85">منتج مختار بعناية من فريق Poshy للحصول على مظهر صحي ومشرق مع قوام مخملي.</p>
+          <a href="#" class="inline-block mt-8 border border-gold text-gold hover:bg-gold hover:text-charcoal transition rounded-full px-7 py-3">اكتشفي المنتج</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-charcoal text-white mt-12">
+    <div class="mx-auto max-w-7xl px-4 lg:px-8 py-12 grid md:grid-cols-3 gap-10">
+      <div>
+        <h3 class="font-heading text-3xl">POSHY STORE</h3>
+        <p class="text-white/70 mt-4 leading-7">تجربة تسوق فاخرة لمنتجات الجمال والعناية الشخصية في الأردن.</p>
+      </div>
+
+      <div>
+        <h4 class="font-semibold text-lg mb-3">Newsletter</h4>
+        <form class="space-y-4">
+          <input type="email" class="underline-input" placeholder="أدخلي بريدك الإلكتروني" required />
+          <button type="submit" class="text-gold hover:text-white transition">Subscribe →</button>
+        </form>
+      </div>
+
+      <div>
+        <h4 class="font-semibold text-lg mb-3">روابط سريعة</h4>
+        <ul class="space-y-2 text-white/70">
+          <li><a href="#" class="hover:text-gold">عن المتجر</a></li>
+          <li><a href="#" class="hover:text-gold">سياسة الشحن</a></li>
+          <li><a href="#" class="hover:text-gold">الاستبدال والاسترجاع</a></li>
+          <li><a href="#" class="hover:text-gold">تواصل معنا</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <div id="quickViewModal" class="modal fixed inset-0 z-[80] bg-black/65 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xl overflow-hidden">
+      <div class="grid md:grid-cols-2">
+        <img id="modalImage" src="" alt="Product" class="w-full h-full object-cover min-h-[280px]" />
+        <div class="p-6">
+          <h3 id="modalTitle" class="font-heading text-2xl"></h3>
+          <p id="modalPrice" class="font-bold text-lg mt-2 text-gold"></p>
+          <p id="modalDesc" class="mt-3 text-sm text-black/70"></p>
+          <div class="mt-6 flex gap-3">
+            <button class="flex-1 bg-charcoal text-white py-3 rounded-xl hover:bg-black transition">إضافة إلى السلة</button>
+            <button id="closeModal" class="px-4 py-3 rounded-xl border border-black/15 hover:bg-black hover:text-white transition">إغلاق</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script>
+    const header = document.getElementById('mainHeader');
+    const megaMenuBtn = document.getElementById('megaMenuBtn');
+    const megaMenu = document.getElementById('megaMenu');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchOverlay = document.getElementById('searchOverlay');
+    const closeSearch = document.getElementById('closeSearch');
+    const modal = document.getElementById('quickViewModal');
+    const closeModal = document.getElementById('closeModal');
+
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 32);
+    });
+
+    if (megaMenuBtn && megaMenu) {
+      megaMenuBtn.addEventListener('mouseenter', () => megaMenu.classList.add('open'));
+      megaMenuBtn.addEventListener('click', () => megaMenu.classList.toggle('open'));
+      megaMenu.addEventListener('mouseleave', () => megaMenu.classList.remove('open'));
+    }
+
+    searchBtn.addEventListener('click', () => searchOverlay.classList.add('open'));
+    closeSearch.addEventListener('click', () => searchOverlay.classList.remove('open'));
+    searchOverlay.addEventListener('click', (e) => {
+      if (e.target === searchOverlay) searchOverlay.classList.remove('open');
+    });
+
+    new Swiper('.hero-swiper', {
+      loop: true,
+      speed: 1100,
+      parallax: true,
+      autoplay: { delay: 5000, disableOnInteraction: false },
+      pagination: { el: '.swiper-pagination', clickable: true }
+    });
+
+    document.querySelectorAll('.quick-view').forEach((button) => {
+      button.addEventListener('click', () => {
+        const card = button.closest('.product-card');
+        document.getElementById('modalTitle').textContent = card.dataset.name;
+        document.getElementById('modalPrice').textContent = card.dataset.price;
+        document.getElementById('modalDesc').textContent = card.dataset.desc;
+        document.getElementById('modalImage').src = card.dataset.image;
+        modal.classList.add('open');
+      });
+    });
+
+    closeModal.addEventListener('click', () => modal.classList.remove('open'));
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('open');
+    });
+  </script>
+</body>
+</html>
