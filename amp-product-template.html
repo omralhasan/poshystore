@@ -1,0 +1,308 @@
+<!doctype html>
+<html ⚡ lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+  <title>{{product_name}} | Poshy Store</title>
+  <meta name="description" content="{{product_seo_description}}">
+
+  <link rel="canonical" href="{{canonical_url}}">
+
+  <script async src="https://cdn.ampproject.org/v0.js"></script>
+  <script async custom-element="amp-carousel" src="https://cdn.ampproject.org/v0/amp-carousel-0.2.js"></script>
+  <script async custom-element="amp-form" src="https://cdn.ampproject.org/v0/amp-form-0.1.js"></script>
+  <script async custom-template="amp-mustache" src="https://cdn.ampproject.org/v0/amp-mustache-0.2.js"></script>
+
+  <style amp-boilerplate>
+    body {
+      -webkit-animation: -amp-start 8s steps(1,end) 0s 1 normal both;
+      -moz-animation: -amp-start 8s steps(1,end) 0s 1 normal both;
+      -ms-animation: -amp-start 8s steps(1,end) 0s 1 normal both;
+      animation: -amp-start 8s steps(1,end) 0s 1 normal both;
+    }
+
+    @-webkit-keyframes -amp-start {
+      from { visibility: hidden; }
+      to { visibility: visible; }
+    }
+
+    @-moz-keyframes -amp-start {
+      from { visibility: hidden; }
+      to { visibility: visible; }
+    }
+
+    @-ms-keyframes -amp-start {
+      from { visibility: hidden; }
+      to { visibility: visible; }
+    }
+
+    @-o-keyframes -amp-start {
+      from { visibility: hidden; }
+      to { visibility: visible; }
+    }
+
+    @keyframes -amp-start {
+      from { visibility: hidden; }
+      to { visibility: visible; }
+    }
+  </style>
+  <noscript>
+    <style amp-boilerplate>
+      body {
+        -webkit-animation: none;
+        -moz-animation: none;
+        -ms-animation: none;
+        animation: none;
+      }
+    </style>
+  </noscript>
+
+  <style amp-custom>
+    :root {
+      --bg: #f6f3ef;
+      --surface: #ffffff;
+      --text: #151515;
+      --muted: #6e6a66;
+      --accent: #1f1f1f;
+      --border: #e6e0d8;
+      --price: #8b6a2f;
+      --ok: #215732;
+      --err: #9f2b2b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .product {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    }
+
+    .media {
+      border-bottom: 1px solid var(--border);
+      background: #faf8f5;
+    }
+
+    .hero {
+      width: 100%;
+      display: block;
+    }
+
+    .gallery {
+      margin-top: 8px;
+      padding: 0 8px 12px;
+    }
+
+    .gallery amp-img {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .details {
+      padding: 20px 16px 24px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .price {
+      margin: 8px 0 0;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--price);
+    }
+
+    .description {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .form {
+      margin-top: 20px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .field,
+    .qty {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 0.95rem;
+    }
+
+    .actions {
+      margin-top: 2px;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 13px 18px;
+      cursor: pointer;
+    }
+
+    .msg {
+      margin-top: 4px;
+      font-size: 0.9rem;
+    }
+
+    .msg.success {
+      color: var(--ok);
+    }
+
+    .msg.error {
+      color: var(--err);
+    }
+
+    .meta {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    @media (min-width: 768px) {
+      .page {
+        padding: 28px;
+      }
+
+      .product {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .media {
+        border-right: 1px solid var(--border);
+        border-bottom: 0;
+      }
+
+      .details {
+        padding: 32px;
+      }
+
+      .title {
+        font-size: 1.9rem;
+      }
+
+      .price {
+        font-size: 1.55rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="product" aria-label="Product details">
+      <section class="media">
+        <amp-img
+          class="hero"
+          src="{{product_image_1}}"
+          width="1200"
+          height="1200"
+          layout="responsive"
+          alt="{{product_name}} main image">
+        </amp-img>
+
+        <div class="gallery">
+          <amp-carousel
+            width="800"
+            height="800"
+            layout="responsive"
+            type="slides"
+            controls
+            aria-label="Product image gallery">
+            <amp-img src="{{product_image_1}}" width="800" height="800" layout="responsive" alt="{{product_name}} image 1"></amp-img>
+            <amp-img src="{{product_image_2}}" width="800" height="800" layout="responsive" alt="{{product_name}} image 2"></amp-img>
+            <amp-img src="{{product_image_3}}" width="800" height="800" layout="responsive" alt="{{product_name}} image 3"></amp-img>
+          </amp-carousel>
+        </div>
+      </section>
+
+      <section class="details">
+        <h1 class="title">{{product_name}}</h1>
+        <p class="price">{{product_price}}</p>
+        <p class="description">{{product_description}}</p>
+
+     <form class="form" method="post" action-xhr="/api/add-to-cart" target="_top">
+          <input type="hidden" name="product_id" value="{{product_id}}">
+          <input type="hidden" name="product_name" value="{{product_name}}">
+          <input type="hidden" name="product_price" value="{{product_price_raw}}">
+
+          <div>
+            <label class="label" for="variant">Select Option</label>
+            <select id="variant" class="field" name="variant" required>
+              <option value="default">Default</option>
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="label" for="quantity">Quantity</label>
+            <input id="quantity" class="qty" type="number" name="quantity" min="1" value="1" required>
+          </div>
+
+          <div class="actions">
+            <button class="btn" type="submit">Add to Cart</button>
+          </div>
+
+          <div submit-success>
+            <template type="amp-mustache">
+              <p class="msg success">{{message}}</p>
+            </template>
+          </div>
+
+          <div submit-error>
+            <template type="amp-mustache">
+              <p class="msg error">{{message}}</p>
+            </template>
+          </div>
+        </form>
+
+        <p class="meta">SKU: {{product_sku}}</p>
+      </section>
+    </article>
+  </main>
+</body>
+</html>
