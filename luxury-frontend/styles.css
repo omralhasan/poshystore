@@ -1,0 +1,116 @@
+:root {
+  --lux-gold: #c5a059;
+  --lux-charcoal: #111111;
+  --lux-cream: #f8f6f3;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--lux-cream); }
+
+.header-glass {
+  background: rgba(248, 246, 243, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.1);
+}
+
+.mega-menu {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.mega-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.search-suggestions {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.search-suggestions::-webkit-scrollbar { width: 6px; }
+.search-suggestions::-webkit-scrollbar-thumb {
+  background: rgba(17,17,17,.2);
+  border-radius: 999px;
+}
+
+.product-card img {
+  transition: transform .35s ease, opacity .3s ease;
+}
+
+.product-card:hover .p-image-primary {
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+.product-card:hover .p-image-secondary {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.cart-drawer {
+  transform: translateX(100%);
+  transition: transform .3s ease;
+}
+
+[dir="rtl"] .cart-drawer {
+  transform: translateX(-100%);
+}
+
+.cart-drawer.open {
+  transform: translateX(0);
+}
+
+.overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
+.overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.qty-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.cart-pop {
+  animation: cartPop .45s ease;
+}
+
+@keyframes cartPop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.filter-accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+
+.filter-accordion.open .filter-accordion-content {
+  max-height: 260px;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.hero-swiper,
+.hero-swiper .swiper-slide {
+  min-height: 72vh;
+}
+
+@media (max-width: 768px) {
+  .hero-swiper,
+  .hero-swiper .swiper-slide {
+    min-height: 60vh;
+  }
+}

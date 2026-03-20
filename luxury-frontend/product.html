@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poshy Store | Product</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: { colors: { cream:'#f8f6f3', charcoal:'#111', gold:'#c5a059' }, fontFamily: { heading:['Playfair Display','serif'], body:['Inter','sans-serif'] } } } }
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="font-body text-charcoal bg-cream">
+  <div class="bg-charcoal text-white text-center text-xs md:text-sm py-2">Luxury offers live now · New arrivals every week</div>
+  <header class="header-glass sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8">
+      <div class="h-20 grid grid-cols-3 items-center gap-3">
+        <div id="searchWrapper" class="relative"><input id="siteSearch" class="w-full border border-black/15 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-gold" placeholder="Search products, brands..." /><div id="searchSuggestions" class="search-suggestions hidden absolute top-11 left-0 right-0 bg-white border border-black/10 rounded-xl shadow-xl z-50"></div></div>
+        <a href="index.html" class="text-center font-heading text-xl md:text-2xl tracking-[0.2em]">POSHY STORE</a>
+        <div class="flex items-center justify-end gap-4 text-sm"><button id="langToggle" class="px-2 py-1 border border-black/20 rounded-md hover:border-gold hover:text-gold">العربية</button><button id="openCartBtn" data-cart-icon class="relative">Cart <span data-cart-count class="hidden absolute -top-2 -right-3 bg-gold text-charcoal text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold">0</span></button></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+    <div class="grid lg:grid-cols-2 gap-10">
+      <section>
+        <div class="swiper pdp-main-swiper rounded-2xl overflow-hidden border border-black/10">
+          <div class="swiper-wrapper">
+            <div class="swiper-slide"><img src="product-1.jpg" class="w-full aspect-[4/5] object-cover" alt="product" /></div>
+            <div class="swiper-slide"><img src="product-1-alt.jpg" class="w-full aspect-[4/5] object-cover" alt="product" /></div>
+            <div class="swiper-slide"><img src="product-1-detail.jpg" class="w-full aspect-[4/5] object-cover" alt="product" /></div>
+          </div>
+        </div>
+        <div class="swiper pdp-thumbs-swiper mt-3">
+          <div class="swiper-wrapper">
+            <div class="swiper-slide"><img src="product-1.jpg" class="w-full aspect-square object-cover rounded-lg border border-black/10" alt="thumb"></div>
+            <div class="swiper-slide"><img src="product-1-alt.jpg" class="w-full aspect-square object-cover rounded-lg border border-black/10" alt="thumb"></div>
+            <div class="swiper-slide"><img src="product-1-detail.jpg" class="w-full aspect-square object-cover rounded-lg border border-black/10" alt="thumb"></div>
+            <div class="swiper-slide"><img src="product-1-pack.jpg" class="w-full aspect-square object-cover rounded-lg border border-black/10" alt="thumb"></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="uppercase tracking-[0.28em] text-xs text-gold">Skincare</p>
+        <h1 class="font-heading text-4xl mt-2">Hydra Glow Serum</h1>
+        <div class="flex items-center gap-1 text-gold mt-3">★★★★★ <span class="text-black/60 text-sm ms-2">4.9 (124 reviews)</span></div>
+        <div class="mt-4 flex items-center gap-3"><span class="text-2xl font-semibold">$29.00</span><span class="text-black/45 line-through">$39.00</span></div>
+
+        <div class="mt-6 flex items-center gap-3">
+          <button id="qtyMinus" class="qty-btn border border-black/20 rounded-lg">-</button>
+          <input id="pdpQty" type="number" min="1" value="1" class="w-16 h-9 text-center border border-black/20 rounded-lg" />
+          <button id="qtyPlus" class="qty-btn border border-black/20 rounded-lg">+</button>
+        </div>
+
+        <button id="pdpAddToCart" class="w-full mt-5 bg-black text-white rounded-xl py-4 font-medium hover:bg-gold hover:text-charcoal transition">Add to Cart</button>
+
+        <div class="mt-8 border-t border-black/10 pt-6">
+          <div class="flex gap-5 border-b border-black/10 pb-3 text-sm font-medium">
+            <button data-tab-btn="tab-description" class="border-b-2 border-black pb-2">Description</button>
+            <button data-tab-btn="tab-how" class="border-b-2 border-transparent pb-2">How to Use</button>
+            <button data-tab-btn="tab-ingredients" class="border-b-2 border-transparent pb-2">Ingredients</button>
+          </div>
+          <div id="tab-description" class="tab-content active pt-4 text-sm text-black/75">A lightweight serum that delivers deep hydration and visible glow with long-lasting comfort.</div>
+          <div id="tab-how" class="tab-content pt-4 text-sm text-black/75">Apply 2-3 drops to clean skin, morning and evening, followed by moisturizer.</div>
+          <div id="tab-ingredients" class="tab-content pt-4 text-sm text-black/75">Hyaluronic Acid, Niacinamide, Panthenol, Centella Asiatica Extract.</div>
+        </div>
+      </section>
+    </div>
+
+    <section class="mt-16">
+      <div class="flex items-center justify-between mb-5"><h2 class="font-heading text-3xl">You May Also Like</h2><a href="shop.html" class="text-sm hover:text-gold">View All</a></div>
+      <div class="swiper related-swiper">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide"><a href="product.html?id=2" class="block bg-white rounded-2xl overflow-hidden border border-black/10"><img src="product-2.jpg" class="w-full aspect-[4/5] object-cover"><div class="p-3"><p class="text-sm font-medium">Velvet Clean Cleanser</p><p class="text-sm font-semibold mt-1">$21.00</p></div></a></div>
+          <div class="swiper-slide"><a href="product.html?id=3" class="block bg-white rounded-2xl overflow-hidden border border-black/10"><img src="product-3.jpg" class="w-full aspect-[4/5] object-cover"><div class="p-3"><p class="text-sm font-medium">Silk Repair Cream</p><p class="text-sm font-semibold mt-1">$34.00</p></div></a></div>
+          <div class="swiper-slide"><a href="product.html?id=4" class="block bg-white rounded-2xl overflow-hidden border border-black/10"><img src="product-4.jpg" class="w-full aspect-[4/5] object-cover"><div class="p-3"><p class="text-sm font-medium">Golden Lift Eye Gel</p><p class="text-sm font-semibold mt-1">$26.00</p></div></a></div>
+          <div class="swiper-slide"><a href="product.html?id=5" class="block bg-white rounded-2xl overflow-hidden border border-black/10"><img src="product-5.jpg" class="w-full aspect-[4/5] object-cover"><div class="p-3"><p class="text-sm font-medium">Nourish Hair Mask</p><p class="text-sm font-semibold mt-1">$24.00</p></div></a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-charcoal text-white mt-16">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8 py-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div><h4 class="font-heading text-xl mb-4">About</h4><p class="text-white/70 text-sm">Poshy Store delivers premium beauty essentials with a luxury shopping experience.</p></div>
+      <div><h4 class="font-heading text-xl mb-4">Customer Service</h4><ul class="space-y-2 text-sm text-white/75"><li><a href="#" class="hover:text-gold">Shipping</a></li><li><a href="#" class="hover:text-gold">Returns</a></li><li><a href="#" class="hover:text-gold">FAQs</a></li></ul></div>
+      <div><h4 class="font-heading text-xl mb-4">Links</h4><ul class="space-y-2 text-sm text-white/75"><li><a href="index.html" class="hover:text-gold">Home</a></li><li><a href="shop.html" class="hover:text-gold">Shop</a></li><li><a href="cart.html" class="hover:text-gold">Cart</a></li></ul></div>
+      <div><h4 class="font-heading text-xl mb-4">Newsletter</h4><p class="text-sm text-white/70 mb-3">Get product drops and exclusive offers.</p><div class="flex"><input class="flex-1 rounded-l-xl px-3 py-2 text-black text-sm" placeholder="Email"><button class="bg-gold text-charcoal px-4 rounded-r-xl text-sm font-semibold">Join</button></div></div>
+    </div>
+    <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">© 2026 Poshy Store. All rights reserved.</div>
+  </footer>
+
+  <div id="cartOverlay" class="overlay fixed inset-0 bg-black/40 z-[70]"></div>
+  <aside id="cartDrawer" class="cart-drawer fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white z-[80] shadow-xl p-5"><div class="flex justify-between items-center mb-4"><h3 class="font-heading text-2xl">Your Cart</h3><button id="closeCartBtn" class="text-sm border border-black/20 rounded-lg px-3 py-1">Close</button></div><div id="cartDrawerItems" class="space-y-4"></div><div class="mt-6 border-t border-black/10 pt-4"><div class="flex justify-between mb-4"><span>Subtotal</span><strong id="cartSubtotal">$0.00</strong></div><a href="checkout.html" class="block text-center bg-black text-white rounded-xl py-3 font-medium">Checkout</a><a href="cart.html" class="block text-center border border-black/20 rounded-xl py-3 font-medium mt-2">View Cart</a></div></aside>
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
