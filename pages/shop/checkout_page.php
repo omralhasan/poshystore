@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= t('checkout') ?> - Poshy Store</title>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -320,7 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/../../includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
     
     <div class="page-container">
     <div class="container py-5">
@@ -1123,6 +1123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         });
     </script>
     
-    <?php require_once __DIR__ . '/../../includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>

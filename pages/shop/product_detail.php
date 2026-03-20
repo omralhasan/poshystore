@@ -78,7 +78,7 @@ if ($is_logged_in) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?> - Poshy Store</title>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         /* Product Detail Page Enhancements */
         .back-link {
@@ -1369,7 +1369,7 @@ if ($is_logged_in) {
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/../../includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
     
     <div class="page-container">
     <div class="container py-5">
@@ -2453,7 +2453,7 @@ if ($is_logged_in) {
         <div class="lightbox-counter" id="lightboxCounter"></div>
     </div>
     
-    <?php require_once __DIR__ . '/../../includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 
     <?php if (!empty($product['video_review_url']) && (strpos($product['video_review_url'], 'uploads/') === 0 || strpos($product['video_review_url'], '/uploads/') === 0)): ?>
     <!-- Sticky Mini Video Player -->

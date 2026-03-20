@@ -16,7 +16,7 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $current_lang === 'ar' ? 'تم تأكيد الطلب' : 'Order Confirmed' ?> - Poshy Store</title>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #e8e8e8 0%, #f5f5f5 100%); min-height: 100vh; }
         .success-container { max-width: 600px; margin: 3rem auto; padding: 0 1rem; text-align: center; }
@@ -33,7 +33,7 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/../../includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
     
     <div class="page-container">
     <div class="success-container">
@@ -77,6 +77,6 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
     </div>
     </div>
     
-    <?php require_once __DIR__ . '/../../includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>

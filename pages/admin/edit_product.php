@@ -523,7 +523,7 @@ if (is_dir($img_folder)) {
         @media(max-width:1024px){.sidebar{width:70px;}.sidebar .logo,.sidebar .admin-badge,.sidebar .nav-item span,.sidebar .logout-btn span{display:none;}.nav-item{justify-content:center;padding:.75rem;}.main-content{margin-left:70px;}.form-grid,.price-grid{grid-template-columns:1fr;}}
         @media(max-width:768px){.sidebar{display:none;}.main-content{margin-left:0;padding:1rem;}}
     </style>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
 </head>
 <body>
 <div class="sidebar">

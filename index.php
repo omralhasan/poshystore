@@ -220,7 +220,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <meta name="description" content="Poshy Store - Premium beauty & skincare products">
     <title><?= t('welcome') ?> - Poshy Store</title>
     
-    <?php require_once __DIR__ . '/includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
     
     <style>
         :root {
@@ -253,7 +253,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         [dir="rtl"] .ms-2 { margin-left: 0 !important; margin-right: 0.5rem !important; }
         [dir="rtl"] .ms-3 { margin-left: 0 !important; margin-right: 1rem !important; }
 
-        /* Navbar handled by ramadan_navbar.php */
+        /* Navbar handled by home_navbar.php */
 
         /* ============ HERO SECTION ============ */
         .hero {
@@ -1213,7 +1213,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 </head>
 <body>
 
-    <?php require_once __DIR__ . '/includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
 
     <!-- ======== WELCOME DISCOUNT BANNER TAPE ======== -->
     <div id="promo-tape" style="background: linear-gradient(90deg, #2d132c, #6c3fa0, #c9a86a, #6c3fa0, #2d132c); background-size: 200% 100%; animation: promoShimmer 4s ease-in-out infinite; color: #fff; text-align: center; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; position: relative; z-index: 900; letter-spacing: 0.5px;">
@@ -1522,7 +1522,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     </section>
 
     <!-- ======== FOOTER ======== -->
-    <?php require_once __DIR__ . '/includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_footer.php'; ?>
 
     <script>
     // Current language for translations

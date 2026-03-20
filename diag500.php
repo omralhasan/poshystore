@@ -51,8 +51,8 @@ $files = [
     'includes/product_manager.php',
     'includes/cart_handler.php',
     'includes/language.php',
-    'includes/ramadan_navbar.php',
-    'includes/ramadan_theme_header.php',
+    'includes/home_navbar.php',
+    'includes/home_theme_header.php',
 ];
 foreach ($files as $f) {
     $exists = file_exists(__DIR__ . '/' . $f);

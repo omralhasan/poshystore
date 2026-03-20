@@ -82,7 +82,7 @@ if ($selected_product_id) {
     <title>Edit Product Information - Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);

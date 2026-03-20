@@ -52,7 +52,7 @@ unset($order); // Break reference
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $current_lang === 'ar' ? 'طلباتي' : 'My Orders' ?> - Poshy Store</title>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -651,7 +651,7 @@ unset($order); // Break reference
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/../../includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
     
     <div class="page-container">
     <div class="container py-5">
@@ -1077,6 +1077,6 @@ unset($order); // Break reference
     </div>
     </div>
     
-    <?php require_once __DIR__ . '/../../includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>

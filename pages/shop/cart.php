@@ -52,7 +52,7 @@ $total_items = $cart['total_items'] ?? 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= t('shopping_cart') ?> - Poshy Store</title>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         .cart-item {
             background: linear-gradient(135deg, #ffffff 0%, #fffbf8 100%);
@@ -533,7 +533,7 @@ $total_items = $cart['total_items'] ?? 0;
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/../../includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
     
     <div class="page-container">
         <div class="container py-5">
@@ -979,6 +979,6 @@ $total_items = $cart['total_items'] ?? 0;
         });
     </script>
     
-    <?php require_once __DIR__ . '/../../includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>

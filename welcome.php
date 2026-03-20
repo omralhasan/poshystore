@@ -15,7 +15,7 @@ $is_logged_in = isset($_SESSION['user_id']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome - Poshy Store</title>
-    <?php require_once __DIR__ . '/includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
     <style>
         .welcome-wrapper {
             min-height: calc(100vh - 200px);
@@ -217,7 +217,7 @@ $is_logged_in = isset($_SESSION['user_id']);
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
     
     <div class="page-container">
     <div class="welcome-wrapper">
@@ -273,6 +273,6 @@ $is_logged_in = isset($_SESSION['user_id']);
     </div>
     </div>
     
-    <?php require_once __DIR__ . '/includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_footer.php'; ?>
 </body>
 </html>

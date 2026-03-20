@@ -58,7 +58,7 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
     <?php endif; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <?php require_once __DIR__ . '/includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
     <style>
         .podcast-container {
             max-width: 900px;
@@ -205,7 +205,7 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
     </style>
 </head>
 <body>
-    <?php require_once __DIR__ . '/includes/ramadan_navbar.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
 
     <div class="podcast-container">
         <a href="podcast.php" class="back-link">
@@ -256,7 +256,7 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
         <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); nextImage()"><i class="fas fa-chevron-right"></i></button>
     </div>
 
-    <?php require_once __DIR__ . '/includes/ramadan_footer.php'; ?>
+    <?php require_once __DIR__ . '/includes/home_footer.php'; ?>
 
     <script>
     const images = <?php echo json_encode(array_map(fn($img) => $img['image_path'], $gallery)); ?>;

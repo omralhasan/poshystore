@@ -205,7 +205,7 @@ tr:hover{background:rgba(79,158,255,.03);}
 @media(max-width:1024px){.sidebar{width:70px;}.sidebar .logo,.sidebar .admin-badge,.sidebar .nav-item span,.sidebar .logout-btn span{display:none;}.nav-item{justify-content:center;padding:.75rem;}.main-content{margin-left:70px;}.filter-bar{flex-direction:column;}.filter-bar input[type="search"]{min-width:100%;}}
 @media(max-width:768px){.sidebar{display:none;}.main-content{margin-left:0;padding:1rem;}.page-header{flex-direction:column;text-align:center;}}
 </style>
-<?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+<?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
 </head>
 <body>
 <div class="sidebar">

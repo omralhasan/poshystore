@@ -359,7 +359,7 @@ if (isset($_GET['edit'])) {
         @media (max-width: 1024px) { .sidebar { width: 70px; } .sidebar .logo, .sidebar .admin-badge, .sidebar .nav-item span, .sidebar .logout-btn span { display: none; } .sidebar-header { padding: 1rem .5rem; text-align: center; } .nav-item { justify-content: center; padding: .75rem; } .main-content { margin-left: 70px; } .form-grid { grid-template-columns: 1fr; } }
         @media (max-width: 768px) { .sidebar { display: none; } .main-content { margin-left: 0; padding: 1rem; } }
     </style>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
 </head>
 <body>
 <div class="sidebar">

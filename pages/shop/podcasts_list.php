@@ -121,7 +121,7 @@ if ($result) {
             .page-header-bar h1 { font-size: 1.75rem; }
         }
     </style>
-    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
 </head>
 <body>
     <div class="page-header-bar">
