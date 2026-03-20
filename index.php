@@ -79,7 +79,11 @@ if ($is_logged_in) {
 
 // Get search & filter params (sanitized)
 $search_query = isset($_GET['search']) ? trim(htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8')) : '';
-$active_category = isset($_GET['category']) ? (int)$_GET['category'] : 0;
+$category_param = isset($_GET['category']) ? trim((string)$_GET['category']) : '';
+$active_category = ctype_digit($category_param) ? (int)$category_param : 0;
+$active_category_keyword = ($active_category === 0 && $category_param !== '')
+    ? strtolower(preg_replace('/[^a-z0-9]+/', '', $category_param))
+    : '';
 $active_subcategory = isset($_GET['subcategory']) ? (int)$_GET['subcategory'] : 0;
 $active_brand = isset($_GET['brand']) ? (int)$_GET['brand'] : 0;
 $active_tag = isset($_GET['tag']) ? trim($_GET['tag']) : '';
@@ -91,6 +95,61 @@ try {
     $all_categories = getAllCategories();
 } catch (Exception $e) {
     error_log("Failed to load categories: " . $e->getMessage());
+}
+
+// Homepage category set: Skin Care, Hair Care, Makeup
+$homepage_categories = [];
+$home_category_slots = [
+    'skin' => null,
+    'hair' => null,
+    'makeup' => null,
+];
+
+foreach ($all_categories as $cat) {
+    $name_en = strtolower(trim((string)($cat['name_en'] ?? '')));
+    $normalized = preg_replace('/[^a-z0-9]+/', '', $name_en);
+
+    if ($home_category_slots['skin'] === null && (str_contains($normalized, 'skin') || str_contains($normalized, 'skincare'))) {
+        $home_category_slots['skin'] = $cat;
+        continue;
+    }
+    if ($home_category_slots['hair'] === null && (str_contains($normalized, 'hair') || str_contains($normalized, 'haircare'))) {
+        $home_category_slots['hair'] = $cat;
+        continue;
+    }
+    if ($home_category_slots['makeup'] === null && (str_contains($normalized, 'makeup') || str_contains($normalized, 'cosmetic'))) {
+        $home_category_slots['makeup'] = $cat;
+        continue;
+    }
+}
+
+foreach (['skin', 'hair', 'makeup'] as $slot) {
+    if (!empty($home_category_slots[$slot])) {
+        $homepage_categories[] = $home_category_slots[$slot];
+    }
+}
+
+// Allow category filter by keyword slug (e.g. category=skin-care)
+if ($active_category === 0 && $active_category_keyword !== '') {
+    if (str_contains($active_category_keyword, 'skin') && !empty($home_category_slots['skin'])) {
+        $active_category = (int)$home_category_slots['skin']['id'];
+    } elseif (str_contains($active_category_keyword, 'hair') && !empty($home_category_slots['hair'])) {
+        $active_category = (int)$home_category_slots['hair']['id'];
+    } elseif ((str_contains($active_category_keyword, 'makeup') || str_contains($active_category_keyword, 'cosmetic')) && !empty($home_category_slots['makeup'])) {
+        $active_category = (int)$home_category_slots['makeup']['id'];
+    }
+}
+
+$active_category_name = '';
+if ($active_category > 0) {
+    foreach ($all_categories as $cat) {
+        if ((int)$cat['id'] === $active_category) {
+            $active_category_name = $lang === 'ar'
+                ? (!empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en'])
+                : $cat['name_en'];
+            break;
+        }
+    }
 }
 
 // Load brands for filter dropdown
@@ -1240,16 +1299,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                             id="categoryFilter"
                             onchange="applySearchFilter()">
                         <option value="0"><?= $lang === 'ar' ? '📂 كل الفئات' : '📂 All Categories' ?></option>
-                        <?php foreach ($all_categories as $cat): ?>
-                            <optgroup label="<?= htmlspecialchars($lang === 'ar' ? $cat['name_ar'] : $cat['name_en']) ?>">
-                                <?php foreach ($cat['subcategories'] as $sub): ?>
-                                    <option value="<?= (int)$sub['id'] ?>" data-is-sub="1"
-                                            <?= $active_subcategory === (int)$sub['id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($lang === 'ar' ? $sub['name_ar'] : $sub['name_en']) ?>
-                                        (<?= $sub['product_count'] ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
+                        <?php foreach ($homepage_categories as $cat): ?>
+                            <option value="<?= (int)$cat['id'] ?>" <?= $active_category === (int)$cat['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($lang === 'ar' && !empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en']) ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                     <?php if ($active_brand > 0 || $active_category > 0 || $active_subcategory > 0): ?>
@@ -1261,25 +1314,18 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             </div>
             
             <!-- Categories -->
-            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && !empty($all_categories)): ?>
+            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && !empty($homepage_categories)): ?>
             <div class="category-chips">
-                <a href="javascript:void(0)" onclick="filterByCategory(0, this)" class="cat-chip <?= ($active_subcategory === 0 && $active_category === 0 && !$show_all) ? 'active' : '' ?>">
-                    <i class="fas fa-th-large"></i>
-                    <?= $lang === 'ar' ? 'الكل' : 'All' ?>
-                </a>
-                <?php foreach ($all_categories as $cat): ?>
-                    <?php foreach ($cat['subcategories'] as $sub): ?>
-                        <a href="javascript:void(0)" onclick="filterByCategory(<?= $sub['id'] ?>, this)"
-                           class="cat-chip <?= $active_subcategory === (int)$sub['id'] ? 'active' : '' ?>">
-                            <?php if (!empty($sub['icon'])): ?>
-                                <i class="<?= htmlspecialchars($sub['icon']) ?>"></i>
-                            <?php endif; ?>
-                            <?= $lang === 'ar' ? htmlspecialchars($sub['name_ar']) : htmlspecialchars($sub['name_en']) ?>
-                            <?php if ($sub['product_count'] > 0): ?>
-                                <span class="chip-count"><?= $sub['product_count'] ?></span>
-                            <?php endif; ?>
-                        </a>
-                    <?php endforeach; ?>
+                <?php foreach ($homepage_categories as $cat): ?>
+                    <a href="index.php?category=<?= (int)$cat['id'] ?>#products"
+                       class="cat-chip <?= ($active_category === (int)$cat['id'] && $active_subcategory === 0) ? 'active' : '' ?>">
+                        <?php if (!empty($cat['icon'])): ?>
+                            <i class="<?= htmlspecialchars($cat['icon']) ?>"></i>
+                        <?php else: ?>
+                            <i class="fas fa-tag"></i>
+                        <?php endif; ?>
+                        <?= htmlspecialchars($lang === 'ar' && !empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en']) ?>
+                    </a>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
@@ -1341,6 +1387,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     }
                     echo htmlspecialchars($active_sub_name ?: t('products'));
                     ?>
+                <?php elseif ($active_category > 0): ?>
+                    <?= htmlspecialchars($active_category_name ?: t('products')) ?>
                 <?php elseif ($is_search_mode): ?>
                     <?= t('search_results_for') ?>
                 <?php else: ?>
