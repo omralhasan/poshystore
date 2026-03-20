@@ -288,6 +288,7 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
             .main-content { margin-left: 0; padding: 1rem; }
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
 </head>
 <body>
 

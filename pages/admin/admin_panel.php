@@ -1079,6 +1079,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             to { transform: rotate(360deg); }
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
 </head>
 <body>
     <!-- Sidebar -->

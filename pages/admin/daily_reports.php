@@ -366,6 +366,7 @@ $total_orders = count($orders);
             }
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
 </head>
 <body>
     <div class="container">

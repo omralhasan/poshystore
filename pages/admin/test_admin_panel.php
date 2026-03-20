@@ -5,7 +5,9 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-echo "<!DOCTYPE html><html><head><title>Admin Panel Test</title></head><body>";
+echo "<!DOCTYPE html><html><head><title>Admin Panel Test</title>";
+require_once __DIR__ . '/../../includes/ramadan_theme_header.php';
+echo "</head><body>";
 echo "<h1>Admin Panel Access Test</h1>";
 
 echo "<h3>Step 1: Session Start</h3>";

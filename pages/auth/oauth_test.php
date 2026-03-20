@@ -103,6 +103,7 @@
             border-radius: 3px;
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
 </head>
 <body>
     <div class="card">

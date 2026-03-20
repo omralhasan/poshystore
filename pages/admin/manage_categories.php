@@ -220,6 +220,7 @@ if ($result) {
         }
         @media (max-width: 768px) { .sidebar { display: none; } .main-content { margin-left: 0; padding: 1rem; } }
     </style>
+    <?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
 </head>
 <body>
 

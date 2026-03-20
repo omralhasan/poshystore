@@ -112,6 +112,7 @@ th{background:var(--bg-light);font-weight:700;font-size:.85rem;text-transform:up
 .badge-info{background:rgba(79,158,255,.15);color:var(--accent-blue);}
 @media(max-width:768px){.sidebar{display:none;}.main-content{margin-left:0;}.form-row{flex-direction:column;}}
 </style>
+<?php require_once __DIR__ . '/../../includes/ramadan_theme_header.php'; ?>
 </head>
 <body>
 <div class="sidebar">
