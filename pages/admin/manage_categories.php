@@ -23,22 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name_en = trim($_POST['name_en'] ?? '');
         $name_ar = trim($_POST['name_ar'] ?? '');
         if (!$name_en) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
-        
-        $image_path = null;
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $upload_dir = __DIR__ . '/../../uploads/categories/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'svg', 'webp', 'gif'])) {
-                $filename = uniqid('cat_') . '.' . $ext;
-                if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $filename)) {
-                    $image_path = 'uploads/categories/' . $filename;
-                }
-            }
-        }
-
-        $stmt = $conn->prepare("INSERT INTO categories (name_en, name_ar, image_path) VALUES (?, ?, ?)");
-        $stmt->bind_param('sss', $name_en, $name_ar, $image_path);
+        $stmt = $conn->prepare("INSERT INTO categories (name_en, name_ar) VALUES (?, ?)");
+        $stmt->bind_param('ss', $name_en, $name_ar);
         if ($stmt->execute()) {
             $new_id = $stmt->insert_id;
             $stmt->close();
@@ -138,7 +124,7 @@ if ($result) {
     while ($row = $result->fetch_assoc()) {
         $cid = $row['cid'];
         if (!isset($categories[$cid])) {
-            $categories[$cid] = ['id' => $cid, 'name_en' => $row['cen'], 'name_ar' => $row['car'], 'image_path' => $row['cimage'] ?? null, 'subcategories' => []];
+            $categories[$cid] = ['id' => $cid, 'name_en' => $row['cen'], 'name_ar' => $row['car'], 'subcategories' => []];
         }
         if ($row['sid']) {
             $categories[$cid]['subcategories'][] = [
@@ -268,9 +254,10 @@ if ($result) {
     <!-- Add Category + Add Subcategory forms -->
     <div class="cards-row">
 
+        <!-- Add Category -->
         <div class="form-card">
             <h2><i class="fas fa-folder-plus"></i> Add New Category</h2>
-            <form id="addCategoryForm" enctype="multipart/form-data">
+            <form id="addCategoryForm">
                 <div class="form-group">
                     <label>Category Name (English) <span style="color:red">*</span></label>
                     <input type="text" name="name_en" id="catNameEn" placeholder="e.g. Skincare" required>
@@ -278,11 +265,6 @@ if ($result) {
                 <div class="form-group">
                     <label>Category Name (Arabic)</label>
                     <input type="text" name="name_ar" id="catNameAr" placeholder="مثال: العناية بالبشرة" dir="rtl">
-                </div>
-                <div class="form-group">
-                    <label>Category Image (Optional)</label>
-                    <input type="file" name="image" id="catImage" accept="image/*">
-                    <div class="help-text">JPG, PNG, WebP. Recommended for homepage Category Stories.</div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center">
                     <i class="fas fa-plus"></i> Add Category
@@ -391,10 +373,8 @@ function showToast(msg, type = 'success') {
 }
 
 function post(data) {
-    const fd = data instanceof FormData ? data : new FormData();
-    if (!(data instanceof FormData)) {
-        for (const k in data) fd.append(k, data[k]);
-    }
+    const fd = new FormData();
+    for (const k in data) fd.append(k, data[k]);
     return fetch('manage_categories.php', { method: 'POST', body: fd }).then(r => r.json());
 }
 
@@ -402,12 +382,10 @@ function post(data) {
 document.getElementById('addCategoryForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const name_en = document.getElementById('catNameEn').value.trim();
+    const name_ar = document.getElementById('catNameAr').value.trim();
     if (!name_en) { showToast('English name is required', 'error'); return; }
 
-    const fd = new FormData(this);
-    fd.append('action', 'add_category');
-
-    post(fd).then(data => {
+    post({ action: 'add_category', name_en, name_ar }).then(data => {
         if (data.success) {
             showToast('Category added!');
             this.reset();

@@ -725,7 +725,3 @@ header('X-Frame-Options: SAMEORIGIN');
     </script>
 </body>
 </html>
-    }
-    </script>
-</body>
-</html>
