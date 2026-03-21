@@ -13,11 +13,12 @@ require_once __DIR__ . '/config.php';
 $request_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 $request_path = rtrim($request_path, '/');
 
-// Serve the new luxury homepage on root URL
-if ($request_path === '' || $request_path === '/') {
-    require __DIR__ . '/poshy-luxury-home.html';
-    exit;
-}
+// The redesigned index.php now serves as the main landing page
+// No separate landing page needed - the Beauty Box design is built into index.php
+// if ($request_path === '' || $request_path === '/') {
+//     require __DIR__ . '/poshy-luxury-home.html';
+//     exit;
+// }
 
 // A slug looks like /some-product-name (lowercase, digits, hyphens only)
 // Exclude known paths: /index.php, /pages/..., /api/..., /images/..., etc.
@@ -224,28 +225,30 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     
     <style>
         :root {
-            --primary: var(--deep-purple, #2d132c);
-            --primary-light: var(--purple-dark, #1a0a18);
-            --accent: var(--royal-gold, #c9a86a);
-            --accent-light: var(--gold-light, #e4d4b4);
+            --primary: #000000;
+            --primary-light: #222222;
+            --accent: #C5A059;
+            --accent-light: #D8BE85;
             --accent-dark: #a88a4e;
             --surface: #ffffff;
-            --surface-alt: var(--creamy-white, #fcf8f2);
-            --surface-hover: #f0ede6;
-            --text-primary: var(--deep-purple, #2d132c);
-            --text-secondary: #6b7280;
-            --text-muted: #9ca3af;
-            --border: #e5e7eb;
-            --border-light: #f3f4f6;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
-            --shadow-xl: 0 20px 50px rgba(0,0,0,0.15);
+            --surface-alt: #F9F9F9;
+            --surface-hover: #f5f5f5;
+            --text-primary: #111111;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --border: rgba(0,0,0,0.08);
+            --border-light: rgba(0,0,0,0.04);
+            --shadow-sm: 0 1px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 50px rgba(0,0,0,0.12);
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --radius-xl: 24px;
+            --radius-xl: 20px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --rose: #E8C4B8;
+            --rose-soft: #F5E6E0;
         }
 
         [dir="rtl"] { text-align: right; }
@@ -257,51 +260,107 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         /* ============ HERO SECTION ============ */
         .hero {
-            background: linear-gradient(135deg, var(--deep-purple, #2d132c) 0%, #3d1a3c 60%, var(--purple-dark, #1a0a18) 100%);
-            padding: 4rem 1.5rem 3rem;
+            background: var(--surface-alt);
+            padding: 0;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
 
-        .hero::before {
-            content: '';
+        .hero-slider {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 21/9;
+            min-height: 340px;
+            max-height: 520px;
+            overflow: hidden;
+        }
+
+        .hero-slide {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at 30% 50%, rgba(201,168,106,0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 80%, rgba(201,168,106,0.07) 0%, transparent 40%);
+            inset: 0;
+            opacity: 0;
+            transition: opacity 1s ease;
         }
 
-        .hero::after {
-            content: '☪';
+        .hero-slide.active { opacity: 1; }
+
+        .hero-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hero-slide-overlay {
             position: absolute;
-            top: 1rem; right: 2rem;
-            font-size: 4rem;
-            color: rgba(201,168,106,0.08);
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @media (max-width: 1024px) {
-            .hero::after { display: none; }
-        }
-
-        @keyframes heroFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(5deg); }
-        }
-
-        .hero-ramadan-badge {
-            display: inline-flex;
+            inset: 0;
+            background: linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+            display: flex;
             align-items: center;
-            gap: 0.5rem;
-            background: rgba(201,168,106,0.15);
-            color: var(--accent-light);
-            padding: 0.4rem 1.2rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(201,168,106,0.2);
+            padding: 0 5%;
+        }
+
+        [dir="rtl"] .hero-slide-overlay {
+            background: linear-gradient(to left, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+        }
+
+        .hero-slide-content {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        [dir="rtl"] .hero-slide-content { text-align: right; }
+
+        .hero-slide-content .hero-tag {
+            display: inline-block;
+            color: var(--accent);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            margin-bottom: 0.75rem;
+        }
+
+        .hero-slide-content h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.25;
+            margin-bottom: 0.75rem;
+        }
+
+        .hero-slide-content p {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.95rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-dots {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+        }
+
+        .hero-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            padding: 0;
+        }
+
+        .hero-dot.active {
+            background: #fff;
+            width: 24px;
+            border-radius: 4px;
         }
 
         .hero-content {
@@ -321,40 +380,36 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .hero h1 span {
-            background: linear-gradient(135deg, #d4af37 0%, #f8e5a0 50%, #d4af37 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--accent);
         }
 
         .hero p {
             font-size: clamp(1rem, 2.5vw, 1.15rem);
-            color: var(--accent-light);
+            color: rgba(255,255,255,0.85);
             margin-bottom: 2rem;
-            opacity: 0.9;
         }
 
         .hero-cta {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, var(--royal-gold, #c9a86a) 0%, #b39358 100%);
-            color: var(--deep-purple, #2d132c);
-            padding: 0.85rem 2rem;
+            background: #000;
+            color: #fff;
+            padding: 0.8rem 2rem;
             border-radius: 50px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9rem;
             text-decoration: none;
             transition: var(--transition);
-            border: none;
+            border: 1.5px solid #fff;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(201, 168, 106, 0.3);
+            letter-spacing: 0.3px;
         }
 
         .hero-cta:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 25px rgba(201,168,106,0.5);
-            color: var(--deep-purple, #2d132c);
+            background: #fff;
+            color: #000;
+            transform: translateY(-2px);
         }
 
         /* ============ SEARCH & FILTER BAR ============ */
@@ -367,7 +422,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .filter-inner {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 0 1.5rem;
         }
@@ -525,15 +580,15 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .cat-chip:hover {
-            border-color: var(--accent);
-            color: var(--accent-dark);
-            background: rgba(201,169,110,0.05);
+            border-color: #000;
+            color: #000;
+            background: rgba(0,0,0,0.02);
         }
 
         .cat-chip.active {
-            background: var(--primary);
-            color: var(--accent-light);
-            border-color: var(--primary);
+            background: #000;
+            color: #fff;
+            border-color: #000;
         }
 
         .cat-chip .chip-count {
@@ -548,21 +603,21 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .cat-chip.active .chip-count {
-            background: rgba(201,169,110,0.2);
-            color: var(--accent-light);
+            background: rgba(255,255,255,0.2);
+            color: #fff;
         }
 
         .cat-chip i { font-size: 0.8rem; }
 
         /* ============ REWARDS BANNER ============ */
         .rewards-strip {
-            background: linear-gradient(135deg, var(--deep-purple, #2d132c) 0%, var(--purple-dark, #1a0a18) 100%);
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid var(--royal-gold, #c9a86a);
+            background: var(--surface);
+            padding: 0.85rem 1.5rem;
+            border-bottom: 1px solid var(--border);
         }
 
         .rewards-inner {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
             display: flex;
             align-items: center;
@@ -575,33 +630,34 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            color: #fff;
+            color: var(--text-primary);
         }
 
-        .rewards-icon { font-size: 1.5rem; color: var(--accent); }
+        .rewards-icon { font-size: 1.3rem; color: var(--accent); }
 
-        .rewards-text { font-size: 0.95rem; }
-        .rewards-text strong { color: var(--accent); font-size: 1.1rem; }
+        .rewards-text { font-size: 0.88rem; }
+        .rewards-text strong { color: var(--accent-dark); font-size: 1rem; }
 
         .rewards-btn {
-            background: var(--accent);
-            color: var(--primary);
+            background: #000;
+            color: #fff;
             padding: 0.5rem 1.25rem;
             border-radius: 50px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             text-decoration: none;
             transition: var(--transition);
         }
 
         .rewards-btn:hover {
-            background: var(--accent-light);
-            color: var(--primary);
+            background: #222;
+            color: #fff;
+            transform: translateY(-1px);
         }
 
         /* ============ PRODUCTS SECTION ============ */
         .products-section {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 2rem 1.5rem 3rem;
         }
@@ -682,16 +738,16 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             background: var(--surface);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            border: 1px solid var(--border-light);
+            border: 1px solid var(--border);
             transition: var(--transition);
             display: flex;
             flex-direction: column;
         }
 
         .p-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 10px 30px rgba(201, 168, 106, 0.3);
-            border-color: var(--royal-gold, #c9a86a);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+            border-color: rgba(0,0,0,0.12);
         }
 
         .p-card-img {
@@ -718,13 +774,14 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             position: absolute;
             top: 0.75rem;
             right: 0.75rem;
-            background: #ef4444;
-            color: white;
-            padding: 0.25rem 0.65rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
+            background: var(--rose);
+            color: #111;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
             font-weight: 700;
             z-index: 2;
+            letter-spacing: 0.3px;
         }
 
         [dir="rtl"] .p-card-img .discount-tag { right: auto; left: 0.75rem; }
@@ -733,11 +790,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             position: absolute;
             bottom: 0.75rem;
             left: 0.75rem;
-            background: rgba(45,19,44,0.85);
-            color: var(--accent-light);
+            background: rgba(0,0,0,0.7);
+            color: #fff;
             padding: 0.2rem 0.6rem;
-            border-radius: 50px;
-            font-size: 0.7rem;
+            border-radius: 4px;
+            font-size: 0.68rem;
             font-weight: 600;
             z-index: 2;
             backdrop-filter: blur(4px);
@@ -807,24 +864,23 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             justify-content: center;
             gap: 0.4rem;
             padding: 0.65rem 0.75rem;
-            background: linear-gradient(135deg, var(--deep-purple, #2d132c) 0%, var(--purple-dark, #1a0a18) 100%);
-            color: var(--accent-light);
+            background: #000;
+            color: #fff;
             border: none;
-            border-radius: 25px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
             font-size: 0.82rem;
             cursor: pointer;
             transition: var(--transition);
             font-family: inherit;
             text-decoration: none;
-            box-shadow: 0 4px 15px rgba(45, 19, 44, 0.2);
         }
 
         .btn-cart:hover {
-            background: linear-gradient(135deg, var(--royal-gold, #c9a86a) 0%, #b39358 100%);
-            color: var(--deep-purple, #2d132c);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(201, 168, 106, 0.4);
+            background: #222;
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-cart:disabled {
@@ -847,9 +903,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .btn-view:hover {
-            border-color: var(--accent);
-            color: var(--accent-dark);
-            background: rgba(201,169,110,0.05);
+            border-color: #000;
+            color: #000;
+            background: rgba(0,0,0,0.03);
         }
 
         /* Empty State */
@@ -877,31 +933,30 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             align-items: center;
             gap: 0.4rem;
             margin-top: 1rem;
-            background: linear-gradient(135deg, var(--royal-gold, #c9a86a) 0%, #b39358 100%);
-            color: var(--deep-purple, #2d132c);
+            background: #000;
+            color: #fff;
             padding: 0.6rem 1.5rem;
             border-radius: 50px;
             text-decoration: none;
             font-weight: 600;
             font-size: 0.9rem;
             transition: var(--transition);
-            box-shadow: 0 4px 15px rgba(201, 168, 106, 0.3);
         }
 
         .empty-state a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(201, 168, 106, 0.5);
+            background: #222;
+            transform: translateY(-1px);
         }
 
         /* ============ FOOTER ============ */
         .site-footer {
-            background: linear-gradient(135deg, var(--deep-purple, #2d132c) 0%, var(--purple-dark, #1a0a18) 100%);
-            color: var(--creamy-white, #fcf8f2);
+            background: #111;
+            color: #f5f5f5;
             margin-top: 2rem;
         }
 
         .footer-main {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 3rem 1.5rem 1.5rem;
             display: grid;
@@ -910,35 +965,30 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .footer-brand {
-            font-family: 'Dancing Script', 'Playfair Display', serif;
-            font-size: 2.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #d4af37 0%, #f8e5a0 50%, #d4af37 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.15em;
             margin-bottom: 0.75rem;
             line-height: 1.1;
-            filter: drop-shadow(0 2px 10px rgba(212, 175, 55, 0.3));
         }
 
         .footer-brand small {
             display: block;
-            font-family: 'Montserrat', 'Inter', sans-serif;
-            font-size: 0.7rem;
-            letter-spacing: 5px;
+            font-family: 'Inter', 'Montserrat', sans-serif;
+            font-size: 0.52rem;
+            letter-spacing: 0.35em;
             text-transform: uppercase;
-            font-weight: 300;
-            background: linear-gradient(135deg, #c9a86a 0%, #e8d5b5 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-weight: 600;
+            color: var(--accent);
+            margin-top: 0.2rem;
         }
 
         .footer-desc {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             line-height: 1.7;
-            opacity: 0.8;
+            color: rgba(255,255,255,0.6);
             margin-bottom: 1rem;
         }
 
@@ -951,29 +1001,29 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border: 1px solid rgba(201,168,106,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--gold-light, #e4d4b4);
+            color: rgba(255,255,255,0.6);
             text-decoration: none;
             transition: var(--transition);
             font-size: 0.9rem;
         }
 
         .social-links a:hover {
-            background: var(--royal-gold, #c9a86a);
-            color: var(--deep-purple, #2d132c);
-            border-color: var(--royal-gold, #c9a86a);
+            background: #fff;
+            color: #111;
+            border-color: #fff;
         }
 
         .footer-heading {
             font-weight: 600;
-            color: var(--royal-gold, #c9a86a);
+            color: #fff;
             margin-bottom: 1rem;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
         }
 
         .footer-links {
@@ -984,28 +1034,22 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         .footer-links li { margin-bottom: 0.5rem; }
 
         .footer-links a {
-            color: var(--gold-light, #e4d4b4);
+            color: rgba(255,255,255,0.55);
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             transition: var(--transition);
         }
 
         .footer-links a:hover {
-            color: var(--royal-gold, #c9a86a);
-            padding-left: 4px;
-        }
-
-        [dir="rtl"] .footer-links a:hover {
-            padding-left: 0;
-            padding-right: 4px;
+            color: #fff;
         }
 
         .footer-bottom {
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(255,255,255,0.08);
             text-align: center;
             padding: 1rem 1.5rem;
-            font-size: 0.8rem;
-            opacity: 0.7;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.4);
         }
 
         /* ============ RESPONSIVE ============ */
@@ -1215,30 +1259,74 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
 
-    <!-- ======== WELCOME DISCOUNT BANNER TAPE ======== -->
-    <div id="promo-tape" style="background: linear-gradient(90deg, #2d132c, #6c3fa0, #c9a86a, #6c3fa0, #2d132c); background-size: 200% 100%; animation: promoShimmer 4s ease-in-out infinite; color: #fff; text-align: center; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; position: relative; z-index: 900; letter-spacing: 0.5px;">
-        <i class="fas fa-gift" style="margin-right: 6px;"></i>
-        <?= $lang === 'ar' ? 'مرحباً! استخدم كود <strong>WELCOME</strong> للحصول على خصم على طلبك الأول' : 'Welcome! Use code <strong>WELCOME</strong> for a discount on your first order' ?>
-        <i class="fas fa-gift" style="margin-left: 6px;"></i>
-        <button onclick="document.getElementById('promo-tape').style.display='none'" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:1rem;padding:4px;">&times;</button>
+    <!-- ======== ANNOUNCEMENT BAR ======== -->
+    <div id="promo-tape" class="announcement-bar">
+        <i class="fas fa-truck me-1"></i>
+        <?= $lang === 'ar' ? 'شحن مجاني للطلبات فوق 35 دينار | استخدم كود <strong>WELCOME</strong> لخصم على طلبك الأول' : 'Free Shipping on Orders Over 35 JOD | Use code <strong>WELCOME</strong> for a discount on your first order' ?>
+        <button class="announcement-close" onclick="document.getElementById('promo-tape').style.display='none'">&times;</button>
     </div>
-    <style>
-        @keyframes promoShimmer { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-    </style>
 
-    <!-- ======== HERO SECTION ======== -->
+    <!-- ======== HERO SLIDER ======== -->
     <section class="hero">
-        <div class="hero-content fade-in">
-            <div class="hero-ramadan-badge">
-                <i class="fas fa-moon"></i> <?= $lang === 'ar' ? 'عروض رمضان الخاصة' : 'Ramadan Special Offers' ?> <i class="fas fa-star-and-crescent"></i>
+        <div class="hero-slider" id="heroSlider">
+            <div class="hero-slide active">
+                <img src="images/hero-beauty-1.png" alt="Poshy Store Collection" loading="eager">
+                <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                        <span class="hero-tag"><?= $lang === 'ar' ? 'مجموعة بوشي الفاخرة' : 'Poshy Luxury Edit' ?></span>
+                        <h2><?= $lang === 'ar' ? 'اكتشفي مجموعتنا الجديدة' : 'The New Glow Collection' ?></h2>
+                        <p><?= $lang === 'ar' ? 'منتجات فاخرة تمنح بشرتك إشراقة ناعمة' : 'Luxury products that give your skin a refined and radiant glow' ?></p>
+                        <a href="#products" class="hero-cta">
+                            <i class="fas fa-shopping-bag"></i> <?= t('shop_now') ?>
+                        </a>
+                    </div>
+                </div>
             </div>
-            <h1><?= t('welcome') ?> <span>Poshy Store</span></h1>
-            <p><?= t('tagline') ?></p>
-            <a href="#products" class="hero-cta">
-                <i class="fas fa-shopping-bag"></i> <?= t('shop_now') ?>
-            </a>
+            <div class="hero-slide">
+                <img src="images/hero-beauty-2.png" alt="Premium Skincare" loading="lazy">
+                <div class="hero-slide-overlay">
+                    <div class="hero-slide-content">
+                        <span class="hero-tag"><?= $lang === 'ar' ? 'عناية متكاملة' : 'Premium Rituals' ?></span>
+                        <h2><?= $lang === 'ar' ? 'روتين متكامل لبشرة مشرقة' : 'Glow. Lift. Renew.' ?></h2>
+                        <p><?= $lang === 'ar' ? 'روتين شامل لبشرة أكثر شباباً وتألقاً' : 'A complete routine for younger-looking, luminous skin' ?></p>
+                        <a href="#products" class="hero-cta">
+                            <i class="fas fa-sparkles"></i> <?= $lang === 'ar' ? 'اكتشفي الآن' : 'Discover Now' ?>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-dots">
+                <button class="hero-dot active" onclick="goToSlide(0)"></button>
+                <button class="hero-dot" onclick="goToSlide(1)"></button>
+            </div>
         </div>
     </section>
+
+    <!-- ======== CATEGORY STORIES (Instagram Style) ======== -->
+    <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && !empty($homepage_categories)): ?>
+    <section style="max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 0.5rem;">
+        <div style="display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap;">
+            <?php foreach ($homepage_categories as $cat): ?>
+            <a href="index.php?category=<?= (int)$cat['id'] ?>#products" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div style="width: 80px; height: 80px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--rose)); margin: 0 auto;">
+                    <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark);">
+                        <?php
+                            $catName = strtolower(trim($cat['name_en'] ?? ''));
+                            if (str_contains($catName, 'skin')) echo '<i class="fas fa-spa"></i>';
+                            elseif (str_contains($catName, 'hair')) echo '<i class="fas fa-wind"></i>';
+                            elseif (str_contains($catName, 'makeup') || str_contains($catName, 'cosmetic')) echo '<i class="fas fa-palette"></i>';
+                            else echo '<i class="fas fa-star"></i>';
+                        ?>
+                    </div>
+                </div>
+                <p style="margin-top: 0.6rem; font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">
+                    <?= htmlspecialchars($lang === 'ar' && !empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en']) ?>
+                </p>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- ======== REWARDS BANNER ======== -->
     <?php if ($is_logged_in && $user_points > 0): ?>
@@ -1306,7 +1394,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <?php endforeach; ?>
                     </select>
                     <?php if ($active_brand > 0 || $active_category > 0 || $active_subcategory > 0): ?>
-                        <a href="index.php" class="filter-select" style="background:none; border-color:#ef4444; color:#ef4444; text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem; padding: 0.4rem 0.75rem; font-weight:600;">
+                        <a href="index.php" class="filter-select" style="background:none; border-color:#E53935; color:#E53935; text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem; padding: 0.4rem 0.75rem; font-weight:600;">
                             <i class="fas fa-times"></i> <?= $lang === 'ar' ? 'مسح' : 'Clear' ?>
                         </a>
                     <?php endif; ?>
@@ -1922,6 +2010,26 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             }
         });
     });
+    // ==========================================
+    // Hero Slider
+    // ==========================================
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots = document.querySelectorAll('.hero-dot');
+    
+    function goToSlide(index) {
+        slides.forEach(s => s.classList.remove('active'));
+        dots.forEach(d => d.classList.remove('active'));
+        currentSlide = index;
+        if (slides[currentSlide]) slides[currentSlide].classList.add('active');
+        if (dots[currentSlide]) dots[currentSlide].classList.add('active');
+    }
+    
+    if (slides.length > 1) {
+        setInterval(() => {
+            goToSlide((currentSlide + 1) % slides.length);
+        }, 5000);
+    }
     </script>
 </body>
 </html>
