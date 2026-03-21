@@ -1,11 +1,17 @@
 const PRODUCTS = [
-  { id: 1, name: 'Hydra Glow Serum', price: 29, oldPrice: 39, image: 'product-1.jpg', image2: 'product-1-alt.jpg', brand: 'Anua', skinType: 'Dry', concern: 'Hydration' },
-  { id: 2, name: 'Velvet Clean Cleanser', price: 21, oldPrice: 0, image: 'product-2.jpg', image2: 'product-2-alt.jpg', brand: 'Cosrx', skinType: 'Combination', concern: 'Acne' },
-  { id: 3, name: 'Silk Repair Cream', price: 34, oldPrice: 45, image: 'product-3.jpg', image2: 'product-3-alt.jpg', brand: 'Beauty of Joseon', skinType: 'Normal', concern: 'Anti-Aging' },
-  { id: 4, name: 'Golden Lift Eye Gel', price: 26, oldPrice: 32, image: 'product-4.jpg', image2: 'product-4-alt.jpg', brand: 'Anua', skinType: 'All', concern: 'Dark Circles' },
-  { id: 5, name: 'Nourish Hair Mask', price: 24, oldPrice: 0, image: 'product-5.jpg', image2: 'product-5-alt.jpg', brand: 'K18', skinType: 'All', concern: 'Repair' },
-  { id: 6, name: 'Cloud Matte Tint', price: 19, oldPrice: 25, image: 'product-6.jpg', image2: 'product-6-alt.jpg', brand: 'Rare Beauty', skinType: 'All', concern: 'Makeup' }
+  { id: 1, name: 'Hydra Glow Serum', price: 29, oldPrice: 39, image: 'product-1.jpg', image2: 'product-1-alt.jpg', brand: 'Anua', skinType: 'Dry', concern: 'Hydration', category: 'Skincare' },
+  { id: 2, name: 'Velvet Clean Cleanser', price: 21, oldPrice: 0, image: 'product-2.jpg', image2: 'product-2-alt.jpg', brand: 'Cosrx', skinType: 'Combination', concern: 'Acne', category: 'Skincare' },
+  { id: 3, name: 'Silk Repair Cream', price: 34, oldPrice: 45, image: 'product-3.jpg', image2: 'product-3-alt.jpg', brand: 'Beauty of Joseon', skinType: 'Normal', concern: 'Anti-Aging', category: 'Skincare' },
+  { id: 4, name: 'Golden Lift Eye Gel', price: 26, oldPrice: 32, image: 'product-4.jpg', image2: 'product-4-alt.jpg', brand: 'Anua', skinType: 'All', concern: 'Dark Circles', category: 'Skincare' },
+  { id: 5, name: 'Nourish Hair Mask', price: 24, oldPrice: 0, image: 'product-5.jpg', image2: 'product-5-alt.jpg', brand: 'K18', skinType: 'All', concern: 'Repair', category: 'Hair' },
+  { id: 6, name: 'Cloud Matte Tint', price: 19, oldPrice: 25, image: 'product-6.jpg', image2: 'product-6-alt.jpg', brand: 'Rare Beauty', skinType: 'All', concern: 'Makeup', category: 'Makeup' },
+  { id: 7, name: 'Velvet Body Lotion', price: 23, oldPrice: 29, image: 'product-2.jpg', image2: 'product-2-alt.jpg', brand: 'Sol de Janeiro', skinType: 'All', concern: 'Hydration', category: 'Body' },
+  { id: 8, name: 'Silk Smooth Shampoo', price: 22, oldPrice: 27, image: 'product-5.jpg', image2: 'product-5-alt.jpg', brand: 'K18', skinType: 'All', concern: 'Repair', category: 'Hair' },
+  { id: 9, name: 'Luminous Lip Velvet', price: 18, oldPrice: 22, image: 'product-6.jpg', image2: 'product-6-alt.jpg', brand: 'Rare Beauty', skinType: 'All', concern: 'Makeup', category: 'Makeup' },
+  { id: 10, name: 'Silky Body Scrub', price: 20, oldPrice: 0, image: 'product-4.jpg', image2: 'product-4-alt.jpg', brand: 'Tree Hut', skinType: 'All', concern: 'Exfoliation', category: 'Body' }
 ];
+
+const HOME_CATEGORIES = ['Skincare', 'Hair', 'Makeup', 'Body'];
 
 const CART_KEY = 'poshy_cart';
 const LANG_KEY = 'poshy_lang';
@@ -227,6 +233,28 @@ function renderHomeProducts() {
   bindCardActions(grid);
 }
 
+function renderHomeCategorySections() {
+  const container = document.getElementById('homeCategorySections');
+  if (!container) return;
+
+  container.innerHTML = HOME_CATEGORIES.map(category => {
+    const categoryProducts = PRODUCTS.filter(product => product.category === category).slice(0, 4);
+    return `
+      <section id="cat-${category.toLowerCase()}" class="pt-4 first:pt-0">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="font-heading text-3xl">${category}</h3>
+          <a href="shop.html" class="text-sm hover:text-gold">View All</a>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          ${categoryProducts.map(productCardTemplate).join('')}
+        </div>
+      </section>
+    `;
+  }).join('');
+
+  bindCardActions(container);
+}
+
 function renderShopProducts() {
   const grid = document.getElementById('shopProductGrid');
   if (!grid) return;
@@ -342,6 +370,7 @@ function initCommon() {
 document.addEventListener('DOMContentLoaded', () => {
   initCommon();
   renderHomeProducts();
+  renderHomeCategorySections();
   initFilters();
   renderShopProducts();
   initPdp();
