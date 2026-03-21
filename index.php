@@ -1405,8 +1405,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <div style="display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap;">
             <?php foreach ($homepage_categories as $cat): ?>
             <a href="pages/shop/category.php?id=<?= (int)$cat['id'] ?>" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                <div style="width: 80px; height: 80px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--rose)); margin: 0 auto;">
-                    <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark);">
+                <div style="width: 80px; height: 80px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--rose)); margin: 0 auto; overflow: hidden;">
+                    <?php if (!empty($cat['image_path'])): ?>
+                        <div style="width: 100%; height: 100%; border-radius: 50%; border: 3px solid #fff; overflow: hidden; background: #fff;">
+                            <img src="<?= htmlspecialchars($cat['image_path']) ?>" alt="<?= htmlspecialchars($cat['name_en']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    <?php else: ?>
+                    <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark); border: 3px solid #fff;">
                         <?php
                             $catName = strtolower(trim($cat['name_en'] ?? ''));
                             if (str_contains($catName, 'skin')) echo '<i class="fas fa-spa"></i>';
@@ -1415,6 +1420,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                             else echo '<i class="fas fa-star"></i>';
                         ?>
                     </div>
+                    <?php endif; ?>
                 </div>
                 <p style="margin-top: 0.6rem; font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">
                     <?= htmlspecialchars($lang === 'ar' && !empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en']) ?>
@@ -1644,26 +1650,60 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         <?php
         // ── Show banner(s) after this category section ──
-        if (isset($homepage_banners[$sec_idx])): ?>
-            <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
-            <section class="homepage-banner fade-in" style="max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 1.5rem;">
-                <?php if (!empty($banner['link_url'])): ?>
-                <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="display: block; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); transition: var(--transition);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-md)'">
-                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
-                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
-                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover;"
-                         loading="lazy">
-                </a>
-                <?php else: ?>
-                <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
-                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
-                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
-                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover;"
-                         loading="lazy">
-                </div>
-                <?php endif; ?>
-            </section>
-            <?php endforeach; ?>
+        if (isset($homepage_banners[$sec_idx])): 
+            $secBanners = $homepage_banners[$sec_idx];
+            if (count($secBanners) > 1): ?>
+                <section class="homepage-banner fade-in" style="max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 1.5rem;">
+                    <div id="bannerCarousel-<?= $sec_idx ?>" class="carousel slide" data-bs-ride="carousel" data-bs-interval="10000" style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
+                        <div class="carousel-inner">
+                            <?php foreach ($secBanners as $b_idx => $banner): ?>
+                            <div class="carousel-item <?= $b_idx === 0 ? 'active' : '' ?>">
+                                <?php if (!empty($banner['link_url'])): ?>
+                                <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="display: block;">
+                                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
+                                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
+                                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover; max-height: 250px;"
+                                         loading="lazy">
+                                </a>
+                                <?php else: ?>
+                                <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
+                                     alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
+                                     style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover; max-height: 250px;"
+                                     loading="lazy">
+                                <?php endif; ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel-<?= $sec_idx ?>" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#bannerCarousel-<?= $sec_idx ?>" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
+                </section>
+            <?php else: 
+                $banner = $secBanners[0]; ?>
+                <section class="homepage-banner fade-in" style="max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 1.5rem;">
+                    <?php if (!empty($banner['link_url'])): ?>
+                    <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="display: block; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); transition: var(--transition);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-md)'">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
+                             alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
+                             style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover; max-height: 250px;"
+                             loading="lazy">
+                    </a>
+                    <?php else: ?>
+                    <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
+                             alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
+                             style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover; max-height: 250px;"
+                             loading="lazy">
+                    </div>
+                    <?php endif; ?>
+                </section>
+            <?php endif; ?>
         <?php endif; ?>
 
     <?php endforeach; ?>

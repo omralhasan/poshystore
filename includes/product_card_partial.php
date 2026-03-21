@@ -6,7 +6,28 @@
  *   $product - product array with all fields
  *   $idx     - card index (for animation delay)
  *   $lang    - current language ('en' or 'ar')
+ *   $card_base_path - (optional) path prefix for URLs e.g. '../../' (defaults to '' for root)
  */
+
+// Determine the base path for image URLs
+// When included from index.php (root), no prefix needed
+// When included from pages/shop/category.php, prefix is '../../'
+if (!isset($card_base_path)) {
+    // Auto-detect: if calling file is in a subdirectory, compute relative path
+    $card_base_path = '';
+    $calling_file = $_SERVER['SCRIPT_FILENAME'] ?? '';
+    $root_dir = realpath(__DIR__ . '/..');
+    if ($root_dir && $calling_file) {
+        $calling_dir = dirname(realpath($calling_file));
+        if ($calling_dir !== $root_dir && strpos($calling_dir, $root_dir) === 0) {
+            $depth = substr_count(str_replace($root_dir, '', $calling_dir), DIRECTORY_SEPARATOR);
+            $card_base_path = str_repeat('../', $depth);
+        }
+    }
+}
+
+// Site root for file-system image lookups
+$_card_site_root = realpath(__DIR__ . '/..') . '/';
 ?>
 <div class="p-card fade-in<?= ($product['stock_quantity'] <= 0) ? ' out-of-stock-card' : '' ?>" style="animation-delay: <?= $idx * 0.05 ?>s;">
     <div class="p-card-img">
@@ -36,15 +57,17 @@
             $image_src = get_product_thumbnail(
                 trim($product['name_en']),
                 $product['image_link'] ?? '',
-                __DIR__ . '/..'
+                $_card_site_root
             );
+            // Prefix with base path so relative URLs work from subdirectories
+            $image_src_url = $card_base_path . $image_src;
         ?>
         <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>">
             <img 
-                src="<?= htmlspecialchars($image_src) ?>" 
+                src="<?= htmlspecialchars($image_src_url) ?>" 
                 alt="<?= htmlspecialchars($product['name_en']) ?>"
                 loading="lazy"
-                onerror="this.onerror=null; this.src='images/placeholder-cosmetics.svg';"
+                onerror="this.onerror=null; this.src='<?= $card_base_path ?>images/placeholder-cosmetics.svg';"
             >
         </a>
     </div>
