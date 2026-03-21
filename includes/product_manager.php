@@ -396,8 +396,8 @@ function getProductsBySubcategory($subcategory_id, $limit = 20)
 function getAllCategories()
 {
     global $conn;
-    $sql = "SELECT c.id AS category_id, c.name_en AS category_en, c.name_ar AS category_ar, c.icon AS category_icon, c.image_path AS category_image,
-                   s.id AS subcategory_id, s.name_en AS subcategory_en, s.name_ar AS subcategory_ar, s.icon AS subcategory_icon, s.image_path AS subcategory_image,
+    $sql = "SELECT c.id AS category_id, c.name_en AS category_en, c.name_ar AS category_ar, c.icon AS category_icon,
+                   s.id AS subcategory_id, s.name_en AS subcategory_en, s.name_ar AS subcategory_ar, s.icon AS subcategory_icon,
                    (SELECT COUNT(*) FROM products p WHERE p.subcategory_id = s.id AND p.stock_quantity > 0) AS product_count
             FROM categories c
             LEFT JOIN subcategories s ON s.category_id = c.id
