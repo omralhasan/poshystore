@@ -169,14 +169,14 @@ $products_array = [];
 $is_search_mode = !empty($search_query);
 $is_tag_mode = !empty($active_tag);
 $is_brand_mode = ($active_brand > 0);
-$products_limit = ($is_search_mode || $is_tag_mode || $is_brand_mode || $active_subcategory > 0 || $active_category > 0 || $show_all) ? 100 : 8;
+$is_filtered_mode = ($is_search_mode || $is_tag_mode || $is_brand_mode || $active_subcategory > 0 || $active_category > 0 || $show_all);
+$products_limit = $is_filtered_mode ? 100 : 8;
 
 try {
     if ($is_search_mode) {
         $search_filters = ['search' => $search_query];
         $products_result = getAllProducts($search_filters, $products_limit);
     } elseif ($is_tag_mode) {
-        // Tag-based product search
         $tag_products = getProductsByTag($active_tag, $products_limit);
         $products_result = ['products' => $tag_products, 'success' => true];
     } elseif ($is_brand_mode) {
@@ -198,13 +198,110 @@ try {
 
 // Count total products for "View All" link
 $total_products_count = 0;
-if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all) {
+if (!$is_filtered_mode) {
     try {
         $all_products_result = getAllProducts([], 200);
         $total_products_count = count($all_products_result['products'] ?? []);
     } catch (Exception $e) {
         error_log("Failed to count products: " . $e->getMessage());
     }
+}
+
+// ── Homepage recommended sections per category ──
+$category_recommended = [];
+if (!$is_filtered_mode) {
+    foreach ($homepage_categories as $cat) {
+        $cat_id = (int)$cat['id'];
+        try {
+            // Get recommended products first (is_recommended=1) for this category
+            $rec_sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
+                               p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
+                               p.original_price, p.discount_percentage, p.has_discount,
+                               p.is_recommended, p.is_best_seller,
+                               s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
+                               c.name_en AS category_en, c.name_ar AS category_ar,
+                               b.name_en AS brand_en, b.name_ar AS brand_ar
+                        FROM products p
+                        LEFT JOIN subcategories s ON p.subcategory_id = s.id
+                        LEFT JOIN categories c ON s.category_id = c.id
+                        LEFT JOIN brands b ON p.brand_id = b.id
+                        WHERE s.category_id = ? AND p.is_recommended = 1
+                        ORDER BY p.is_best_seller DESC, p.id DESC
+                        LIMIT 4";
+            $rec_stmt = $conn->prepare($rec_sql);
+            $rec_stmt->bind_param('i', $cat_id);
+            $rec_stmt->execute();
+            $rec_result = $rec_stmt->get_result();
+            $rec_products = [];
+            while ($row = $rec_result->fetch_assoc()) {
+                $row['price_formatted'] = formatJOD($row['price_jod']);
+                $rec_products[] = $row;
+            }
+            $rec_stmt->close();
+
+            // If fewer than 4 recommended, fill with best sellers / newest
+            if (count($rec_products) < 4) {
+                $existing_ids = array_map(fn($p) => (int)$p['id'], $rec_products);
+                $exclude = !empty($existing_ids) ? implode(',', $existing_ids) : '0';
+                $remaining = 4 - count($rec_products);
+                $fill_sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
+                                    p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
+                                    p.original_price, p.discount_percentage, p.has_discount,
+                                    p.is_recommended, p.is_best_seller,
+                                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
+                                    c.name_en AS category_en, c.name_ar AS category_ar,
+                                    b.name_en AS brand_en, b.name_ar AS brand_ar
+                             FROM products p
+                             LEFT JOIN subcategories s ON p.subcategory_id = s.id
+                             LEFT JOIN categories c ON s.category_id = c.id
+                             LEFT JOIN brands b ON p.brand_id = b.id
+                             WHERE s.category_id = $cat_id AND p.id NOT IN ($exclude)
+                             ORDER BY p.is_best_seller DESC, p.id DESC
+                             LIMIT $remaining";
+                $fill_result = $conn->query($fill_sql);
+                if ($fill_result) {
+                    while ($row = $fill_result->fetch_assoc()) {
+                        $row['price_formatted'] = formatJOD($row['price_jod']);
+                        $rec_products[] = $row;
+                    }
+                }
+            }
+
+            // Count total products in this category
+            $count_sql = "SELECT COUNT(*) as cnt FROM products p JOIN subcategories s ON p.subcategory_id = s.id WHERE s.category_id = ?";
+            $count_stmt = $conn->prepare($count_sql);
+            $count_stmt->bind_param('i', $cat_id);
+            $count_stmt->execute();
+            $count_row = $count_stmt->get_result()->fetch_assoc();
+            $count_stmt->close();
+
+            $category_recommended[] = [
+                'category' => $cat,
+                'products' => $rec_products,
+                'total_count' => (int)$count_row['cnt'],
+            ];
+        } catch (Exception $e) {
+            error_log("Failed to load recommended for category {$cat_id}: " . $e->getMessage());
+        }
+    }
+}
+
+// ── Homepage banners ──
+$homepage_banners = [];
+try {
+    $banners_result = $conn->query("SELECT * FROM homepage_banners WHERE is_active = 1 ORDER BY position ASC, id ASC");
+    if ($banners_result) {
+        while ($b = $banners_result->fetch_assoc()) {
+            $pos = (int)$b['position'];
+            if (!isset($homepage_banners[$pos])) {
+                $homepage_banners[$pos] = [];
+            }
+            $homepage_banners[$pos][] = $b;
+        }
+    }
+} catch (Exception $e) {
+    // homepage_banners table might not exist yet - that's OK
+    error_log("Homepage banners: " . $e->getMessage());
 }
 
 // Security headers
@@ -1307,7 +1404,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <section style="max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 0.5rem;">
         <div style="display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap;">
             <?php foreach ($homepage_categories as $cat): ?>
-            <a href="index.php?category=<?= (int)$cat['id'] ?>#products" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <a href="pages/shop/category.php?id=<?= (int)$cat['id'] ?>" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="width: 80px; height: 80px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--rose)); margin: 0 auto;">
                     <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark);">
                         <?php
@@ -1421,6 +1518,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     </div>
 
     <!-- ======== PRODUCTS SECTION ======== -->
+    <?php if ($is_filtered_mode): ?>
+    <!-- Filtered/Search View: show products in a single grid -->
     <section class="products-section" id="products">
 
         <?php if ($is_search_mode): ?>
@@ -1463,7 +1562,6 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <i class="fas fa-sparkles"></i>
                 <?php if ($active_subcategory > 0): ?>
                     <?php 
-                    // Find the active subcategory name
                     $active_sub_name = '';
                     foreach ($all_categories as $cat) {
                         foreach ($cat['subcategories'] as $sub) {
@@ -1483,17 +1581,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     <?= $show_all ? t('view_all_products') : t('featured_products') ?>
                 <?php endif; ?>
             </h2>
-
-            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
-                <a href="javascript:void(0)" onclick="showAllProducts(this)" class="view-all-link">
-                    <?= t('view_all') ?> (<?= $total_products_count ?>)
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            <?php endif; ?>
         </div>
 
         <?php if (empty($products_array)): ?>
-            <!-- Empty State -->
             <div class="empty-state fade-in">
                 <i class="fas fa-box-open"></i>
                 <h3><?= t('no_products_found') ?></h3>
@@ -1503,111 +1593,82 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 </a>
             </div>
         <?php else: ?>
-            <!-- Product Grid -->
             <div class="product-grid">
                 <?php foreach ($products_array as $idx => $product): ?>
-                <div class="p-card fade-in<?= ($product['stock_quantity'] <= 0) ? ' out-of-stock-card' : '' ?>" style="animation-delay: <?= $idx * 0.05 ?>s;">
-                    <div class="p-card-img">
-                        <?php if ($product['stock_quantity'] <= 0): ?>
-                            <span class="out-of-stock-tag" style="position:absolute;top:10px;left:10px;z-index:5;background:rgba(239,68,68,0.92);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;"><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
-                        <?php endif; ?>
-
-                        <?php if (!empty($product['is_best_seller'])): ?>
-                            <span style="position:absolute;top:<?= ($product['stock_quantity'] <= 0) ? '38px' : '10px' ?>;left:10px;z-index:5;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-fire"></i> <?= $lang === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller' ?></span>
-                        <?php endif; ?>
-
-                        <?php if (!empty($product['is_recommended'])): ?>
-                            <span style="position:absolute;bottom:10px;left:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
-                        <?php endif; ?>
-
-                        <?php if (!empty($product['has_discount']) && $product['discount_percentage'] > 0): ?>
-                            <span class="discount-tag">-<?= intval($product['discount_percentage']) ?>%</span>
-                        <?php endif; ?>
-
-                        <?php if (!empty($product['subcategory_en'])): ?>
-                            <span class="cat-tag">
-                                <?= $lang === 'ar' ? htmlspecialchars($product['subcategory_ar'] ?? '') : htmlspecialchars($product['subcategory_en']) ?>
-                            </span>
-                        <?php endif; ?>
-
-                        <?php
-                            $image_src = get_product_thumbnail(
-                                trim($product['name_en']),
-                                $product['image_link'] ?? '',
-                                __DIR__
-                            );
-                        ?>
-                        <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>">
-                            <img 
-                                src="<?= htmlspecialchars($image_src) ?>" 
-                                alt="<?= htmlspecialchars($product['name_en']) ?>"
-                                loading="lazy"
-                                onerror="this.onerror=null; this.src='images/placeholder-cosmetics.svg';"
-                            >
-                        </a>
-                    </div>
-
-                    <div class="p-card-body">
-                        <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>" style="text-decoration:none; color:inherit;">
-                            <div class="p-card-name"><?= htmlspecialchars($lang === 'ar' ? ($product['name_ar'] ?: $product['name_en']) : $product['name_en']) ?></div>
-                            <div class="p-card-name-ar"><?= htmlspecialchars($lang === 'ar' ? $product['name_en'] : ($product['name_ar'] ?? '')) ?></div>
-                        </a>
-                        
-                        <!-- Short Description with Language Support -->
-                        <?php if (!empty($product['short_description_en']) || !empty($product['short_description_ar'])): ?>
-                        <div class="p-card-short-desc" style="font-size: 0.85rem; color: #666; font-style: italic; margin-bottom: 0.5rem; line-height: 1.4;">
-                            <?php if ($lang === 'ar' && !empty($product['short_description_ar'])): ?>
-                                <?= htmlspecialchars($product['short_description_ar']) ?>
-                            <?php elseif (!empty($product['short_description_en'])): ?>
-                                <?= htmlspecialchars($product['short_description_en']) ?>
-                            <?php endif; ?>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <div class="p-card-price">
-                            <?php 
-                                // Show supplier price if user is supplier and supplier_cost is set
-                                $display_price = $product['price_jod'];
-                                if (isSupplier() && !empty($product['supplier_cost']) && $product['supplier_cost'] > 0) {
-                                    $display_price = $product['supplier_cost'];
-                                }
-                            ?>
-                            <span class="price-now"><?= number_format($display_price, 3) ?> <?= t('currency') ?></span>
-                            <?php if (!empty($product['has_discount']) && $product['original_price'] > 0): ?>
-                                <span class="price-was"><?= number_format($product['original_price'], 3) ?></span>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="p-card-actions">
-                            <?php if ($product['stock_quantity'] <= 0): ?>
-                                <button class="btn-cart" disabled style="opacity:0.6;cursor:not-allowed;background:#999;">
-                                    <i class="fas fa-ban"></i>
-                                    <span><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
-                                </button>
-                            <?php else: ?>
-                                <button class="btn-cart" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
-                                    <i class="fas fa-cart-plus"></i>
-                                    <span><?= t('add_to_cart') ?></span>
-                                </button>
-                            <?php endif; ?>
-                            <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>" class="btn-view" title="<?= t('details') ?>">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <?php include __DIR__ . '/includes/product_card_partial.php'; ?>
                 <?php endforeach; ?>
             </div>
-
-            <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && $active_subcategory === 0 && $active_category === 0 && !$show_all && $total_products_count > count($products_array)): ?>
-            <div style="text-align: center; margin-top: 2rem;">
-                <a href="javascript:void(0)" onclick="showAllProducts(this)" class="hero-cta" style="font-size: 0.9rem; padding: 0.7rem 1.75rem;">
-                    <i class="fas fa-th-large"></i> <?= t('view_all_products') ?> (<?= $total_products_count ?>)
-                </a>
-            </div>
-            <?php endif; ?>
         <?php endif; ?>
     </section>
+
+    <?php else: ?>
+    <!-- ======== HOMEPAGE: Recommended sections per category ======== -->
+    <div id="products">
+    <?php foreach ($category_recommended as $sec_idx => $section): ?>
+        <?php
+            $sec_cat = $section['category'];
+            $sec_products = $section['products'];
+            $sec_total = $section['total_count'];
+            $sec_cat_name = $lang === 'ar' && !empty($sec_cat['name_ar']) ? $sec_cat['name_ar'] : $sec_cat['name_en'];
+            $sec_cat_lower = strtolower(trim($sec_cat['name_en'] ?? ''));
+            $sec_icon = 'fas fa-star';
+            if (str_contains($sec_cat_lower, 'skin')) $sec_icon = 'fas fa-spa';
+            elseif (str_contains($sec_cat_lower, 'hair')) $sec_icon = 'fas fa-wind';
+            elseif (str_contains($sec_cat_lower, 'makeup') || str_contains($sec_cat_lower, 'cosmetic')) $sec_icon = 'fas fa-palette';
+        ?>
+        <section class="products-section" style="padding-bottom: 1rem;">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="<?= $sec_icon ?>" style="color: var(--accent);"></i>
+                    <?= $lang === 'ar' ? 'مختارات ' . htmlspecialchars($sec_cat_name) : htmlspecialchars($sec_cat_name) . ' Picks' ?>
+                </h2>
+                <a href="pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>" class="view-all-link">
+                    <?= $lang === 'ar' ? 'عرض الكل' : 'View All' ?> (<?= $sec_total ?>)
+                    <i class="fas fa-arrow-<?= $lang === 'ar' ? 'left' : 'right' ?>"></i>
+                </a>
+            </div>
+
+            <?php if (!empty($sec_products)): ?>
+            <div class="product-grid">
+                <?php foreach ($sec_products as $idx => $product): ?>
+                <?php include __DIR__ . '/includes/product_card_partial.php'; ?>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <div class="empty-state fade-in" style="padding: 2rem;">
+                <i class="fas fa-box-open"></i>
+                <h3><?= $lang === 'ar' ? 'لا توجد منتجات بعد' : 'No products yet' ?></h3>
+            </div>
+            <?php endif; ?>
+        </section>
+
+        <?php
+        // ── Show banner(s) after this category section ──
+        if (isset($homepage_banners[$sec_idx])): ?>
+            <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
+            <section class="homepage-banner fade-in" style="max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 1.5rem;">
+                <?php if (!empty($banner['link_url'])): ?>
+                <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="display: block; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); transition: var(--transition);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-md)'">
+                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
+                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
+                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover;"
+                         loading="lazy">
+                </a>
+                <?php else: ?>
+                <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
+                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
+                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
+                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover;"
+                         loading="lazy">
+                </div>
+                <?php endif; ?>
+            </section>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+    <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
     <!-- ======== FOOTER ======== -->
     <?php require_once __DIR__ . '/includes/home_footer.php'; ?>
