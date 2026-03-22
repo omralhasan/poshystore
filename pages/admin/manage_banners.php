@@ -350,6 +350,7 @@ if ($cat_result) {
         <a href="manage_categories.php" class="nav-item"><i class="fas fa-layer-group"></i><span>Categories</span></a>
         <a href="manage_brands.php"     class="nav-item"><i class="fas fa-copyright"></i><span>Brands</span></a>
         <a href="manage_banners.php"    class="nav-item active"><i class="fas fa-images"></i><span>Homepage Banners</span></a>
+        <a href="upload_center.php"     class="nav-item"><i class="fas fa-cloud-upload-alt"></i><span>Upload Center</span></a>
         <a href="daily_reports.php"     class="nav-item"><i class="fas fa-chart-line"></i><span>Daily Reports</span></a>
         <a href="../../index.php"       class="nav-item"><i class="fas fa-store"></i><span>Visit Store</span></a>
     </div>
