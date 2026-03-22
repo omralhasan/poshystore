@@ -200,3 +200,32 @@ Stack trace:
 #1 /home/omar/poshystore/run_hero_migration.php(7): require_once('...')
 #2 {main}
   thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[22-Mar-2026 09:38:01 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /home/omar/poshystore/check_schema.php(2): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[22-Mar-2026 09:38:20 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /home/omar/poshystore/check_schema.php(2): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[22-Mar-2026 09:38:56 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/check_schema.php:5
+Stack trace:
+#0 /home/omar/poshystore/check_schema.php(5): mysqli->__construct()
+#1 {main}
+  thrown in /home/omar/poshystore/check_schema.php on line 5
+[22-Mar-2026 09:42:05 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /home/omar/poshystore/check_schema.php(3): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[22-Mar-2026 09:45:28 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /home/omar/poshystore/run_migration.php(4): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19

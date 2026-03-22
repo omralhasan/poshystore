@@ -43,6 +43,10 @@ $_card_site_root = realpath(__DIR__ . '/..') . '/';
             <span style="position:absolute;bottom:10px;left:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
         <?php endif; ?>
 
+        <?php if (!empty($product['is_new_arrival'])): ?>
+            <span style="position:absolute;bottom:38px;right:10px;z-index:5;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;box-shadow:0 4px 6px rgba(0,0,0,0.1);"><i class="fas fa-sparkles"></i> <?= $lang === 'ar' ? 'وصل حديثاً' : 'New Arrival' ?></span>
+        <?php endif; ?>
+
         <?php if (!empty($product['has_discount']) && $product['discount_percentage'] > 0): ?>
             <span class="discount-tag">-<?= intval($product['discount_percentage']) ?>%</span>
         <?php endif; ?>

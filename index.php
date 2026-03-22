@@ -1215,9 +1215,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         .p-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             background: var(--surface-alt);
-            padding: 4px;
             transition: transform 0.5s ease;
         }
 
@@ -2250,6 +2249,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 if (subName) {
                     catTag = '<span class="cat-tag">' + subName + '</span>';
                 }
+
+                // New Arrival tag
+                let newTag = '';
+                if (product.is_new_arrival == 1) {
+                    let newText = CURRENT_LANG === 'ar' ? 'وصل حديثاً' : 'New Arrival';
+                    newTag = '<span style="position:absolute;bottom:38px;right:10px;z-index:5;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;box-shadow:0 4px 6px rgba(0,0,0,0.1);"><i class="fas fa-sparkles"></i> ' + newText + '</span>';
+                }
                 
                 // Price
                 let priceHtml = '<span class="price-now">' + product.price_jod + ' ' + CURRENCY_TEXT + '</span>';
@@ -2270,7 +2276,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     '<i class="fas fa-eye"></i></a>';
                 
                 cardsHtml += '<div class="p-card fade-in" style="animation-delay: ' + (idx * 0.05) + 's;">' +
-                    '<div class="p-card-img">' + discountTag + catTag +
+                    '<div class="p-card-img">' + discountTag + catTag + newTag +
                     '<a href="' + product.slug + '"><img src="' + product.image_src + '" alt="' + product.name_en + '" loading="lazy" ' +
                     'onerror="this.onerror=null; this.src=\'images/placeholder-cosmetics.svg\';"></a></div>' +
                     '<div class="p-card-body">' +
