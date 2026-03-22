@@ -396,7 +396,13 @@ function getProductsBySubcategory($subcategory_id, $limit = 20)
 function getAllCategories()
 {
     global $conn;
-    $sql = "SELECT c.id AS category_id, c.name_en AS category_en, c.name_ar AS category_ar, c.icon AS category_icon,
+    
+    // Check if image_url column exists
+    $img_check = $conn->query("SHOW COLUMNS FROM categories LIKE 'image_url'");
+    $has_img = ($img_check && $img_check->num_rows > 0);
+    $img_col = $has_img ? ', c.image_url AS category_image' : '';
+    
+    $sql = "SELECT c.id AS category_id, c.name_en AS category_en, c.name_ar AS category_ar, c.icon AS category_icon $img_col,
                    s.id AS subcategory_id, s.name_en AS subcategory_en, s.name_ar AS subcategory_ar, s.icon AS subcategory_icon,
                    (SELECT COUNT(*) FROM products p WHERE p.subcategory_id = s.id AND p.stock_quantity > 0) AS product_count
             FROM categories c
@@ -415,6 +421,7 @@ function getAllCategories()
                 'name_en' => $row['category_en'],
                 'name_ar' => $row['category_ar'],
                 'icon' => $row['category_icon'],
+                'image_url' => $row['category_image'] ?? '',
                 'subcategories' => []
             ];
         }

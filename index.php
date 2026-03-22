@@ -688,6 +688,143 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             }
         }
 
+        /* ============ CATEGORY EXPLORE BAR ============ */
+        .category-explore {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .category-hero-banner {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            height: 140px;
+            margin-bottom: 1rem;
+        }
+
+        .category-hero-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .category-hero-banner .cat-banner-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-hero-banner .cat-banner-title {
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            letter-spacing: 0.5px;
+        }
+
+        .category-explore-links {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .cat-explore-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        .cat-explore-link:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .cat-explore-link i {
+            font-size: 0.9rem;
+        }
+
+        .cat-explore-link.new-arrivals {
+            background: linear-gradient(135deg, #f8f4f0, #fff);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .cat-explore-link.new-arrivals:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .subcategory-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .subcategory-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 1rem;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            text-decoration: none;
+            background: var(--surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            transition: all 0.25s ease;
+        }
+
+        .subcategory-chip:hover {
+            background: linear-gradient(135deg, #f8f4f0, #fff);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .subcategory-chip i {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .subcategory-chip .chip-count {
+            font-size: 0.68rem;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            .category-hero-banner { height: 110px; border-radius: 12px; }
+            .category-hero-banner .cat-banner-title { font-size: 1.2rem; }
+            .category-explore-links { gap: 0.5rem; }
+            .cat-explore-link { padding: 0.45rem 0.9rem; font-size: 0.75rem; }
+            .subcategory-chips { gap: 0.4rem; }
+            .subcategory-chip { padding: 0.35rem 0.75rem; font-size: 0.72rem; }
+        }
+
+        @media (max-width: 480px) {
+            .category-hero-banner { height: 90px; border-radius: 10px; }
+            .category-hero-banner .cat-banner-title { font-size: 1rem; }
+            .category-explore { padding: 0 1rem; }
+        }
+
         /* Responsive hero */
         @media (max-width: 1024px) {
             .hero-banner {
@@ -1908,6 +2045,40 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     <?= $lang === 'ar' ? 'عرض الكل' : 'View All' ?> (<?= $sec_total ?>)
                     <i class="fas fa-arrow-<?= $lang === 'ar' ? 'left' : 'right' ?>"></i>
                 </a>
+            </div>
+
+            <!-- Category Explore Bar -->
+            <div class="category-explore fade-in">
+                <?php if (!empty($sec_cat['image_url'])): ?>
+                <div class="category-hero-banner">
+                    <img src="<?= htmlspecialchars($sec_cat['image_url']) ?>" alt="<?= htmlspecialchars($sec_cat_name) ?>" loading="lazy">
+                    <div class="cat-banner-overlay">
+                        <div class="cat-banner-title"><?= htmlspecialchars($sec_cat_name) ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="category-explore-links">
+                    <a href="pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&sort=newest" class="cat-explore-link new-arrivals">
+                        <i class="fas fa-sparkles"></i> 
+                        <?= $lang === 'ar' ? 'تسوق أحدث المنتجات' : 'Shop ' . htmlspecialchars($sec_cat['name_en']) . ' New Arrivals' ?>
+                    </a>
+                </div>
+
+                <?php if (!empty($sec_cat['subcategories'])): ?>
+                <div class="subcategory-chips">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; margin-right: 0.5rem;">
+                        <?= $lang === 'ar' ? 'تسوق حسب الفئة:' : 'Shop by Category:' ?>
+                    </span>
+                    <?php foreach ($sec_cat['subcategories'] as $sub): ?>
+                        <a href="pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip">
+                            <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
+                            <?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>
+                            <span class="chip-count">(<?= $sub['product_count'] ?>)</span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
             </div>
 
             <?php if (!empty($sec_products)): ?>

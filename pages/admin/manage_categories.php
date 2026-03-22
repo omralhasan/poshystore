@@ -13,6 +13,15 @@ if (!isAdmin()) {
     exit();
 }
 
+$cat_upload_dir = __DIR__ . '/../../uploads/categories/';
+if (!is_dir($cat_upload_dir)) {
+    mkdir($cat_upload_dir, 0755, true);
+}
+
+// Check if image_url column exists
+$img_col_check = $conn->query("SHOW COLUMNS FROM categories LIKE 'image_url'");
+$has_image_col = ($img_col_check && $img_col_check->num_rows > 0);
+
 // ─── AJAX handlers ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -108,13 +117,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // UPLOAD CATEGORY IMAGE
+    if ($action === 'upload_category_image') {
+        $cat_id = intval($_POST['category_id'] ?? 0);
+        if (!$cat_id) { echo json_encode(['success' => false, 'error' => 'Invalid category ID']); exit(); }
+        if (!$has_image_col) { echo json_encode(['success' => false, 'error' => 'Please run the migration first: /run_category_image_migration.php']); exit(); }
+        
+        if (empty($_FILES['category_image']) || $_FILES['category_image']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['success' => false, 'error' => 'Please select a valid image']);
+            exit();
+        }
+        
+        $file = $_FILES['category_image'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!in_array($ext, $allowed)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid file type. Allowed: ' . implode(', ', $allowed)]);
+            exit();
+        }
+        if ($file['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'error' => 'File too large. Max 5MB.']);
+            exit();
+        }
+        
+        $filename = 'cat_' . $cat_id . '_' . time() . '.' . $ext;
+        $dest = $cat_upload_dir . $filename;
+        
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            echo json_encode(['success' => false, 'error' => 'Upload failed']);
+            exit();
+        }
+        
+        $image_path = 'uploads/categories/' . $filename;
+        $stmt = $conn->prepare("UPDATE categories SET image_url = ? WHERE id = ?");
+        $stmt->bind_param('si', $image_path, $cat_id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'image_url' => $image_path]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'DB error: ' . $conn->error]);
+        }
+        $stmt->close();
+        exit();
+    }
+
     echo json_encode(['success' => false, 'error' => 'Unknown action']);
     exit();
 }
 
 // ─── Load categories & subcategories ─────────────────────────────────────────
 $categories = [];
-$result = $conn->query("SELECT c.id AS cid, c.name_en AS cen, c.name_ar AS car,
+$img_select = $has_image_col ? ', c.image_url AS cimg' : '';
+$result = $conn->query("SELECT c.id AS cid, c.name_en AS cen, c.name_ar AS car $img_select,
     s.id AS sid, s.name_en AS sen, s.name_ar AS sar, s.icon AS sicon,
     (SELECT COUNT(*) FROM products WHERE subcategory_id = s.id) AS product_count
     FROM categories c
@@ -124,7 +178,7 @@ if ($result) {
     while ($row = $result->fetch_assoc()) {
         $cid = $row['cid'];
         if (!isset($categories[$cid])) {
-            $categories[$cid] = ['id' => $cid, 'name_en' => $row['cen'], 'name_ar' => $row['car'], 'subcategories' => []];
+            $categories[$cid] = ['id' => $cid, 'name_en' => $row['cen'], 'name_ar' => $row['car'], 'image_url' => $row['cimg'] ?? '', 'subcategories' => []];
         }
         if ($row['sid']) {
             $categories[$cid]['subcategories'][] = [
@@ -315,15 +369,29 @@ if ($result) {
             <?php foreach ($categories as $cat): ?>
             <div class="category-block" id="catBlock-<?= $cat['id'] ?>">
                 <div class="category-header">
-                    <div>
-                        <div class="cat-title">
-                            <i class="fas fa-folder" style="color: var(--warning);"></i>
-                            <?= htmlspecialchars($cat['name_en']) ?>
-                            <span style="color:var(--text-gray);font-size:.8rem;">(ID: <?= $cat['id'] ?>)</span>
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <!-- Category Image -->
+                        <div style="position:relative; width:60px; height:60px; border-radius:10px; overflow:hidden; background:#f3f4f6; flex-shrink:0; cursor:pointer;" onclick="document.getElementById('catImgInput-<?= $cat['id'] ?>').click()" title="Click to upload category image">
+                            <?php if (!empty($cat['image_url'])): ?>
+                                <img src="../../<?= htmlspecialchars($cat['image_url']) ?>" style="width:100%;height:100%;object-fit:cover;" id="catImgPreview-<?= $cat['id'] ?>">
+                            <?php else: ?>
+                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:1.2rem;" id="catImgPreview-<?= $cat['id'] ?>">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" id="catImgInput-<?= $cat['id'] ?>" accept="image/*" style="display:none" onchange="uploadCategoryImage(<?= $cat['id'] ?>, this)">
+                            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;text-align:center;font-size:.55rem;padding:2px;">📷 Upload</div>
                         </div>
-                        <?php if ($cat['name_ar']): ?>
-                            <span class="cat-ar"><?= htmlspecialchars($cat['name_ar']) ?></span>
-                        <?php endif; ?>
+                        <div>
+                            <div class="cat-title">
+                                <i class="fas fa-folder" style="color: var(--warning);"></i>
+                                <?= htmlspecialchars($cat['name_en']) ?>
+                                <span style="color:var(--text-gray);font-size:.8rem;">(ID: <?= $cat['id'] ?>)</span>
+                            </div>
+                            <?php if ($cat['name_ar']): ?>
+                                <span class="cat-ar"><?= htmlspecialchars($cat['name_ar']) ?></span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <button class="btn btn-danger btn-sm" onclick="deleteCategory(<?= $cat['id'] ?>, this)" title="Delete category and all its subcategories">
                         <i class="fas fa-trash-alt"></i> Delete
@@ -519,6 +587,40 @@ function appendSubcategoryItem(subId, catId, name_en, name_ar, icon) {
 
 function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Upload Category Image ────────────────────────────────────────────────────
+function uploadCategoryImage(catId, input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 5 * 1024 * 1024) { showToast('File too large. Max 5MB.', 'error'); return; }
+    
+    const fd = new FormData();
+    fd.append('action', 'upload_category_image');
+    fd.append('category_id', catId);
+    fd.append('category_image', file);
+    
+    showToast('Uploading image...');
+    
+    fetch('manage_categories.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Category image updated!');
+                // Update preview
+                const preview = document.getElementById('catImgPreview-' + catId);
+                if (preview) {
+                    if (preview.tagName === 'IMG') {
+                        preview.src = '../../' + data.image_url;
+                    } else {
+                        preview.outerHTML = '<img src="../../' + data.image_url + '" style="width:100%;height:100%;object-fit:cover;" id="catImgPreview-' + catId + '">';
+                    }
+                }
+            } else {
+                showToast(data.error || 'Upload failed', 'error');
+            }
+        })
+        .catch(() => showToast('Upload failed', 'error'));
 }
 </script>
 </body>
