@@ -288,8 +288,27 @@ if (!$is_filtered_mode) {
 
 // ── Homepage banners ──
 $homepage_banners = [];
+$hero_banners = [];
 try {
-    $banners_result = $conn->query("SELECT * FROM homepage_banners WHERE is_active = 1 ORDER BY position ASC, id ASC");
+    // Check if banner_type column exists
+    $col_check = $conn->query("SHOW COLUMNS FROM homepage_banners LIKE 'banner_type'");
+    $has_banner_type = ($col_check && $col_check->num_rows > 0);
+
+    if ($has_banner_type) {
+        // Load hero banners for the top slider
+        $hero_result = $conn->query("SELECT * FROM homepage_banners WHERE banner_type = 'hero' AND is_active = 1 ORDER BY sort_order ASC, id ASC");
+        if ($hero_result) {
+            while ($b = $hero_result->fetch_assoc()) {
+                $hero_banners[] = $b;
+            }
+        }
+        // Load section banners (between category sections)
+        $banners_result = $conn->query("SELECT * FROM homepage_banners WHERE banner_type = 'section' AND is_active = 1 ORDER BY position ASC, id ASC");
+    } else {
+        // Legacy: all banners are section banners
+        $banners_result = $conn->query("SELECT * FROM homepage_banners WHERE is_active = 1 ORDER BY position ASC, id ASC");
+    }
+
     if ($banners_result) {
         while ($b = $banners_result->fetch_assoc()) {
             $pos = (int)$b['position'];
@@ -355,159 +374,240 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         /* Navbar handled by home_navbar.php */
 
-        /* ============ HERO SECTION ============ */
-        .hero {
-            background: var(--surface-alt);
-            padding: 0;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-slider {
+        /* ============ HERO BANNER SLIDER (BeautyBox-inspired) ============ */
+        .hero-banner {
             position: relative;
             width: 100%;
-            aspect-ratio: 21/9;
-            min-height: 340px;
-            max-height: 520px;
+            height: 500px;
             overflow: hidden;
+            background: #f5f0eb;
         }
 
-        .hero-slide {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            transition: opacity 1s ease;
+        .hero-banner-track {
+            display: flex;
+            height: 100%;
+            transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
         }
 
-        .hero-slide.active { opacity: 1; }
+        .hero-banner-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+            flex-shrink: 0;
+        }
 
-        .hero-slide img {
+        .hero-banner-slide img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
-        .hero-slide-overlay {
+        /* Optional text overlay - only rendered if banner has title */
+        .hero-banner-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+            background: linear-gradient(
+                105deg,
+                rgba(0, 0, 0, 0.45) 0%,
+                rgba(0, 0, 0, 0.18) 45%,
+                transparent 70%
+            );
             display: flex;
             align-items: center;
-            padding: 0 5%;
+            padding: 0 6%;
         }
 
-        [dir="rtl"] .hero-slide-overlay {
-            background: linear-gradient(to left, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+        [dir="rtl"] .hero-banner-overlay {
+            background: linear-gradient(
+                -105deg,
+                rgba(0, 0, 0, 0.45) 0%,
+                rgba(0, 0, 0, 0.18) 45%,
+                transparent 70%
+            );
         }
 
-        .hero-slide-content {
+        .hero-banner-text {
             max-width: 500px;
-            text-align: left;
         }
 
-        [dir="rtl"] .hero-slide-content { text-align: right; }
-
-        .hero-slide-content .hero-tag {
+        .hero-banner-text .hero-label {
             display: inline-block;
-            color: var(--accent);
-            font-size: 0.72rem;
-            font-weight: 600;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
             text-transform: uppercase;
-            letter-spacing: 0.25em;
+            color: var(--accent, #C5A059);
             margin-bottom: 0.75rem;
         }
 
-        .hero-slide-content h2 {
+        .hero-banner-text h2 {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-size: clamp(1.6rem, 4vw, 2.8rem);
             font-weight: 700;
             color: #fff;
-            line-height: 1.25;
-            margin-bottom: 0.75rem;
-        }
-
-        .hero-slide-content p {
-            color: rgba(255,255,255,0.85);
-            font-size: 0.95rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .hero-dots {
-            position: absolute;
-            bottom: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 8px;
-            z-index: 5;
-        }
-
-        .hero-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.4);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            padding: 0;
-        }
-
-        .hero-dot.active {
-            background: #fff;
-            width: 24px;
-            border-radius: 4px;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .hero h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 0.75rem;
             line-height: 1.2;
+            margin-bottom: 0.6rem;
         }
 
-        .hero h1 span {
-            color: var(--accent);
+        .hero-banner-text p {
+            color: rgba(255, 255, 255, 0.88);
+            font-size: clamp(0.88rem, 1.5vw, 1.05rem);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
         }
 
-        .hero p {
-            font-size: clamp(1rem, 2.5vw, 1.15rem);
-            color: rgba(255,255,255,0.85);
-            margin-bottom: 2rem;
-        }
-
-        .hero-cta {
+        .hero-banner-cta {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: #000;
-            color: #fff;
-            padding: 0.8rem 2rem;
+            background: #fff;
+            color: #111;
+            padding: 0.75rem 2rem;
             border-radius: 50px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             text-decoration: none;
-            transition: var(--transition);
-            border: 1.5px solid #fff;
-            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             letter-spacing: 0.3px;
+            border: none;
+            cursor: pointer;
         }
 
-        .hero-cta:hover {
-            background: #fff;
-            color: #000;
+        .hero-banner-cta:hover {
+            background: #111;
+            color: #fff;
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
+
+        /* Navigation arrows */
+        .hero-banner-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: none;
+            color: #111;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero-banner-arrow:hover {
+            background: #fff;
+            transform: translateY(-50%) scale(1.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .hero-banner-arrow.prev { left: 1.25rem; }
+        .hero-banner-arrow.next { right: 1.25rem; }
+
+        [dir="rtl"] .hero-banner-arrow.prev { left: auto; right: 1.25rem; }
+        [dir="rtl"] .hero-banner-arrow.next { right: auto; left: 1.25rem; }
+
+        /* Bottom controls: dots + pause/play */
+        .hero-banner-controls {
+            position: absolute;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 5;
+        }
+
+        .hero-banner-dots {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .hero-banner-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.45);
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+
+        .hero-banner-dot.active {
+            width: 28px;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        .hero-banner-pause {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: none;
+            color: #fff;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .hero-banner-pause:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive hero */
+        @media (max-width: 1024px) {
+            .hero-banner {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-banner {
+                height: 320px;
+            }
+            .hero-banner-arrow {
+                width: 36px;
+                height: 36px;
+                font-size: 0.85rem;
+            }
+            .hero-banner-arrow.prev { left: 0.75rem; }
+            .hero-banner-arrow.next { right: 0.75rem; }
+            .hero-banner-text h2 { font-size: 1.4rem; }
+            .hero-banner-text p { font-size: 0.85rem; }
+            .hero-banner-cta { padding: 0.6rem 1.5rem; font-size: 0.82rem; }
+            .hero-banner-controls { bottom: 0.75rem; }
+            .hero-banner-dot { width: 8px; height: 8px; }
+            .hero-banner-dot.active { width: 22px; }
+        }
+
+        @media (max-width: 480px) {
+            .hero-banner {
+                height: 260px;
+            }
+            .hero-banner-overlay {
+                padding: 0 1rem;
+            }
+        }
+
 
         /* ============ SEARCH & FILTER BAR ============ */
         .filter-bar {
@@ -1164,9 +1264,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 gap: 0.75rem;
             }
 
-            .hero {
-                padding: 2rem 1rem 1.5rem;
-            }
+
             
             /* Filter bar */
             .filter-bar {
@@ -1293,18 +1391,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 height: 36px;
             }
 
-            .hero h1 {
-                font-size: 1.6rem;
-            }
 
-            .hero p {
-                font-size: 0.9rem;
-            }
-
-            .hero-cta {
-                padding: 0.7rem 1.5rem;
-                font-size: 0.9rem;
-            }
         }
 
         /* ============ UTILITIES ============ */
@@ -1363,40 +1450,90 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <button class="announcement-close" onclick="document.getElementById('promo-tape').style.display='none'">&times;</button>
     </div>
 
-    <!-- ======== HERO SLIDER ======== -->
-    <section class="hero">
-        <div class="hero-slider" id="heroSlider">
-            <div class="hero-slide active">
-                <img src="images/hero-beauty-1.png" alt="Poshy Store Collection" loading="eager">
-                <div class="hero-slide-overlay">
-                    <div class="hero-slide-content">
-                        <span class="hero-tag"><?= $lang === 'ar' ? 'مجموعة بوشي الفاخرة' : 'Poshy Luxury Edit' ?></span>
-                        <h2><?= $lang === 'ar' ? 'اكتشفي مجموعتنا الجديدة' : 'The New Glow Collection' ?></h2>
-                        <p><?= $lang === 'ar' ? 'منتجات فاخرة تمنح بشرتك إشراقة ناعمة' : 'Luxury products that give your skin a refined and radiant glow' ?></p>
-                        <a href="#products" class="hero-cta">
-                            <i class="fas fa-shopping-bag"></i> <?= t('shop_now') ?>
+    <!-- ======== HERO BANNER SLIDER ======== -->
+    <?php
+    // Build slides array: from DB hero banners, or fallback defaults
+    $slides = [];
+    if (!empty($hero_banners)) {
+        foreach ($hero_banners as $hb) {
+            $slides[] = [
+                'image'       => $hb['image_path'],
+                'title'       => $lang === 'ar' && !empty($hb['title_ar']) ? $hb['title_ar'] : ($hb['title'] ?? ''),
+                'subtitle'    => $lang === 'ar' && !empty($hb['subtitle_ar']) ? $hb['subtitle_ar'] : ($hb['subtitle'] ?? ''),
+                'cta_text'    => $lang === 'ar' && !empty($hb['cta_text_ar']) ? $hb['cta_text_ar'] : ($hb['cta_text'] ?? ''),
+                'link'        => $hb['link_url'] ?? '#products',
+            ];
+        }
+    } else {
+        // Default hero slides when no DB banners uploaded yet
+        $slides = [
+            [
+                'image'    => 'images/hero-beauty-1.png',
+                'title'    => $lang === 'ar' ? 'اكتشفي مجموعتنا الجديدة' : 'The New Glow Collection',
+                'subtitle' => $lang === 'ar' ? 'منتجات فاخرة تمنح بشرتك إشراقة ناعمة' : 'Luxury products for a refined, radiant glow',
+                'cta_text' => $lang === 'ar' ? 'تسوقي الآن' : 'Shop Now',
+                'link'     => '#products',
+            ],
+            [
+                'image'    => 'images/hero-beauty-2.png',
+                'title'    => $lang === 'ar' ? 'روتين متكامل لبشرة مشرقة' : 'Glow. Lift. Renew.',
+                'subtitle' => $lang === 'ar' ? 'روتين شامل لبشرة أكثر شباباً وتألقاً' : 'A complete routine for younger-looking, luminous skin',
+                'cta_text' => $lang === 'ar' ? 'اكتشفي الآن' : 'Discover Now',
+                'link'     => '#products',
+            ],
+        ];
+    }
+    $slide_count = count($slides);
+    ?>
+    <section class="hero-banner" id="heroBanner">
+        <div class="hero-banner-track" id="heroBannerTrack" style="width: <?= $slide_count * 100 ?>%;">
+            <?php foreach ($slides as $i => $slide): ?>
+            <div class="hero-banner-slide">
+                <img src="<?= htmlspecialchars($slide['image']) ?>"
+                     alt="<?= htmlspecialchars($slide['title'] ?: 'Poshy Store Banner') ?>"
+                     <?= $i === 0 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"' ?>>
+                <?php if (!empty($slide['title'])): ?>
+                <div class="hero-banner-overlay">
+                    <div class="hero-banner-text">
+                        <?php if (!empty($slide['subtitle'])): ?>
+                        <span class="hero-label"><?= htmlspecialchars($slide['subtitle']) ?></span>
+                        <?php endif; ?>
+                        <h2><?= htmlspecialchars($slide['title']) ?></h2>
+                        <?php if (!empty($slide['cta_text'])): ?>
+                        <a href="<?= htmlspecialchars($slide['link'] ?: '#products') ?>" class="hero-banner-cta">
+                            <i class="fas fa-shopping-bag"></i> <?= htmlspecialchars($slide['cta_text']) ?>
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
-            <div class="hero-slide">
-                <img src="images/hero-beauty-2.png" alt="Premium Skincare" loading="lazy">
-                <div class="hero-slide-overlay">
-                    <div class="hero-slide-content">
-                        <span class="hero-tag"><?= $lang === 'ar' ? 'عناية متكاملة' : 'Premium Rituals' ?></span>
-                        <h2><?= $lang === 'ar' ? 'روتين متكامل لبشرة مشرقة' : 'Glow. Lift. Renew.' ?></h2>
-                        <p><?= $lang === 'ar' ? 'روتين شامل لبشرة أكثر شباباً وتألقاً' : 'A complete routine for younger-looking, luminous skin' ?></p>
-                        <a href="#products" class="hero-cta">
-                            <i class="fas fa-sparkles"></i> <?= $lang === 'ar' ? 'اكتشفي الآن' : 'Discover Now' ?>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="hero-dots">
-                <button class="hero-dot active" onclick="goToSlide(0)"></button>
-                <button class="hero-dot" onclick="goToSlide(1)"></button>
-            </div>
+            <?php endforeach; ?>
         </div>
+
+        <?php if ($slide_count > 1): ?>
+        <!-- Navigation Arrows -->
+        <button class="hero-banner-arrow prev" onclick="heroPrev()" aria-label="Previous slide">
+            <i class="fas fa-chevron-<?= $lang === 'ar' ? 'right' : 'left' ?>"></i>
+        </button>
+        <button class="hero-banner-arrow next" onclick="heroNext()" aria-label="Next slide">
+            <i class="fas fa-chevron-<?= $lang === 'ar' ? 'left' : 'right' ?>"></i>
+        </button>
+
+        <!-- Bottom Controls: Dots + Pause -->
+        <div class="hero-banner-controls">
+            <div class="hero-banner-dots">
+                <?php for ($d = 0; $d < $slide_count; $d++): ?>
+                <button class="hero-banner-dot <?= $d === 0 ? 'active' : '' ?>"
+                        onclick="heroGoTo(<?= $d ?>)"
+                        aria-label="Go to slide <?= $d + 1 ?>"></button>
+                <?php endfor; ?>
+            </div>
+            <button class="hero-banner-pause" id="heroPauseBtn" onclick="heroTogglePause()" aria-label="Pause slideshow">
+                <i class="fas fa-pause" id="heroPauseIcon"></i>
+            </button>
+        </div>
+        <?php endif; ?>
     </section>
 
     <!-- ======== CATEGORY STORIES (Instagram Style) ======== -->
@@ -2072,25 +2209,85 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         });
     });
     // ==========================================
-    // Hero Slider
+    // Hero Banner Slider (horizontal slide)
     // ==========================================
-    let currentSlide = 0;
-    const slides = document.querySelectorAll('.hero-slide');
-    const dots = document.querySelectorAll('.hero-dot');
-    
-    function goToSlide(index) {
-        slides.forEach(s => s.classList.remove('active'));
-        dots.forEach(d => d.classList.remove('active'));
-        currentSlide = index;
-        if (slides[currentSlide]) slides[currentSlide].classList.add('active');
-        if (dots[currentSlide]) dots[currentSlide].classList.add('active');
-    }
-    
-    if (slides.length > 1) {
-        setInterval(() => {
-            goToSlide((currentSlide + 1) % slides.length);
-        }, 5000);
-    }
+    (function() {
+        const track = document.getElementById('heroBannerTrack');
+        const dots = document.querySelectorAll('.hero-banner-dot');
+        const pauseIcon = document.getElementById('heroPauseIcon');
+        const slideCount = <?= $slide_count ?? 2 ?>;
+        let current = 0;
+        let autoInterval = null;
+        let isPaused = false;
+
+        if (!track || slideCount <= 1) return;
+
+        function goTo(index) {
+            if (index < 0) index = slideCount - 1;
+            if (index >= slideCount) index = 0;
+            current = index;
+            track.style.transform = `translateX(-${current * (100 / slideCount)}%)`;
+            dots.forEach((d, i) => d.classList.toggle('active', i === current));
+        }
+
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+
+        function startAuto() {
+            stopAuto();
+            autoInterval = setInterval(next, 5000);
+        }
+
+        function stopAuto() {
+            if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                stopAuto();
+                if (pauseIcon) { pauseIcon.className = 'fas fa-play'; }
+            } else {
+                startAuto();
+                if (pauseIcon) { pauseIcon.className = 'fas fa-pause'; }
+            }
+        }
+
+        // Touch / swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const banner = document.getElementById('heroBanner');
+
+        if (banner) {
+            banner.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+                stopAuto();
+            }, { passive: true });
+
+            banner.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                const diff = touchStartX - touchEndX;
+                const isRtl = document.documentElement.dir === 'rtl';
+                if (Math.abs(diff) > 50) {
+                    if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) {
+                        next();
+                    } else {
+                        prev();
+                    }
+                }
+                if (!isPaused) startAuto();
+            }, { passive: true });
+        }
+
+        // Expose to global for inline onclick handlers
+        window.heroGoTo = function(i) { goTo(i); if (!isPaused) { startAuto(); } };
+        window.heroNext = function() { next(); if (!isPaused) { startAuto(); } };
+        window.heroPrev = function() { prev(); if (!isPaused) { startAuto(); } };
+        window.heroTogglePause = togglePause;
+
+        // Start auto-slide
+        startAuto();
+    })();
     </script>
 </body>
 </html>

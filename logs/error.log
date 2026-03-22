@@ -188,3 +188,15 @@ Stack trace:
 #1 Command line code(1): require_once('...')
 #2 {main}
   thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[22-Mar-2026 03:43:11 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /home/omar/poshystore/run_hero_migration.php(7): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[22-Mar-2026 03:43:20 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /home/omar/poshystore/run_hero_migration.php(7): require_once('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19

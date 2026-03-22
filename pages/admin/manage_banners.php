@@ -1,7 +1,7 @@
 <?php
 /**
  * Manage Homepage Banners – Admin Panel
- * Upload, manage, and arrange banner images that appear between category sections on the homepage
+ * Upload, manage, and arrange banner images for hero slider and between-section positions
  */
 
 session_start();
@@ -18,6 +18,10 @@ if (!is_dir($upload_dir)) {
     mkdir($upload_dir, 0755, true);
 }
 
+// Check if banner_type column exists (migration might not have run yet)
+$col_check = $conn->query("SHOW COLUMNS FROM homepage_banners LIKE 'banner_type'");
+$has_banner_type = ($col_check && $col_check->num_rows > 0);
+
 // ─── AJAX handlers ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -25,10 +29,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // UPLOAD BANNER
     if ($action === 'upload_banner') {
-        $title    = trim($_POST['title'] ?? '');
-        $title_ar = trim($_POST['title_ar'] ?? '');
-        $link_url = trim($_POST['link_url'] ?? '');
-        $position = intval($_POST['position'] ?? 0);
+        $title       = trim($_POST['title'] ?? '');
+        $title_ar    = trim($_POST['title_ar'] ?? '');
+        $link_url    = trim($_POST['link_url'] ?? '');
+        $position    = intval($_POST['position'] ?? 0);
+        $banner_type = ($_POST['banner_type'] ?? 'section');
+        $subtitle    = trim($_POST['subtitle'] ?? '');
+        $subtitle_ar = trim($_POST['subtitle_ar'] ?? '');
+        $cta_text    = trim($_POST['cta_text'] ?? '');
+        $cta_text_ar = trim($_POST['cta_text_ar'] ?? '');
+        $sort_order  = intval($_POST['sort_order'] ?? 0);
+
+        // Validate banner_type
+        if (!in_array($banner_type, ['hero', 'section'])) {
+            $banner_type = 'section';
+        }
 
         if (empty($_FILES['banner_image']) || $_FILES['banner_image']['error'] !== UPLOAD_ERR_OK) {
             echo json_encode(['success' => false, 'error' => 'Please select a valid image file']);
@@ -58,20 +73,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $image_path = 'uploads/banners/' . $filename;
-        $stmt = $conn->prepare("INSERT INTO homepage_banners (title, title_ar, image_path, position, link_url, is_active) VALUES (?, ?, ?, ?, ?, 1)");
-        $stmt->bind_param('sssis', $title, $title_ar, $image_path, $position, $link_url);
+
+        if ($has_banner_type) {
+            $stmt = $conn->prepare("INSERT INTO homepage_banners (title, title_ar, banner_type, subtitle, subtitle_ar, cta_text, cta_text_ar, sort_order, image_path, position, link_url, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
+            $stmt->bind_param('sssssssisis', $title, $title_ar, $banner_type, $subtitle, $subtitle_ar, $cta_text, $cta_text_ar, $sort_order, $image_path, $position, $link_url);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO homepage_banners (title, title_ar, image_path, position, link_url, is_active) VALUES (?, ?, ?, ?, ?, 1)");
+            $stmt->bind_param('sssis', $title, $title_ar, $image_path, $position, $link_url);
+        }
 
         if ($stmt->execute()) {
             $new_id = $stmt->insert_id;
             $stmt->close();
             echo json_encode([
-                'success'    => true,
-                'id'         => $new_id,
-                'title'      => $title,
-                'title_ar'   => $title_ar,
-                'image_path' => $image_path,
-                'position'   => $position,
-                'link_url'   => $link_url,
+                'success'     => true,
+                'id'          => $new_id,
+                'title'       => $title,
+                'title_ar'    => $title_ar,
+                'image_path'  => $image_path,
+                'position'    => $position,
+                'link_url'    => $link_url,
+                'banner_type' => $banner_type,
             ]);
         } else {
             echo json_encode(['success' => false, 'error' => 'DB error: ' . $conn->error]);
@@ -93,13 +115,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // UPDATE POSITION
+    // UPDATE POSITION / SORT ORDER
     if ($action === 'update_position') {
-        $id       = intval($_POST['id'] ?? 0);
-        $position = intval($_POST['position'] ?? 0);
+        $id         = intval($_POST['id'] ?? 0);
+        $position   = intval($_POST['position'] ?? 0);
+        $sort_order = intval($_POST['sort_order'] ?? 0);
         if ($id > 0) {
-            $stmt = $conn->prepare("UPDATE homepage_banners SET position = ? WHERE id = ?");
-            $stmt->bind_param('ii', $position, $id);
+            if ($has_banner_type) {
+                $stmt = $conn->prepare("UPDATE homepage_banners SET position = ?, sort_order = ? WHERE id = ?");
+                $stmt->bind_param('iii', $position, $sort_order, $id);
+            } else {
+                $stmt = $conn->prepare("UPDATE homepage_banners SET position = ? WHERE id = ?");
+                $stmt->bind_param('ii', $position, $id);
+            }
             $stmt->execute();
             $stmt->close();
             echo json_encode(['success' => true]);
@@ -141,10 +169,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ─── Load banners ────────────────────────────────────────────────────────
 $banners = [];
-$result = $conn->query("SELECT * FROM homepage_banners ORDER BY position ASC, id ASC");
+$hero_banners = [];
+$section_banners = [];
+
+if ($has_banner_type) {
+    $result = $conn->query("SELECT * FROM homepage_banners ORDER BY banner_type DESC, sort_order ASC, position ASC, id ASC");
+} else {
+    $result = $conn->query("SELECT * FROM homepage_banners ORDER BY position ASC, id ASC");
+}
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $banners[] = $row;
+        if ($has_banner_type && ($row['banner_type'] ?? 'section') === 'hero') {
+            $hero_banners[] = $row;
+        } else {
+            $section_banners[] = $row;
+        }
     }
 }
 
@@ -172,6 +212,7 @@ if ($cat_result) {
             --text-gray: #9ca3af; --text-dark: #1f2937; --success: #10b981;
             --warning: #f59e0b; --danger: #ef4444; --bg-light: #f9fafb;
             --border-color: #e5e7eb; --shadow-md: 0 4px 6px rgba(0,0,0,.1);
+            --accent-gold: #C5A059; --accent-rose: #E8C4B8;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-light); min-height: 100vh; display: flex; color: var(--text-dark); }
@@ -197,9 +238,18 @@ if ($cat_result) {
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; font-weight: 600; margin-bottom: .4rem; font-size: .875rem; }
-        .form-group input, .form-group select { width: 100%; padding: .65rem .9rem; border: 2px solid var(--border-color); border-radius: 10px; font-size: .9rem; font-family: inherit; transition: border-color .3s; background: var(--bg-light); }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(79,158,255,.15); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: .65rem .9rem; border: 2px solid var(--border-color); border-radius: 10px; font-size: .9rem; font-family: inherit; transition: border-color .3s; background: var(--bg-light); }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(79,158,255,.15); }
         .form-group .help-text { font-size: .78rem; color: var(--text-gray); margin-top: .3rem; }
+
+        /* Banner type toggle */
+        .type-toggle { display: flex; gap: 0; border: 2px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
+        .type-toggle label { flex: 1; padding: .75rem 1rem; text-align: center; cursor: pointer; font-weight: 600; font-size: .85rem; transition: all .3s; background: var(--bg-light); color: var(--text-gray); display: flex; align-items: center; justify-content: center; gap: .4rem; }
+        .type-toggle label:first-child { border-right: 1px solid var(--border-color); }
+        .type-toggle input { display: none; }
+        .type-toggle input:checked + label { background: linear-gradient(135deg, var(--accent-gold), #d4a847); color: #fff; }
+        .type-toggle .type-hero-label { }
+        .type-toggle .type-section-label { }
 
         .file-upload-zone {
             border: 2px dashed var(--border-color);
@@ -228,6 +278,15 @@ if ($cat_result) {
         .btn-secondary { background: var(--bg-light); color: var(--text-dark); border: 2px solid var(--border-color); }
         .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; }
         .btn-warning { background: linear-gradient(135deg, var(--warning), #d97706); color: #fff; }
+        .btn-gold { background: linear-gradient(135deg, var(--accent-gold), #d4a847); color: #fff; }
+
+        /* Tab system */
+        .tab-nav { display: flex; gap: 0; margin-bottom: 1.5rem; border: 2px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+        .tab-btn { flex: 1; padding: .85rem 1rem; text-align: center; cursor: pointer; font-weight: 600; font-size: .9rem; transition: all .3s; background: #fff; color: var(--text-gray); border: none; display: flex; align-items: center; justify-content: center; gap: .5rem; }
+        .tab-btn:not(:last-child) { border-right: 1px solid var(--border-color); }
+        .tab-btn.active { background: var(--primary-dark); color: #fff; }
+        .tab-btn .tab-count { background: rgba(0,0,0,.1); padding: 0.1rem .5rem; border-radius: 10px; font-size: .75rem; }
+        .tab-btn.active .tab-count { background: rgba(255,255,255,.2); }
 
         .banners-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
         .banner-card {
@@ -240,11 +299,25 @@ if ($cat_result) {
         }
         .banner-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,.15); }
         .banner-card.inactive { opacity: .6; border-color: var(--danger); }
-        .banner-card-img { width: 100%; aspect-ratio: 21/7; object-fit: cover; display: block; background: #eee; }
+        .banner-card-img { width: 100%; aspect-ratio: 21/9; object-fit: cover; display: block; background: #eee; }
+        .banner-card.hero-type .banner-card-img { aspect-ratio: 21/9; }
         .banner-card-body { padding: 1.25rem; }
         .banner-card-title { font-weight: 700; font-size: 1rem; margin-bottom: .25rem; }
         .banner-card-meta { font-size: .8rem; color: var(--text-gray); margin-bottom: .75rem; }
         .banner-card-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+        .banner-type-badge { display: inline-flex; align-items: center; gap: .25rem; padding: .15rem .6rem; border-radius: 6px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+        .badge-hero { background: linear-gradient(135deg, var(--accent-gold), #d4a847); color: #fff; }
+        .badge-section { background: rgba(79,158,255,.1); color: var(--accent-blue); }
+
+        /* Hero fields toggle */
+        .hero-fields { display: none; }
+        .hero-fields.show { display: block; }
+        .section-fields { display: none; }
+        .section-fields.show { display: block; }
+
+        /* Size recommendation */
+        .size-rec { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #f59e0b; border-radius: 10px; padding: .75rem 1rem; font-size: .82rem; color: #92400e; margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
+        .size-rec i { color: #f59e0b; }
 
         .toast { position: fixed; top: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; color: #fff; font-weight: 600; z-index: 9999; transform: translateX(120%); transition: transform .4s; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
         .toast.show { transform: translateX(0); }
@@ -294,22 +367,95 @@ if ($cat_result) {
     <!-- Upload Form -->
     <div class="form-card">
         <h2><i class="fas fa-cloud-upload-alt"></i> Upload New Banner</h2>
+
+        <?php if ($has_banner_type): ?>
+        <!-- Banner Type Toggle -->
+        <div class="type-toggle">
+            <input type="radio" name="banner_type_radio" id="typeHero" value="hero" checked>
+            <label for="typeHero" class="type-hero-label" onclick="setBannerType('hero')">
+                <i class="fas fa-film"></i> Hero Slider
+            </label>
+            <input type="radio" name="banner_type_radio" id="typeSection" value="section">
+            <label for="typeSection" class="type-section-label" onclick="setBannerType('section')">
+                <i class="fas fa-layer-group"></i> Section Banner
+            </label>
+        </div>
+        <?php endif; ?>
+
+        <!-- Size recommendation -->
+        <div class="size-rec" id="sizeRec">
+            <i class="fas fa-info-circle"></i>
+            <span id="sizeRecText">Recommended: <strong>1600×500px</strong> for hero slider. Max 10MB. Use high-quality imagery for a premium look.</span>
+        </div>
+
         <form id="uploadBannerForm" enctype="multipart/form-data">
+            <input type="hidden" name="banner_type" id="bannerTypeField" value="hero">
             <div class="form-row">
                 <div>
                     <div class="form-group">
                         <label>Banner Title (English)</label>
-                        <input type="text" name="title" id="bannerTitle" placeholder="e.g. Summer Sale Banner">
+                        <input type="text" name="title" id="bannerTitle" placeholder="e.g. The New Glow Collection">
+                        <div class="help-text hero-fields show">For hero: overlaid on image. Leave empty for image-only banners.</div>
                     </div>
                     <div class="form-group">
                         <label>Banner Title (Arabic)</label>
-                        <input type="text" name="title_ar" id="bannerTitleAr" placeholder="مثال: عرض الصيف" dir="rtl">
+                        <input type="text" name="title_ar" id="bannerTitleAr" placeholder="مثال: مجموعة البشرة الجديدة" dir="rtl">
                     </div>
+
+                    <?php if ($has_banner_type): ?>
+                    <!-- Hero-specific fields -->
+                    <div class="hero-fields show" id="heroFields">
+                        <div class="form-group">
+                            <label>Subtitle / Tag line (English)</label>
+                            <input type="text" name="subtitle" placeholder="e.g. Luxury Beauty Edit">
+                            <div class="help-text">Small text above the title. Leave empty to hide.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Subtitle (Arabic)</label>
+                            <input type="text" name="subtitle_ar" placeholder="مثال: عناية فاخرة" dir="rtl">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>CTA Button Text (English)</label>
+                                <input type="text" name="cta_text" placeholder="e.g. Shop Now">
+                            </div>
+                            <div class="form-group">
+                                <label>CTA Button Text (Arabic)</label>
+                                <input type="text" name="cta_text_ar" placeholder="تسوقي الآن" dir="rtl">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Sort Order</label>
+                            <input type="number" name="sort_order" value="0" min="0">
+                            <div class="help-text">Lower number = appears first in slider</div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="form-group">
                         <label>Link URL (optional)</label>
                         <input type="text" name="link_url" id="bannerLink" placeholder="e.g. index.php?category=1">
-                        <div class="help-text">Optional. Where to go when banner is clicked.</div>
+                        <div class="help-text">Where to go when banner is clicked.</div>
                     </div>
+
+                    <?php if ($has_banner_type): ?>
+                    <!-- Section-specific fields -->
+                    <div class="section-fields" id="sectionFields">
+                        <div class="form-group">
+                            <label>Position (between which sections)</label>
+                            <select name="position" id="bannerPosition">
+                                <?php foreach ($categories as $idx => $cat): ?>
+                                    <option value="<?= $idx ?>"><?= "After " . htmlspecialchars($cat['name_en']) . " section" ?></option>
+                                <?php endforeach; ?>
+                                <?php if (empty($categories)): ?>
+                                    <option value="0">Position 1</option>
+                                    <option value="1">Position 2</option>
+                                    <option value="2">Position 3</option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <?php else: ?>
                     <div class="form-group">
                         <label>Position (between which sections)</label>
                         <select name="position" id="bannerPosition">
@@ -323,6 +469,7 @@ if ($cat_result) {
                             <?php endif; ?>
                         </select>
                     </div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <div class="form-group">
@@ -330,7 +477,7 @@ if ($cat_result) {
                         <div class="file-upload-zone" id="uploadZone">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <p>Click or drag to upload image</p>
-                            <p style="font-size: .72rem; color: #aaa;">Recommended: 1400×400px • Max 10MB</p>
+                            <p style="font-size: .72rem; color: #aaa;" id="sizeHint">Recommended: 1600×500px • Max 10MB</p>
                             <input type="file" name="banner_image" id="bannerFile" accept="image/*" required>
                             <img class="file-preview" id="filePreview" alt="Preview">
                         </div>
@@ -345,37 +492,98 @@ if ($cat_result) {
 
     <!-- Banners List -->
     <div class="form-card">
-        <h2><i class="fas fa-list"></i> Current Banners (<?= count($banners) ?>)</h2>
-        <?php if (empty($banners)): ?>
-            <p style="color: var(--text-gray); text-align: center; padding: 2rem;">No banners uploaded yet. Upload one above to display between homepage sections.</p>
-        <?php else: ?>
-            <div class="banners-grid" id="bannersGrid">
-                <?php foreach ($banners as $banner): ?>
-                <div class="banner-card <?= $banner['is_active'] ? '' : 'inactive' ?>" id="bannerCard-<?= $banner['id'] ?>">
-                    <img src="../../<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? 'Banner') ?>" class="banner-card-img" loading="lazy">
-                    <div class="banner-card-body">
-                        <div class="banner-card-title"><?= htmlspecialchars($banner['title'] ?: 'Untitled Banner') ?></div>
-                        <div class="banner-card-meta">
-                            Position: <?= $banner['position'] ?> •
-                            <?= $banner['is_active'] ? '<span style="color:var(--success);">Active</span>' : '<span style="color:var(--danger);">Inactive</span>' ?>
-                            <?php if ($banner['link_url']): ?>
-                                • <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="color:var(--accent-blue);">🔗 Link</a>
-                            <?php endif; ?>
-                        </div>
-                        <div class="banner-card-actions">
-                            <button class="btn btn-sm <?= $banner['is_active'] ? 'btn-warning' : 'btn-success' ?>" onclick="toggleBanner(<?= $banner['id'] ?>, this)">
-                                <i class="fas <?= $banner['is_active'] ? 'fa-eye-slash' : 'fa-eye' ?>"></i>
-                                <?= $banner['is_active'] ? 'Deactivate' : 'Activate' ?>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteBanner(<?= $banner['id'] ?>, this)">
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </button>
+        <?php if ($has_banner_type): ?>
+        <!-- Tab navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="showTab('hero', this)">
+                <i class="fas fa-film"></i> Hero Slider
+                <span class="tab-count"><?= count($hero_banners) ?></span>
+            </button>
+            <button class="tab-btn" onclick="showTab('section', this)">
+                <i class="fas fa-layer-group"></i> Section Banners
+                <span class="tab-count"><?= count($section_banners) ?></span>
+            </button>
+        </div>
+        <?php endif; ?>
+
+        <!-- Hero banners tab -->
+        <div id="tab-hero" class="tab-content">
+            <h2 style="margin-bottom: 1rem;"><i class="fas fa-film"></i> Hero Slider Banners (<?= count($hero_banners) ?>)</h2>
+            <?php if (empty($hero_banners)): ?>
+                <p style="color: var(--text-gray); text-align: center; padding: 2rem;">
+                    <i class="fas fa-image" style="font-size: 2rem; display: block; margin-bottom: .5rem; color: var(--accent-gold);"></i>
+                    No hero banners yet. Upload one above with "Hero Slider" type to display in the top banner slider.
+                </p>
+            <?php else: ?>
+                <div class="banners-grid" id="heroBannersGrid">
+                    <?php foreach ($hero_banners as $banner): ?>
+                    <div class="banner-card hero-type <?= $banner['is_active'] ? '' : 'inactive' ?>" id="bannerCard-<?= $banner['id'] ?>">
+                        <img src="../../<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? 'Banner') ?>" class="banner-card-img" loading="lazy">
+                        <div class="banner-card-body">
+                            <div style="display: flex; align-items: center; gap: .5rem; margin-bottom: .25rem;">
+                                <span class="banner-type-badge badge-hero"><i class="fas fa-film"></i> Hero</span>
+                                <span class="banner-card-title"><?= htmlspecialchars($banner['title'] ?: 'Image-only Banner') ?></span>
+                            </div>
+                            <div class="banner-card-meta">
+                                Sort: <?= $banner['sort_order'] ?? 0 ?> •
+                                <?= $banner['is_active'] ? '<span style="color:var(--success);">Active</span>' : '<span style="color:var(--danger);">Inactive</span>' ?>
+                                <?php if ($banner['link_url']): ?>
+                                    • <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="color:var(--accent-blue);">🔗 Link</a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="banner-card-actions">
+                                <button class="btn btn-sm <?= $banner['is_active'] ? 'btn-warning' : 'btn-success' ?>" onclick="toggleBanner(<?= $banner['id'] ?>, this)">
+                                    <i class="fas <?= $banner['is_active'] ? 'fa-eye-slash' : 'fa-eye' ?>"></i>
+                                    <?= $banner['is_active'] ? 'Deactivate' : 'Activate' ?>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteBanner(<?= $banner['id'] ?>, this)">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- Section banners tab -->
+        <div id="tab-section" class="tab-content" style="display: none;">
+            <h2 style="margin-bottom: 1rem;"><i class="fas fa-layer-group"></i> Section Banners (<?= count($section_banners) ?>)</h2>
+            <?php if (empty($section_banners)): ?>
+                <p style="color: var(--text-gray); text-align: center; padding: 2rem;">No section banners uploaded yet.</p>
+            <?php else: ?>
+                <div class="banners-grid" id="sectionBannersGrid">
+                    <?php foreach ($section_banners as $banner): ?>
+                    <div class="banner-card <?= $banner['is_active'] ? '' : 'inactive' ?>" id="bannerCard-<?= $banner['id'] ?>">
+                        <img src="../../<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? 'Banner') ?>" class="banner-card-img" loading="lazy">
+                        <div class="banner-card-body">
+                            <div style="display: flex; align-items: center; gap: .5rem; margin-bottom: .25rem;">
+                                <span class="banner-type-badge badge-section"><i class="fas fa-layer-group"></i> Section</span>
+                                <span class="banner-card-title"><?= htmlspecialchars($banner['title'] ?: 'Untitled Banner') ?></span>
+                            </div>
+                            <div class="banner-card-meta">
+                                Position: <?= $banner['position'] ?? 0 ?> •
+                                <?= $banner['is_active'] ? '<span style="color:var(--success);">Active</span>' : '<span style="color:var(--danger);">Inactive</span>' ?>
+                                <?php if ($banner['link_url']): ?>
+                                    • <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="color:var(--accent-blue);">🔗 Link</a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="banner-card-actions">
+                                <button class="btn btn-sm <?= $banner['is_active'] ? 'btn-warning' : 'btn-success' ?>" onclick="toggleBanner(<?= $banner['id'] ?>, this)">
+                                    <i class="fas <?= $banner['is_active'] ? 'fa-eye-slash' : 'fa-eye' ?>"></i>
+                                    <?= $banner['is_active'] ? 'Deactivate' : 'Activate' ?>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteBanner(<?= $banner['id'] ?>, this)">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
@@ -387,6 +595,37 @@ function showToast(msg, type = 'success') {
     t.textContent = msg;
     t.className = 'toast toast-' + type + ' show';
     setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// Banner type toggle
+let selectedType = 'hero';
+function setBannerType(type) {
+    selectedType = type;
+    document.getElementById('bannerTypeField').value = type;
+    const heroFields = document.getElementById('heroFields');
+    const sectionFields = document.getElementById('sectionFields');
+    const sizeRecText = document.getElementById('sizeRecText');
+    const sizeHint = document.getElementById('sizeHint');
+
+    if (type === 'hero') {
+        if (heroFields) heroFields.classList.add('show');
+        if (sectionFields) sectionFields.classList.remove('show');
+        if (sizeRecText) sizeRecText.innerHTML = 'Recommended: <strong>1600×500px</strong> for hero slider. Max 10MB. Use high-quality imagery for a premium look.';
+        if (sizeHint) sizeHint.textContent = 'Recommended: 1600×500px • Max 10MB';
+    } else {
+        if (heroFields) heroFields.classList.remove('show');
+        if (sectionFields) sectionFields.classList.add('show');
+        if (sizeRecText) sizeRecText.innerHTML = 'Recommended: <strong>1400×400px</strong> for section banners. Max 10MB.';
+        if (sizeHint) sizeHint.textContent = 'Recommended: 1400×400px • Max 10MB';
+    }
+}
+
+// Tab system
+function showTab(tab, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).style.display = 'block';
+    btn.classList.add('active');
 }
 
 // File preview
