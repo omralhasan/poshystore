@@ -312,10 +312,17 @@ try {
     if ($banners_result) {
         while ($b = $banners_result->fetch_assoc()) {
             $pos = (int)$b['position'];
-            if (!isset($homepage_banners[$pos])) {
-                $homepage_banners[$pos] = [];
+            // Negative position = "before" that section index
+            // e.g. position = -1 means "before section 0", -2 means "before section 1"
+            if ($pos < 0) {
+                $key = 'before_' . abs($pos + 1);
+            } else {
+                $key = $pos;
             }
-            $homepage_banners[$pos][] = $b;
+            if (!isset($homepage_banners[$key])) {
+                $homepage_banners[$key] = [];
+            }
+            $homepage_banners[$key][] = $b;
         }
     }
 } catch (Exception $e) {
@@ -391,7 +398,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         }
 
         .hero-banner-slide {
-            min-width: 100%;
+            width: 100vw;
+            min-width: 100vw;
             height: 100%;
             position: relative;
             flex-shrink: 0;
@@ -402,6 +410,66 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+
+        /* ============ TOP SEARCH BAR (above hero) ============ */
+        .top-search-bar {
+            background: #fff;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding: 0.6rem 0;
+            position: sticky;
+            top: 60px;
+            z-index: 90;
+        }
+
+        .top-search-inner {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .top-search-form {
+            width: 100%;
+        }
+
+        .top-search-bar .search-wrapper {
+            position: relative;
+        }
+
+        .top-search-bar .search-input {
+            width: 100%;
+            padding: 0.65rem 1rem 0.65rem 2.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 50px;
+            font-size: 0.88rem;
+            background: #f9fafb;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .top-search-bar .search-input:focus {
+            border-color: var(--accent);
+            background: #fff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15);
+        }
+
+        .top-search-bar .search-icon {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        [dir="rtl"] .top-search-bar .search-icon {
+            left: auto;
+            right: 0.9rem;
+        }
+
+        [dir="rtl"] .top-search-bar .search-input {
+            padding: 0.65rem 2.5rem 0.65rem 1rem;
         }
 
         /* Optional text overlay - only rendered if banner has title */
@@ -573,6 +641,53 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             background: rgba(255, 255, 255, 0.5);
         }
 
+        /* ============ SECTION BANNERS (compact stacked) ============ */
+        .section-banners {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0.5rem 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .section-banner-card {
+            display: block;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+        }
+
+        .section-banner-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+
+        .section-banner-card img {
+            width: 100%;
+            display: block;
+            height: 160px;
+            object-fit: cover;
+        }
+
+        @media (max-width: 768px) {
+            .section-banners {
+                padding: 0.4rem 1rem 0.75rem;
+            }
+            .section-banner-card img {
+                height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-banner-card img {
+                height: 100px;
+                border-radius: 10px;
+            }
+        }
+
         /* Responsive hero */
         @media (max-width: 1024px) {
             .hero-banner {
@@ -582,30 +697,36 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         @media (max-width: 768px) {
             .hero-banner {
-                height: 320px;
+                height: 280px;
             }
             .hero-banner-arrow {
-                width: 36px;
-                height: 36px;
-                font-size: 0.85rem;
+                width: 32px;
+                height: 32px;
+                font-size: 0.8rem;
             }
-            .hero-banner-arrow.prev { left: 0.75rem; }
-            .hero-banner-arrow.next { right: 0.75rem; }
-            .hero-banner-text h2 { font-size: 1.4rem; }
-            .hero-banner-text p { font-size: 0.85rem; }
-            .hero-banner-cta { padding: 0.6rem 1.5rem; font-size: 0.82rem; }
-            .hero-banner-controls { bottom: 0.75rem; }
-            .hero-banner-dot { width: 8px; height: 8px; }
-            .hero-banner-dot.active { width: 22px; }
+            .hero-banner-arrow.prev { left: 0.5rem; }
+            .hero-banner-arrow.next { right: 0.5rem; }
+            .hero-banner-text h2 { font-size: 1.2rem; }
+            .hero-banner-text p { font-size: 0.8rem; }
+            .hero-banner-cta { padding: 0.5rem 1.2rem; font-size: 0.78rem; }
+            .hero-banner-controls { bottom: 0.6rem; }
+            .hero-banner-dot { width: 7px; height: 7px; }
+            .hero-banner-dot.active { width: 20px; }
+            .top-search-bar { top: 52px; padding: 0.4rem 0; }
+            .top-search-bar .search-input { font-size: 16px !important; padding: 0.55rem 1rem 0.55rem 2.2rem; }
         }
 
         @media (max-width: 480px) {
             .hero-banner {
-                height: 260px;
+                height: 220px;
             }
             .hero-banner-overlay {
-                padding: 0 1rem;
+                padding: 0 0.75rem;
             }
+            .hero-banner-text h2 { font-size: 1rem; }
+            .hero-label { font-size: 0.6rem; }
+            .hero-banner-cta { padding: 0.4rem 1rem; font-size: 0.72rem; }
+            .top-search-inner { padding: 0 0.75rem; }
         }
 
 
@@ -1450,6 +1571,23 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <button class="announcement-close" onclick="document.getElementById('promo-tape').style.display='none'">&times;</button>
     </div>
 
+    <!-- ======== SEARCH BAR (above hero) ======== -->
+    <div class="top-search-bar">
+        <div class="top-search-inner">
+            <form method="GET" action="index.php" class="top-search-form" id="topSearchForm">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="search" id="searchInput" class="search-input" 
+                           placeholder="<?= t('search_products') ?>" 
+                           value="<?= htmlspecialchars($search_query) ?>" autocomplete="off">
+                    <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
+                <input type="hidden" name="brand" id="searchBrandHidden" value="<?= $active_brand ?>">
+                <input type="hidden" name="category" id="searchCategoryHidden" value="<?= $active_category ?>">
+            </form>
+        </div>
+    </div>
+
     <!-- ======== HERO BANNER SLIDER ======== -->
     <?php
     // Build slides array: from DB hero banners, or fallback defaults
@@ -1486,7 +1624,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     $slide_count = count($slides);
     ?>
     <section class="hero-banner" id="heroBanner">
-        <div class="hero-banner-track" id="heroBannerTrack" style="width: <?= $slide_count * 100 ?>%;">
+        <div class="hero-banner-track" id="heroBannerTrack">
             <?php foreach ($slides as $i => $slide): ?>
             <div class="hero-banner-slide">
                 <img src="<?= htmlspecialchars($slide['image']) ?>"
@@ -1582,27 +1720,14 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     </div>
     <?php endif; ?>
 
-    <!-- ======== SEARCH & CATEGORIES ======== -->
+    <!-- ======== FILTERS & CATEGORIES ======== -->
     <div class="filter-bar" id="filterBar">
         <div class="filter-inner">
-            <!-- Search -->
             <div class="search-row">
-                <form method="GET" action="index.php" class="search-form" id="searchForm">
-                    <div class="search-wrapper">
-                        <i class="fas fa-search search-icon"></i>
-                        <input 
-                            type="text" 
-                            name="search" 
-                            id="searchInput"
-                            class="search-input" 
-                            placeholder="<?= t('search_products') ?>"
-                            value="<?= htmlspecialchars($search_query) ?>"
-                            autocomplete="off"
-                        >
-                        <div class="search-suggestions" id="searchSuggestions"></div>
-                    </div>
-                    <!-- Hidden fields to carry active brand/category into text search -->
-                    <input type="hidden" name="brand"    id="searchBrandHidden"    value="<?= $active_brand ?>">
+                <!-- Hidden form for filter JS (actual search input is above hero) -->
+                <form method="GET" action="index.php" id="searchForm" style="display:none">
+                    <input type="text" name="search" value="<?= htmlspecialchars($search_query) ?>">
+                    <input type="hidden" name="brand" id="searchBrandHidden" value="<?= $active_brand ?>">
                     <input type="hidden" name="category" id="searchCategoryHidden" value="<?= $active_category ?>">
                 </form>
                 <!-- Brand & Category filter dropdowns (submit via JS) -->
@@ -1753,6 +1878,26 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             elseif (str_contains($sec_cat_lower, 'hair')) $sec_icon = 'fas fa-wind';
             elseif (str_contains($sec_cat_lower, 'makeup') || str_contains($sec_cat_lower, 'cosmetic')) $sec_icon = 'fas fa-palette';
         ?>
+
+        <?php
+        // ── Show banner(s) BEFORE this category section (position = sec_idx, displayed before) ──
+        $before_key = 'before_' . $sec_idx;
+        if (isset($homepage_banners[$before_key]) && !empty($homepage_banners[$before_key])): ?>
+            <div class="section-banners fade-in">
+                <?php foreach ($homepage_banners[$before_key] as $banner): ?>
+                <?php if (!empty($banner['link_url'])): ?>
+                    <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                    </a>
+                <?php else: ?>
+                    <div class="section-banner-card">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                    </div>
+                <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <section class="products-section" style="padding-bottom: 1rem;">
             <div class="section-header">
                 <h2 class="section-title">
@@ -1780,27 +1925,21 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         </section>
 
         <?php
-        // ── Show banner(s) after this category section ──
+        // ── Show banner(s) AFTER this category section (compact stacked) ──
         if (isset($homepage_banners[$sec_idx])): ?>
-            <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
-            <section class="homepage-banner fade-in" style="max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 1.5rem;">
+            <div class="section-banners fade-in">
+                <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
                 <?php if (!empty($banner['link_url'])): ?>
-                <a href="<?= htmlspecialchars($banner['link_url']) ?>" style="display: block; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); transition: var(--transition);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-md)'">
-                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
-                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
-                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover;"
-                         loading="lazy">
-                </a>
+                    <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                    </a>
                 <?php else: ?>
-                <div style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
-                    <img src="<?= htmlspecialchars($banner['image_path']) ?>" 
-                         alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" 
-                         style="width: 100%; display: block; aspect-ratio: 21/7; object-fit: cover;"
-                         loading="lazy">
-                </div>
+                    <div class="section-banner-card">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                    </div>
                 <?php endif; ?>
-            </section>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
 
     <?php endforeach; ?>
@@ -2209,13 +2348,14 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         });
     });
     // ==========================================
-    // Hero Banner Slider (horizontal slide)
+    // Hero Banner Slider (horizontal slide) - FIXED
     // ==========================================
     (function() {
         const track = document.getElementById('heroBannerTrack');
+        const slides = document.querySelectorAll('.hero-banner-slide');
         const dots = document.querySelectorAll('.hero-banner-dot');
         const pauseIcon = document.getElementById('heroPauseIcon');
-        const slideCount = <?= $slide_count ?? 2 ?>;
+        const slideCount = slides.length;
         let current = 0;
         let autoInterval = null;
         let isPaused = false;
@@ -2226,7 +2366,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             if (index < 0) index = slideCount - 1;
             if (index >= slideCount) index = 0;
             current = index;
-            track.style.transform = `translateX(-${current * (100 / slideCount)}%)`;
+            // Each slide is 100% of viewport width, move by 100% per slide
+            track.style.transform = 'translateX(-' + (current * 100) + '%)';
             dots.forEach((d, i) => d.classList.toggle('active', i === current));
         }
 
@@ -2255,7 +2396,6 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         // Touch / swipe support
         let touchStartX = 0;
-        let touchEndX = 0;
         const banner = document.getElementById('heroBanner');
 
         if (banner) {
@@ -2265,24 +2405,19 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             }, { passive: true });
 
             banner.addEventListener('touchend', e => {
-                touchEndX = e.changedTouches[0].screenX;
-                const diff = touchStartX - touchEndX;
+                const diff = touchStartX - e.changedTouches[0].screenX;
                 const isRtl = document.documentElement.dir === 'rtl';
                 if (Math.abs(diff) > 50) {
-                    if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) {
-                        next();
-                    } else {
-                        prev();
-                    }
+                    if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) { next(); } else { prev(); }
                 }
                 if (!isPaused) startAuto();
             }, { passive: true });
         }
 
         // Expose to global for inline onclick handlers
-        window.heroGoTo = function(i) { goTo(i); if (!isPaused) { startAuto(); } };
-        window.heroNext = function() { next(); if (!isPaused) { startAuto(); } };
-        window.heroPrev = function() { prev(); if (!isPaused) { startAuto(); } };
+        window.heroGoTo = function(i) { goTo(i); if (!isPaused) startAuto(); };
+        window.heroNext = function() { next(); if (!isPaused) startAuto(); };
+        window.heroPrev = function() { prev(); if (!isPaused) startAuto(); };
         window.heroTogglePause = togglePause;
 
         // Start auto-slide

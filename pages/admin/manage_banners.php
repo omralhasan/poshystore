@@ -443,30 +443,34 @@ if ($cat_result) {
                     <!-- Section-specific fields -->
                     <div class="section-fields" id="sectionFields">
                         <div class="form-group">
-                            <label>Position (between which sections)</label>
+                            <label>Position (before or after which section)</label>
                             <select name="position" id="bannerPosition">
                                 <?php foreach ($categories as $idx => $cat): ?>
-                                    <option value="<?= $idx ?>"><?= "After " . htmlspecialchars($cat['name_en']) . " section" ?></option>
+                                    <option value="<?= -($idx + 1) ?>">📌 Before <?= htmlspecialchars($cat['name_en']) ?> section</option>
+                                    <option value="<?= $idx ?>">📍 After <?= htmlspecialchars($cat['name_en']) ?> section</option>
                                 <?php endforeach; ?>
                                 <?php if (empty($categories)): ?>
-                                    <option value="0">Position 1</option>
-                                    <option value="1">Position 2</option>
-                                    <option value="2">Position 3</option>
+                                    <option value="-1">📌 Before Section 1</option>
+                                    <option value="0">📍 After Section 1</option>
+                                    <option value="-2">📌 Before Section 2</option>
+                                    <option value="1">📍 After Section 2</option>
                                 <?php endif; ?>
                             </select>
                         </div>
                     </div>
                     <?php else: ?>
                     <div class="form-group">
-                        <label>Position (between which sections)</label>
+                        <label>Position (before or after which section)</label>
                         <select name="position" id="bannerPosition">
                             <?php foreach ($categories as $idx => $cat): ?>
-                                <option value="<?= $idx ?>"><?= "After " . htmlspecialchars($cat['name_en']) . " section" ?></option>
+                                <option value="<?= -($idx + 1) ?>">📌 Before <?= htmlspecialchars($cat['name_en']) ?> section</option>
+                                <option value="<?= $idx ?>">📍 After <?= htmlspecialchars($cat['name_en']) ?> section</option>
                             <?php endforeach; ?>
                             <?php if (empty($categories)): ?>
-                                <option value="0">Position 1</option>
-                                <option value="1">Position 2</option>
-                                <option value="2">Position 3</option>
+                                <option value="-1">📌 Before Section 1</option>
+                                <option value="0">📍 After Section 1</option>
+                                <option value="-2">📌 Before Section 2</option>
+                                <option value="1">📍 After Section 2</option>
                             <?php endif; ?>
                         </select>
                     </div>
