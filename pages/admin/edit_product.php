@@ -283,7 +283,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $orig_price = ($_POST['original_price'] ?? '') !== '' ? floatval($_POST['original_price']) : $price;
     $discount   = floatval($_POST['discount_percentage'] ?? 0);
     $has_disc   = ($discount > 0) ? 1 : 0;
-    $is_new_arrival = isset($_POST['is_new_arrival']) ? 1 : 0;
 
     if (empty($name_en)) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
     if ($price <= 0)      { echo json_encode(['success' => false, 'error' => 'Price must be greater than 0']); exit(); }
@@ -310,18 +309,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
                 price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
                 supplier_cost=?, cost=?,
-                original_price=?, discount_percentage=?, has_discount=?, is_new_arrival=?
+                original_price=?, discount_percentage=?, has_discount=?
             WHERE id=?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) { echo json_encode(['success' => false, 'error' => 'DB prepare error: ' . $conn->error]); exit(); }
 
-    $stmt->bind_param('sssssssssssdiiiddddiii',
+    $stmt->bind_param('sssssssssssdiiiddddii',
         $name_en, $name_ar, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar,
         $how_en, $how_ar, $video_url,
         $price, $stock, $subcat_id, $brand_id,
         $sup_cost, $product_cost,
-        $orig_price, $discount, $has_disc, $is_new_arrival,
+        $orig_price, $discount, $has_disc,
         $pid
     );
 
@@ -647,14 +646,10 @@ if (is_dir($img_folder)) {
                     <input type="number" name="stock_quantity" min="0" required value="<?= $product['stock_quantity'] ?>">
                 </div>
             </div>
-            <div style="margin-top:1rem; display:flex; gap:2rem; align-items:flex-end;">
+            <div style="margin-top:1rem;">
                 <div class="form-group" style="max-width:280px;">
                     <label>Discount Percentage (%)</label>
                     <input type="number" name="discount_percentage" step="0.01" min="0" max="100" value="<?= $product['discount_percentage'] ?? 0 ?>">
-                </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:0.5rem; padding-bottom:0.75rem;">
-                    <input type="checkbox" name="is_new_arrival" id="isNewArrival" value="1" <?= (!empty($product['is_new_arrival'])) ? 'checked' : '' ?> style="width:20px; height:20px;">
-                    <label for="isNewArrival" style="margin:0; cursor:pointer; font-weight:600;"><i class="fas fa-star" style="color:var(--warning);"></i> Mark as New Arrival</label>
                 </div>
             </div>
         </div>

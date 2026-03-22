@@ -38,7 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $orig_price = $price;
     $discount   = floatval($_POST['discount_percentage'] ?? 0);
     $has_disc   = ($discount > 0) ? 1 : 0;
-    $is_new_arrival = isset($_POST['is_new_arrival']) ? 1 : 0;
 
     // Validation
     if (empty($name_en)) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
@@ -93,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             description, description_ar, product_details, product_details_ar, how_to_use_en, how_to_use_ar, video_review_url,
             price_jod, stock_quantity, image_link, subcategory_id, brand_id,
             supplier_cost,
-            original_price, discount_percentage, has_discount, is_new_arrival)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            original_price, discount_percentage, has_discount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -102,12 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit();
     }
 
-    $stmt->bind_param('ssssssssssssdisiidddii',
+    $stmt->bind_param('ssssssssssssdisiidddi',
         $name_en, $name_ar, $slug, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar, $how_en, $how_ar, $video_url,
         $price, $stock, $image_link, $subcat_id, $brand_id,
         $sup_cost,
-        $orig_price, $discount, $has_disc, $is_new_arrival
+        $orig_price, $discount, $has_disc
     );
 
     if ($stmt->execute()) {
@@ -405,10 +404,6 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
                     <label>Discount Percentage (%)</label>
                     <input type="number" name="discount_percentage" step="0.01" min="0" max="100" value="0" placeholder="0">
                     <div class="help-text">Set > 0 to automatically mark product as discounted.</div>
-                </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:0.5rem; margin-top:1.5rem;">
-                    <input type="checkbox" name="is_new_arrival" id="isNewArrival" value="1" style="width:20px; height:20px;">
-                    <label for="isNewArrival" style="margin:0; cursor:pointer; font-weight:600;"><i class="fas fa-star" style="color:var(--warning);"></i> Mark as New Arrival</label>
                 </div>
             </div>
         </div>

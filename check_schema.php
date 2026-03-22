@@ -1,5 +1,4 @@
 <?php
-require 'config.php';
 require 'includes/db_connect.php';
 $res1 = $conn->query("SHOW COLUMNS FROM subcategories");
 while ($row = $res1->fetch_assoc()) {
