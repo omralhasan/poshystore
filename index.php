@@ -1654,12 +1654,15 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         /* ============ UTILITIES ============ */
         .fade-in {
-            animation: fadeIn 0.5s ease-out;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: opacity, transform;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .fade-in.is-visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* Alert Toasts */
@@ -2594,6 +2597,30 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         // Start auto-slide
         startAuto();
     })();
+    // ==========================================
+    // Intersection Observer for Scroll Animations
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", function() {
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1 // Trigger when 10% of the element is visible
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    // Optional: stop observing once it's visible so it doesn't fade out when scrolling up
+                    observer.unobserve(entry.target); 
+                }
+            });
+        }, observerOptions);
+
+        // Find all elements with fade-in and observe them
+        const fadeElements = document.querySelectorAll('.fade-in');
+        fadeElements.forEach(el => observer.observe(el));
+    });
     </script>
 </body>
 </html>
