@@ -611,9 +611,12 @@ header('X-Frame-Options: SAMEORIGIN');
                                 $product['image_link'] ?? '',
                                 __DIR__ . '/../../'
                             );
+                            // Prefix with ../../ so the relative path resolves from
+                            // /pages/shop/ back to the site root where /images/ lives
+                            $image_src_url = '../../' . $image_src;
                         ?>
                         <a href="<?= htmlspecialchars(getProductUrl($product['slug'] ?? '')) ?>">
-                            <img src="<?= htmlspecialchars($image_src) ?>" 
+                            <img src="<?= htmlspecialchars($image_src_url) ?>" 
                                  alt="<?= htmlspecialchars($product['name_en']) ?>"
                                  loading="lazy"
                                  onerror="this.onerror=null; this.src='../../images/placeholder-cosmetics.svg';">
