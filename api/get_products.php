@@ -20,7 +20,7 @@ require_once __DIR__ . '/../includes/product_image_helper.php';
 require_once __DIR__ . '/../includes/language.php';
 
 // Determine current language
-$lang = $_SESSION['language'] ?? 'en';
+$lang = $current_lang ?? ($_SESSION['language'] ?? ($_SESSION['lang'] ?? 'en'));
 
 // Parse request params
 $subcategory_id = isset($_GET['subcategory']) ? intval($_GET['subcategory']) : 0;

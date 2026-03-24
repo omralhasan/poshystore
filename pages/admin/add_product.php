@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $folder_name = $name_en;
     $folder_path = $images_base . $folder_name . '/';
 
+    $uploaded_image_paths = [];
     if (!empty($_FILES['product_images']['name'][0])) {
         if (!is_dir($folder_path)) mkdir($folder_path, 0755, true);
 
@@ -79,10 +80,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
             $num = $i + 1;
             $dest = $folder_path . $num . '.png';
-            move_uploaded_file($files['tmp_name'][$i], $dest);
+            if (!move_uploaded_file($files['tmp_name'][$i], $dest)) {
+                continue;
+            }
+
+            $relative_path = 'images/' . $folder_name . '/' . $num . '.png';
+            $uploaded_image_paths[] = $relative_path;
 
             if ($num === 1) {
-                $image_link = 'images/' . $folder_name . '/1.png';
+                $image_link = $relative_path;
             }
         }
     }
@@ -112,6 +118,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if ($stmt->execute()) {
         $product_id = $stmt->insert_id;
         $stmt->close();
+
+        if (!empty($uploaded_image_paths)) {
+            $conn->query("CREATE TABLE IF NOT EXISTS product_images (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                product_id INT NOT NULL,
+                image_path VARCHAR(500) NOT NULL,
+                sort_order INT NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_product_id (product_id)
+            )");
+
+            $img_stmt = $conn->prepare("INSERT INTO product_images (product_id, image_path, sort_order) VALUES (?, ?, ?)");
+            if ($img_stmt) {
+                foreach ($uploaded_image_paths as $sort => $path) {
+                    $ord = $sort + 1;
+                    $img_stmt->bind_param('isi', $product_id, $path, $ord);
+                    $img_stmt->execute();
+                }
+                $img_stmt->close();
+            }
+        }
 
         // Handle tags
         if (!empty($tags_raw)) {

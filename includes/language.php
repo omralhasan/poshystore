@@ -9,28 +9,46 @@ if (!defined('POSHY_CONFIG_LOADED')) {
     require_once __DIR__ . '/../config.php';
 }
 
+// Normalize language session key (supports legacy `lang` key)
+if (!isset($_SESSION['language']) && isset($_SESSION['lang']) && in_array($_SESSION['lang'], ['ar', 'en'], true)) {
+    $_SESSION['language'] = $_SESSION['lang'];
+}
+
 // Set default language
-if (!isset($_SESSION['language'])) {
+if (!isset($_SESSION['language']) || !in_array($_SESSION['language'], ['ar', 'en'], true)) {
     $_SESSION['language'] = 'en'; // Default to English
 }
+$_SESSION['lang'] = $_SESSION['language'];
 
 // Handle language change
 if (isset($_GET['lang'])) {
     $lang = $_GET['lang'];
     if (in_array($lang, ['ar', 'en'])) {
         $_SESSION['language'] = $lang;
-        
-        // Redirect to remove lang parameter from URL
-        $redirect_url = strtok($_SERVER['REQUEST_URI'], '?');
-        if (!empty($_SERVER['QUERY_STRING'])) {
-            parse_str($_SERVER['QUERY_STRING'], $params);
-            unset($params['lang']);
-            if (!empty($params)) {
-                $redirect_url .= '?' . http_build_query($params);
+        $_SESSION['lang'] = $lang;
+
+        // Redirect to remove lang parameter from URL (only for normal page GET requests)
+        $is_get_request = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET');
+        $is_ajax_request = (
+            (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+            (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+        );
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $is_api_request = (strpos($request_uri, '/api/') !== false);
+
+        if ($is_get_request && !$is_ajax_request && !$is_api_request && !headers_sent()) {
+            $redirect_url = strtok($_SERVER['REQUEST_URI'], '?');
+            if (!empty($_SERVER['QUERY_STRING'])) {
+                parse_str($_SERVER['QUERY_STRING'], $params);
+                unset($params['lang']);
+                if (!empty($params)) {
+                    $redirect_url .= '?' . http_build_query($params);
+                }
             }
+
+            header("Location: $redirect_url");
+            exit();
         }
-        header("Location: $redirect_url");
-        exit();
     }
 }
 

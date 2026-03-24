@@ -20,6 +20,48 @@ if (!$product_id) {
     exit();
 }
 
+function syncProductImagesTable(mysqli $conn, int $productId, string $productName): void
+{
+    $conn->query("CREATE TABLE IF NOT EXISTS product_images (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        image_path VARCHAR(500) NOT NULL,
+        sort_order INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id)
+    )");
+
+    $productId = (int)$productId;
+    $conn->query("DELETE FROM product_images WHERE product_id = {$productId}");
+
+    $img_base = __DIR__ . '/../../images/' . $productName . '/';
+    if (!is_dir($img_base)) {
+        return;
+    }
+
+    $files = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+    if (empty($files)) {
+        return;
+    }
+
+    usort($files, static function ($a, $b) {
+        return strnatcasecmp(basename($a), basename($b));
+    });
+
+    $img_stmt = $conn->prepare("INSERT INTO product_images (product_id, image_path, sort_order) VALUES (?, ?, ?)");
+    if (!$img_stmt) {
+        return;
+    }
+
+    foreach ($files as $idx => $f) {
+        $path = 'images/' . $productName . '/' . basename($f);
+        $ord = $idx + 1;
+        $img_stmt->bind_param('isi', $productId, $path, $ord);
+        $img_stmt->execute();
+    }
+    $img_stmt->close();
+}
+
 // ─── AJAX handler ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
@@ -38,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit();
             }
             $conn->query("DELETE FROM product_tags WHERE product_id = $del_id");
+            $conn->query("DELETE FROM product_images WHERE product_id = $del_id");
             $conn->query("DELETE FROM cart WHERE product_id = $del_id");
             $conn->query("DELETE FROM product_reviews WHERE product_id = $del_id");
             $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
@@ -105,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
             }
         }
+        syncProductImagesTable($conn, $pid, $prow['name_en']);
         echo json_encode(['success' => true, 'images' => $updated_images]);
         exit();
     }
@@ -151,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         foreach ($files as $f) {
             $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
         }
+        syncProductImagesTable($conn, $pid, $prow['name_en']);
         echo json_encode(['success' => true, 'images' => $updated_images]);
         exit();
     }
@@ -204,6 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         foreach ($files_list as $f) {
             $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
         }
+        syncProductImagesTable($conn, $pid, $prow['name_en']);
         echo json_encode(['success' => true, 'images' => $updated_images, 'added' => $added]);
         exit();
     }
@@ -257,6 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         foreach ($files_list as $f) {
             $updated_images[] = 'images/' . $prow['name_en'] . '/' . basename($f);
         }
+        syncProductImagesTable($conn, $pid, $prow['name_en']);
         echo json_encode(['success' => true, 'images' => $updated_images]);
         exit();
     }
@@ -363,6 +410,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
             }
         }
+
+        syncProductImagesTable($conn, $pid, $name_en);
 
         // Handle tags — clear old, insert new
         $conn->query("DELETE FROM product_tags WHERE product_id = $pid");

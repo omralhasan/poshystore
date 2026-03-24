@@ -5,6 +5,7 @@
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
+require_once __DIR__ . '/../../includes/language.php';
 
 $success = '';
 $error = '';
@@ -63,7 +64,7 @@ if (empty($token)) {
     }
 }
 
-$current_lang = $_SESSION['lang'] ?? 'en';
+$current_lang = $_SESSION['language'] ?? ($_SESSION['lang'] ?? 'en');
 ?>
 <!DOCTYPE html>
 <html lang="<?= $current_lang ?>" dir="<?= $current_lang === 'ar' ? 'rtl' : 'ltr' ?>">

@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
     }
 }
 
-$current_lang = $_SESSION['lang'] ?? 'en';
+$current_lang = $_SESSION['language'] ?? ($_SESSION['lang'] ?? 'en');
 ?>
 <!DOCTYPE html>
 <html lang="<?= $current_lang ?>" dir="<?= $current_lang === 'ar' ? 'rtl' : 'ltr' ?>">
