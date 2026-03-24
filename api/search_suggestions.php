@@ -11,6 +11,7 @@ header('Cache-Control: no-store');
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/../includes/language.php';
 
 $q     = trim($_GET['q'] ?? '');
 $lang  = in_array($_GET['lang'] ?? 'en', ['en', 'ar']) ? $_GET['lang'] : 'en';
@@ -82,6 +83,7 @@ while ($row = $result->fetch_assoc()) {
         'name_en' => $row['name_en'],
         'name_ar' => $row['name_ar'] ?? '',
         'slug'   => $row['slug'] ?? '',
+        'product_url' => !empty($row['slug']) ? getProductUrl($row['slug'], $lang) : '',
         'price'  => number_format((float)$row['price_jod'], 3) . ' JOD',
         'image'  => $image_path,
         'brand'  => $lang === 'ar' && !empty($row['brand_ar']) ? $row['brand_ar'] : ($row['brand_en'] ?? ''),

@@ -2436,7 +2436,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                       + `<div class="sugg-img-placeholder" style="display:none"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`
                     : `<div class="sugg-img-placeholder"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`;
                 const meta = [it.brand, it.category].filter(Boolean).join(' · ');
-                return `<div class="sugg-item" data-slug="${escHtml(it.slug)}" data-name="${escHtml(it.name_en)}" onclick="pickSugg(this)">
+                return `<div class="sugg-item" data-slug="${escHtml(it.slug)}" data-url="${escHtml(it.product_url)}" data-name="${escHtml(it.name_en)}" onclick="pickSugg(this)">
                     ${imgHtml}
                     <div class="sugg-text">
                         <div class="sugg-name">${escHtml(it.name)}</div>
@@ -2451,8 +2451,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         function closeBox() { box.classList.remove('open'); focused = -1; }
 
         window.pickSugg = function(el) {
+            const url = el.dataset.url;
             const slug = el.dataset.slug;
-            if (slug) { window.location.href = slug; }
+            if (url) { window.location.href = url; }
+            else if (slug) { window.location.href = slug.startsWith('/') ? slug : ('/' + slug); }
             else { input.value = el.dataset.name; document.getElementById('searchForm').submit(); }
         };
 
