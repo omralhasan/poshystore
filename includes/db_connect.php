@@ -53,12 +53,16 @@ $conn->query("SET time_zone = '+03:00'");
  */
 function closeConnection() {
     global $conn;
-    if ($conn && $conn instanceof mysqli && !@$conn->connect_errno) {
-        try {
-            @$conn->close();
-        } catch (Error $e) {
-            // Already closed, ignore
-        }
+    if (!($conn instanceof mysqli)) {
+        return;
+    }
+
+    try {
+        @$conn->close();
+    } catch (Throwable $e) {
+        // Ignore shutdown-time close errors (already closed/invalid handle)
+    } finally {
+        $conn = null;
     }
 }
 

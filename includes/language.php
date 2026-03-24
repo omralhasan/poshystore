@@ -27,16 +27,18 @@ if (isset($_GET['lang'])) {
         $_SESSION['language'] = $lang;
         $_SESSION['lang'] = $lang;
 
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $lang_explicit_in_url = (bool)preg_match('/[?&]lang=(ar|en)\b/i', $request_uri);
+
         // Redirect to remove lang parameter from URL (only for normal page GET requests)
         $is_get_request = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET');
         $is_ajax_request = (
             (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
             (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
         );
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
         $is_api_request = (strpos($request_uri, '/api/') !== false);
 
-        if ($is_get_request && !$is_ajax_request && !$is_api_request && !headers_sent()) {
+        if ($lang_explicit_in_url && $is_get_request && !$is_ajax_request && !$is_api_request && !headers_sent()) {
             $redirect_url = strtok($_SERVER['REQUEST_URI'], '?');
             if (!empty($_SERVER['QUERY_STRING'])) {
                 parse_str($_SERVER['QUERY_STRING'], $params);
