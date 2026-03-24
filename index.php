@@ -2238,6 +2238,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         } else {
             cardsHtml = '<div class="product-grid">';
             products.forEach(function(product, idx) {
+                const productUrl = product.product_url
+                    ? product.product_url
+                    : (product.slug ? ('/' + String(product.slug).replace(/^\/+/, '')) : '#');
+
                 // Discount tag
                 let discountTag = '';
                 if (product.has_discount && product.discount_percentage > 0) {
@@ -2266,15 +2270,15 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     actionsHtml = '<button class="btn-cart" onclick="addToCart(' + product.id + ', this)">' +
                         '<i class="fas fa-cart-plus"></i><span>' + ADD_TO_CART_TEXT + '</span></button>';
                 }
-                actionsHtml += '<a href="' + product.slug + '" class="btn-view" title="' + DETAILS_TEXT + '">' +
+                actionsHtml += '<a href="' + productUrl + '" class="btn-view" title="' + DETAILS_TEXT + '">' +
                     '<i class="fas fa-eye"></i></a>';
                 
                 cardsHtml += '<div class="p-card fade-in" style="animation-delay: ' + (idx * 0.05) + 's;">' +
                     '<div class="p-card-img">' + discountTag + catTag +
-                    '<a href="' + product.slug + '"><img src="' + product.image_src + '" alt="' + product.name_en + '" loading="lazy" ' +
+                    '<a href="' + productUrl + '"><img src="' + product.image_src + '" alt="' + product.name_en + '" loading="lazy" ' +
                     'onerror="this.onerror=null; this.src=\'images/placeholder-cosmetics.svg\';"></a></div>' +
                     '<div class="p-card-body">' +
-                    '<a href="' + product.slug + '" style="text-decoration:none; color:inherit;">' +
+                    '<a href="' + productUrl + '" style="text-decoration:none; color:inherit;">' +
                     '<div class="p-card-name">' + (CURRENT_LANG === 'ar' ? (product.name_ar || product.name_en) : product.name_en) + '</div>' +
                     '<div class="p-card-name-ar">' + (CURRENT_LANG === 'ar' ? product.name_en : product.name_ar) + '</div></a>' +
                     '<div class="p-card-price">' + priceHtml + '</div>' +

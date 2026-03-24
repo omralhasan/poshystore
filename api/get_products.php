@@ -73,6 +73,9 @@ $base_dir = __DIR__ . '/..';
 // ─── Format products for JS ───────────────────────────────────────────────────
 $products = [];
 foreach ($raw_products as $p) {
+    $slug = $p['slug'] ?? '';
+    $product_url = $slug !== '' ? getProductUrl($slug, $lang) : '#';
+
     // Compute thumbnail using helper
     $image_src = get_product_thumbnail(
         trim($p['name_en']),
@@ -84,7 +87,8 @@ foreach ($raw_products as $p) {
         'id'                  => (int)$p['id'],
         'name_en'             => $p['name_en'],
         'name_ar'             => $p['name_ar'] ?? '',
-        'slug'                => $p['slug'] ?? ('#'),
+        'slug'                => $slug ?: '#',
+        'product_url'         => $product_url,
         'price_jod'           => number_format((float)$p['price_jod'], 3),
         'original_price'      => !empty($p['original_price']) ? number_format((float)$p['original_price'], 3) : '',
         'has_discount'        => !empty($p['has_discount']) && (float)$p['discount_percentage'] > 0,
