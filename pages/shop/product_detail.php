@@ -4,7 +4,6 @@ require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
-require_once __DIR__ . '/../../includes/auto_translate.php';
 require_once __DIR__ . '/../../includes/product_options_display.php';
 require_once __DIR__ . '/../../includes/text_formatter.php';
 
@@ -29,11 +28,9 @@ if (!$product_result['success']) {
 
 $product = $product_result['product'];
 
-// Auto-translate English content to Arabic when language is Arabic
-// and Arabic fields are missing. Results are cached back to the DB.
-if ($current_lang === 'ar') {
-    ensureArabicContent($conn, $product);
-}
+// Use already stored Arabic fields when available.
+// Avoid runtime translation during page renders because it adds a blocking
+// network dependency and can make Arabic page navigation appear to hang.
 
 // Get product tags
 $product_tags = getProductTags($product_id);
