@@ -10,6 +10,7 @@
 if (!defined('SITE_URL')) {
     require_once __DIR__ . '/config.php';
 }
+require_once __DIR__ . '/includes/language.php';
 require_once __DIR__ . '/includes/db_connect.php';
 require_once __DIR__ . '/includes/text_formatter.php';
 
@@ -45,7 +46,7 @@ $page_title = $podcast['meta_title'] ?: $podcast['title'];
 $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['description']), 0, 160);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $current_lang ?>" dir="<?= isRTL() ? 'rtl' : 'ltr' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -208,8 +209,8 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
 
     <div class="podcast-container">
-        <a href="podcast.php" class="back-link">
-            <i class="fas fa-arrow-left"></i> All Podcasts
+        <a href="<?= htmlspecialchars(getPodcastUrl(null, $current_lang)) ?>" class="back-link">
+            <i class="fas fa-arrow-left"></i> <?= $current_lang === 'ar' ? 'كل البودكاست' : 'All Podcasts' ?>
         </a>
 
         <div class="podcast-header">

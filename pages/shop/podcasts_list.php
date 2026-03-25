@@ -4,6 +4,7 @@
  * Public page showing all published podcasts as cards
  */
 
+require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
 
 $page_title = 'Podcasts';
@@ -47,7 +48,7 @@ if ($result) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $current_lang ?>" dir="<?= isRTL() ? 'rtl' : 'ltr' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -125,23 +126,23 @@ if ($result) {
 </head>
 <body>
     <div class="page-header-bar">
-        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to Store</a>
+        <a href="<?= htmlspecialchars(getShopUrl($current_lang)) ?>" class="back-link"><i class="fas fa-arrow-left"></i> <?= $current_lang === 'ar' ? 'العودة للمتجر' : 'Back to Store' ?></a>
         <h1><i class="fas fa-podcast"></i> Podcasts</h1>
-        <p>Explore our latest podcasts and lifestyle content</p>
+        <p><?= $current_lang === 'ar' ? 'استكشف أحدث البودكاست والمحتوى الخاص بنا' : 'Explore our latest podcasts and lifestyle content' ?></p>
     </div>
 
     <div class="container">
         <?php if (empty($podcasts)): ?>
             <div class="empty-state">
                 <i class="fas fa-podcast"></i>
-                <h2>No Podcasts Yet</h2>
-                <p>Check back soon for exciting new content!</p>
+                <h2><?= $current_lang === 'ar' ? 'لا توجد حلقات بعد' : 'No Podcasts Yet' ?></h2>
+                <p><?= $current_lang === 'ar' ? 'يرجى العودة قريباً لمحتوى جديد ومميز!' : 'Check back soon for exciting new content!' ?></p>
             </div>
         <?php else: ?>
             <div class="podcast-grid">
                 <?php foreach ($podcasts as $p): ?>
                     <div class="podcast-card">
-                        <a href="../../podcast/<?php echo htmlspecialchars($p['url_path']); ?>">
+                        <a href="<?= htmlspecialchars(getPodcastUrl($p['url_path'], $current_lang)) ?>">
                             <?php if ($p['main_photo']): ?>
                                 <img src="../../<?php echo htmlspecialchars($p['main_photo']); ?>" class="podcast-image" alt="<?php echo htmlspecialchars($p['title']); ?>" loading="lazy">
                             <?php else: ?>
@@ -157,7 +158,7 @@ if ($result) {
                         <div class="podcast-meta">
                             <span><i class="far fa-calendar"></i> <?php echo date('M j, Y', strtotime($p['created_at'])); ?></span>
                             <?php if ($p['image_count'] > 0): ?>
-                                <span class="photos"><i class="far fa-images"></i> <?php echo $p['image_count']; ?> photos</span>
+                                <span class="photos"><i class="far fa-images"></i> <?php echo $p['image_count']; ?> <?= $current_lang === 'ar' ? 'صور' : 'photos' ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
