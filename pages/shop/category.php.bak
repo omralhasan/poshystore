@@ -519,7 +519,7 @@ header('X-Frame-Options: SAMEORIGIN');
     <!-- Breadcrumb -->
     <div class="breadcrumb-bar">
         <ul class="breadcrumb">
-            <li><a href="/index.php"><i class="fas fa-home"></i> <?= $lang === 'ar' ? 'الرئيسية' : 'Home' ?></a></li>
+            <li><a href="../../index.php"><i class="fas fa-home"></i> <?= $lang === 'ar' ? 'الرئيسية' : 'Home' ?></a></li>
             <li>/</li>
             <?php if ($active_subcategory > 0): ?>
                 <li><a href="category.php?id=<?= $category_id ?>"><?= htmlspecialchars($category_name) ?></a></li>
@@ -574,7 +574,7 @@ header('X-Frame-Options: SAMEORIGIN');
                 <i class="fas fa-box-open"></i>
                 <h3><?= $lang === 'ar' ? 'لا توجد منتجات' : 'No products found' ?></h3>
                 <p><?= $lang === 'ar' ? 'لا توجد منتجات في هذا القسم بعد' : 'No products are available in this category yet' ?></p>
-                <a href="/index.php">
+                <a href="../../index.php">
                     <i class="fas fa-arrow-left"></i> <?= $lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home' ?>
                 </a>
             </div>

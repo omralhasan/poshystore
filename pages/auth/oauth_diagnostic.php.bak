@@ -123,6 +123,6 @@ require_once __DIR__ . '/../../includes/oauth_functions.php';
         → Usually caused by redirect_uri mismatch during token exchange
     </div>
     
-    <a href="/pages/auth/signin.php" class="button">← Back to Sign In</a>
+    <a href="signin.php" class="button">← Back to Sign In</a>
 </body>
 </html>

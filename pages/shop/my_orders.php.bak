@@ -695,7 +695,7 @@ unset($order); // Break reference
                     <div class="empty-icon">📦</div>
                     <h2><?= t('no_orders') ?></h2>
                     <p><?= $current_lang === 'ar' ? 'ابدأ التسوق لتقديم طلبك الأول!' : 'Start shopping to place your first order!' ?></p>
-                    <a href="/index.php" class="btn-ramadan">
+                    <a href="../../index.php" class="btn-ramadan">
                         <i class="fas fa-shopping-bag me-2" style="color: white;"></i><?= $current_lang === 'ar' ? 'ابدأ التسوق' : 'Start Shopping' ?>
                     </a>
                 </div>
@@ -921,7 +921,7 @@ unset($order); // Break reference
                                         <i class="fas fa-times-circle" style="color: white;"></i> Cancel Order
                                     </button>
                                 <?php endif; ?>
-                                <a href="/index.php" class="action-btn btn-reorder">
+                                <a href="../../index.php" class="action-btn btn-reorder">
                                     <i class="fas fa-shopping-bag" style="color: var(--gold-color);"></i> Shop Again
                                 </a>
                             </div>

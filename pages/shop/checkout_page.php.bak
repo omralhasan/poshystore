@@ -895,7 +895,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                             <i class="fas fa-check-circle me-2"></i><?= t('confirm_order') ?>
                         </button>
                         
-                        <a href="/pages/shop/cart.php" class="btn-ramadan-secondary w-100 mt-3" style="display: block; text-align: center; text-decoration: none; padding: 0.75rem; font-weight: 600;">
+                        <a href="cart.php" class="btn-ramadan-secondary w-100 mt-3" style="display: block; text-align: center; text-decoration: none; padding: 0.75rem; font-weight: 600;">
                             <i class="fas fa-arrow-left me-2"></i><?= t('back_to_cart') ?>
                         </a>
                         

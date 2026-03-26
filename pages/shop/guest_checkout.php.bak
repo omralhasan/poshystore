@@ -189,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
             <i class="fas fa-user-circle" style="font-size: 1.5rem; color: var(--purple-color, #6b2fa0);"></i>
             <p style="margin: 0.5rem 0 0;">
                 <?= $current_lang === 'ar' ? 'لديك حساب؟' : 'Have an account?' ?>
-                <a href="/pages/auth/signin.php"><?= $current_lang === 'ar' ? 'سجل الدخول للحصول على نقاط ومكافآت' : 'Sign in for points & rewards' ?></a>
+                <a href="../auth/signin.php"><?= $current_lang === 'ar' ? 'سجل الدخول للحصول على نقاط ومكافآت' : 'Sign in for points & rewards' ?></a>
             </p>
         </div>
         

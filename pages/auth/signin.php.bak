@@ -354,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                                         <input type="checkbox" name="remember_me" value="1" style="width: 18px; height: 18px; accent-color: var(--royal-gold); cursor: pointer;">
                                         <?= function_exists('t') ? t('remember_me') : 'Remember me' ?>
                                     </label>
-                                    <a href="/pages/auth/forgot_password.php" style="color: var(--gold-color); font-size: 0.85rem; text-decoration: none; font-weight: 500;">
+                                    <a href="forgot_password.php" style="color: var(--gold-color); font-size: 0.85rem; text-decoration: none; font-weight: 500;">
                                         <i class="fas fa-lock" style="font-size: 0.75rem;"></i> Forgot password?
                                     </a>
                                 </div>
@@ -367,10 +367,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                         
                         <div class="text-center mt-4">
                             <p class="mb-0">
-                                <?= t('dont_have_account') ?> <a href="/pages/auth/signup.php" class="auth-link"><?= t('sign_up') ?></a>
+                                <?= t('dont_have_account') ?> <a href="signup.php" class="auth-link"><?= t('sign_up') ?></a>
                             </p>
                             <p class="mb-0 mt-2">
-                                <a href="/index.php" class="auth-link">
+                                <a href="../../index.php" class="auth-link">
                                     <i class="fas fa-arrow-left me-1"></i><?= t('back_to_store') ?>
                                 </a>
                             </p>

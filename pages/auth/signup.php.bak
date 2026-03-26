@@ -104,7 +104,7 @@ if (isset($_SESSION['user_id'])) {
     // Display success or error messages in fixed position
     if (isset($_GET['success'])) {
         echo '<div class="alert-message-container">';
-        echo '<div class="alert-ramadan alert-success"><i class="fas fa-check-circle me-2"></i>✅ ' . t('registration_successful') . ' <a href="/pages/auth/signin.php" style="color: #155724; font-weight: bold; text-decoration: underline;">' . t('sign_in_now') . '</a> ' . t('to_start_shopping') . '.</div>';
+        echo '<div class="alert-ramadan alert-success"><i class="fas fa-check-circle me-2"></i>✅ ' . t('registration_successful') . ' <a href="signin.php" style="color: #155724; font-weight: bold; text-decoration: underline;">' . t('sign_in_now') . '</a> ' . t('to_start_shopping') . '.</div>';
         echo '</div>';
         echo '<script>setTimeout(function(){ document.querySelector(".alert-message-container").style.display="none"; }, 7000);</script>';
     }
@@ -170,10 +170,10 @@ if (isset($_SESSION['user_id'])) {
                         
                         <div class="text-center mt-4">
                             <p class="mb-0">
-                                <?= t('already_have_account') ?> <a href="/pages/auth/signin.php" class="auth-link"><?= t('sign_in') ?></a>
+                                <?= t('already_have_account') ?> <a href="signin.php" class="auth-link"><?= t('sign_in') ?></a>
                             </p>
                             <p class="mb-0 mt-2">
-                                <a href="/index.php" class="auth-link">
+                                <a href="../../index.php" class="auth-link">
                                     <i class="fas fa-arrow-left me-1"></i><?= t('back_to_store') ?>
                                 </a>
                             </p>

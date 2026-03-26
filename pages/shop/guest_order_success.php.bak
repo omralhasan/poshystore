@@ -70,7 +70,7 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
                 <p style="margin: 0.5rem 0 0; font-size: 0.95rem;">
                     <?= $current_lang === 'ar' ? 'أنشئ حساباً لتحصل على نقاط ومكافآت وتتبع طلباتك!' : 'Create an account to earn points, rewards, and track your orders!' ?>
                     <br>
-                    <a href="/pages/auth/signin.php"><?= $current_lang === 'ar' ? 'إنشاء حساب الآن' : 'Create Account Now' ?></a>
+                    <a href="../auth/signin.php"><?= $current_lang === 'ar' ? 'إنشاء حساب الآن' : 'Create Account Now' ?></a>
                 </p>
             </div>
         </div>

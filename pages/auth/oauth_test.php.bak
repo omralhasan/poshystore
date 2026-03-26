@@ -217,8 +217,8 @@
     <div class="card">
         <h2>🎨 UI Test</h2>
         <p>Test the new social login interface:</p>
-        <a href="/pages/auth/signin.php" class="button">📱 View Sign In Page</a>
-        <a href="/pages/auth/signup.php" class="button">📝 View Sign Up Page</a>
+        <a href="signin.php" class="button">📱 View Sign In Page</a>
+        <a href="signup.php" class="button">📝 View Sign Up Page</a>
     </div>
 
     <div class="card">
@@ -248,7 +248,7 @@
             <li><strong>VISUAL_GUIDE.md</strong> - UI design reference</li>
         </ul>
         
-        <a href="/index.php" class="button">🏠 Back to Home</a>
+        <a href="../../index.php" class="button">🏠 Back to Home</a>
     </div>
 </body>
 </html>
