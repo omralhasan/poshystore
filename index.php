@@ -2134,7 +2134,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     <?php foreach ($sec_cat['subcategories'] as $sub): ?>
                         <a href="/pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
                             <div class="chip-icon">
-                                <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
+                                <?php if (!empty($sub['image_url'])): ?>
+                                    <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                <?php else: ?>
+                                    <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
+                                <?php endif; ?>
                             </div>
                             <div class="chip-label"><?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?></div>
                             <span class="chip-count">(<?= $sub['product_count'] ?>)</span>

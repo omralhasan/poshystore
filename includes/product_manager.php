@@ -397,13 +397,17 @@ function getAllCategories()
 {
     global $conn;
     
-    // Check if image_url column exists
+    // Check if image_url column exists in both tables
     $img_check = $conn->query("SHOW COLUMNS FROM categories LIKE 'image_url'");
-    $has_img = ($img_check && $img_check->num_rows > 0);
-    $img_col = $has_img ? ', c.image_url AS category_image' : '';
+    $has_cat_img = ($img_check && $img_check->num_rows > 0);
+    $cat_img_col = $has_cat_img ? ', c.image_url AS category_image' : '';
     
-    $sql = "SELECT c.id AS category_id, c.name_en AS category_en, c.name_ar AS category_ar, c.icon AS category_icon $img_col,
-                   s.id AS subcategory_id, s.name_en AS subcategory_en, s.name_ar AS subcategory_ar, s.icon AS subcategory_icon,
+    $sub_img_check = $conn->query("SHOW COLUMNS FROM subcategories LIKE 'image_url'");
+    $has_sub_img = ($sub_img_check && $sub_img_check->num_rows > 0);
+    $sub_img_col = $has_sub_img ? ', s.image_url AS subcategory_image' : '';
+    
+    $sql = "SELECT c.id AS category_id, c.name_en AS category_en, c.name_ar AS category_ar, c.icon AS category_icon $cat_img_col,
+                   s.id AS subcategory_id, s.name_en AS subcategory_en, s.name_ar AS subcategory_ar, s.icon AS subcategory_icon $sub_img_col,
                    (SELECT COUNT(*) FROM products p WHERE p.subcategory_id = s.id AND p.stock_quantity > 0) AS product_count
             FROM categories c
             LEFT JOIN subcategories s ON s.category_id = c.id
@@ -431,6 +435,7 @@ function getAllCategories()
                 'name_en' => $row['subcategory_en'],
                 'name_ar' => $row['subcategory_ar'],
                 'icon' => $row['subcategory_icon'],
+                'image_url' => $row['subcategory_image'] ?? '',
                 'product_count' => (int)$row['product_count']
             ];
         }

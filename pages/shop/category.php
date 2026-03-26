@@ -644,7 +644,9 @@ header('X-Frame-Options: SAMEORIGIN');
                    class="sub-chip <?= $active_subcategory === (int)$sub['id'] ? 'active' : '' ?>"
                    title="<?= htmlspecialchars($lang === 'ar' && !empty($sub['name_ar']) ? $sub['name_ar'] : $sub['name_en']) ?>">
                     <div class="chip-icon">
-                        <?php if (!empty($sub['icon'])): ?>
+                        <?php if (!empty($sub['image_url'])): ?>
+                            <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                        <?php elseif (!empty($sub['icon'])): ?>
                             <i class="<?= htmlspecialchars($sub['icon']) ?>"></i>
                         <?php else: ?>
                             <i class="fas fa-tag"></i>

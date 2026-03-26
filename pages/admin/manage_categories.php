@@ -161,6 +161,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // UPLOAD SUBCATEGORY IMAGE
+    if ($action === 'upload_subcategory_image') {
+        $sub_id = intval($_POST['subcategory_id'] ?? 0);
+        if (!$sub_id) { echo json_encode(['success' => false, 'error' => 'Invalid subcategory ID']); exit(); }
+        
+        // Check if image_url column exists
+        $sub_img_check = $conn->query("SHOW COLUMNS FROM subcategories LIKE 'image_url'");
+        $has_sub_image_col = ($sub_img_check && $sub_img_check->num_rows > 0);
+        if (!$has_sub_image_col) { echo json_encode(['success' => false, 'error' => 'Please run the migration first: /run_subcategory_image_migration.php']); exit(); }
+        
+        if (empty($_FILES['subcategory_image']) || $_FILES['subcategory_image']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['success' => false, 'error' => 'Please select a valid image']);
+            exit();
+        }
+        
+        $file = $_FILES['subcategory_image'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!in_array($ext, $allowed)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid file type. Allowed: ' . implode(', ', $allowed)]);
+            exit();
+        }
+        if ($file['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'error' => 'File too large. Max 5MB.']);
+            exit();
+        }
+        
+        $filename = 'subcat_' . $sub_id . '_' . time() . '.' . $ext;
+        $dest = $cat_upload_dir . $filename;
+        
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            echo json_encode(['success' => false, 'error' => 'Upload failed']);
+            exit();
+        }
+        
+        $image_path = 'uploads/categories/' . $filename;
+        $stmt = $conn->prepare("UPDATE subcategories SET image_url = ? WHERE id = ?");
+        $stmt->bind_param('si', $image_path, $sub_id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'image_url' => $image_path]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'DB error: ' . $conn->error]);
+        }
+        $stmt->close();
+        exit();
+    }
+
     echo json_encode(['success' => false, 'error' => 'Unknown action']);
     exit();
 }
@@ -168,8 +216,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ─── Load categories & subcategories ─────────────────────────────────────────
 $categories = [];
 $img_select = $has_image_col ? ', c.image_url AS cimg' : '';
+
+// Check if subcategories have image_url column
+$sub_img_check = $conn->query("SHOW COLUMNS FROM subcategories LIKE 'image_url'");
+$has_sub_image_col = ($sub_img_check && $sub_img_check->num_rows > 0);
+$sub_img_select = $has_sub_image_col ? ', s.image_url AS simg' : '';
+
 $result = $conn->query("SELECT c.id AS cid, c.name_en AS cen, c.name_ar AS car $img_select,
-    s.id AS sid, s.name_en AS sen, s.name_ar AS sar, s.icon AS sicon,
+    s.id AS sid, s.name_en AS sen, s.name_ar AS sar, s.icon AS sicon $sub_img_select,
     (SELECT COUNT(*) FROM products WHERE subcategory_id = s.id) AS product_count
     FROM categories c
     LEFT JOIN subcategories s ON s.category_id = c.id
@@ -186,6 +240,7 @@ if ($result) {
                 'name_en'       => $row['sen'],
                 'name_ar'       => $row['sar'],
                 'icon'          => $row['sicon'] ?? '',
+                'image_url'     => $row['simg'] ?? '',
                 'product_count' => intval($row['product_count']),
             ];
         }
@@ -403,19 +458,34 @@ if ($result) {
                     <?php else: ?>
                         <?php foreach ($cat['subcategories'] as $sub): ?>
                         <div class="subcategory-item" id="subItem-<?= $sub['id'] ?>">
-                            <div class="sub-info">
-                                <?php if ($sub['icon']): ?>
-                                    <i class="<?= htmlspecialchars($sub['icon']) ?> sub-icon"></i>
-                                <?php else: ?>
-                                    <i class="fas fa-tag sub-icon"></i>
-                                <?php endif; ?>
-                                <div>
-                                    <div class="sub-name"><?= htmlspecialchars($sub['name_en']) ?></div>
-                                    <?php if ($sub['name_ar']): ?>
-                                        <div class="sub-ar"><?= htmlspecialchars($sub['name_ar']) ?></div>
+                            <div style="display:flex;align-items:center;gap:1rem;flex:1;">
+                                <!-- Subcategory Image Upload -->
+                                <div style="position:relative;width:80px;height:80px;border-radius:12px;overflow:hidden;background:#f3f4f6;flex-shrink:0;cursor:pointer;" onclick="document.getElementById('subImgInput-<?= $sub['id'] ?>').click()" title="Click to upload subcategory image">
+                                    <?php if (!empty($sub['image_url'])): ?>
+                                        <img src="../../<?= htmlspecialchars($sub['image_url']) ?>" style="width:100%;height:100%;object-fit:cover;" id="subImgPreview-<?= $sub['id'] ?>">
+                                    <?php else: ?>
+                                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:1.5rem;" id="subImgPreview-<?= $sub['id'] ?>">
+                                            <i class="<?= htmlspecialchars($sub['icon'] ?: 'fas fa-tag') ?>"></i>
+                                        </div>
                                     <?php endif; ?>
+                                    <input type="file" id="subImgInput-<?= $sub['id'] ?>" accept="image/*" style="display:none" onchange="uploadSubcategoryImage(<?= $sub['id'] ?>, this)">
+                                    <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;text-align:center;font-size:.6rem;padding:2px;font-weight:600;">📷</div>
                                 </div>
-                                <span class="prod-badge"><?= $sub['product_count'] ?> product<?= $sub['product_count'] != 1 ? 's' : '' ?></span>
+                                
+                                <div class="sub-info" style="flex:1;">
+                                    <?php if ($sub['icon']): ?>
+                                        <i class="<?= htmlspecialchars($sub['icon']) ?> sub-icon"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-tag sub-icon"></i>
+                                    <?php endif; ?>
+                                    <div>
+                                        <div class="sub-name"><?= htmlspecialchars($sub['name_en']) ?></div>
+                                        <?php if ($sub['name_ar']): ?>
+                                            <div class="sub-ar"><?= htmlspecialchars($sub['name_ar']) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span class="prod-badge"><?= $sub['product_count'] ?> product<?= $sub['product_count'] != 1 ? 's' : '' ?></span>
+                                </div>
                             </div>
                             <button class="btn btn-danger btn-sm" onclick="deleteSubcategory(<?= $sub['id'] ?>, <?= $cat['id'] ?>, this)" title="Delete subcategory">
                                 <i class="fas fa-times"></i>
@@ -614,6 +684,37 @@ function uploadCategoryImage(catId, input) {
                         preview.src = '../../' + data.image_url;
                     } else {
                         preview.outerHTML = '<img src="../../' + data.image_url + '" style="width:100%;height:100%;object-fit:cover;" id="catImgPreview-' + catId + '">';
+                    }
+                }
+            } else {
+                showToast(data.error || 'Upload failed', 'error');
+            }
+        })
+        .catch(() => showToast('Upload failed', 'error'));
+}
+
+// ─── Upload Subcategory Image ─────────────────────────────────────────────────
+function uploadSubcategoryImage(subId, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const fd = new FormData();
+    fd.append('action', 'upload_subcategory_image');
+    fd.append('subcategory_id', subId);
+    fd.append('subcategory_image', file);
+
+    fetch('manage_categories.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Subcategory image updated!');
+                // Update preview
+                const preview = document.getElementById('subImgPreview-' + subId);
+                if (preview) {
+                    if (preview.tagName === 'IMG') {
+                        preview.src = '../../' + data.image_url;
+                    } else {
+                        preview.outerHTML = '<img src="../../' + data.image_url + '" style="width:100%;height:100%;object-fit:cover;" id="subImgPreview-' + subId + '">';
                     }
                 }
             } else {
