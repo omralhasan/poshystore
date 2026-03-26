@@ -69,7 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         $meta_title  = trim($_POST['meta_title'] ?? '');
         $meta_desc   = trim($_POST['meta_description'] ?? '');
         $url_path    = trim($_POST['url_path'] ?? '');
-        $status      = ($_POST['status'] ?? 'draft') === 'published' ? 'published' : 'draft';
+        $status      = trim($_POST['status'] ?? 'draft');
+        
+        // Validate status value - must be 'published' or 'draft'
+        if (!in_array($status, ['published', 'draft'], true)) {
+            $status = 'draft';
+        }
 
         if (empty($title)) { echo json_encode(['success'=>false,'error'=>'Title is required']); exit(); }
 
@@ -136,7 +141,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         $meta_title  = trim($_POST['meta_title'] ?? '');
         $meta_desc   = trim($_POST['meta_description'] ?? '');
         $url_path    = trim($_POST['url_path'] ?? '');
-        $status      = ($_POST['status'] ?? 'draft') === 'published' ? 'published' : 'draft';
+        $status      = trim($_POST['status'] ?? 'draft');
+        
+        // Validate status value - must be 'published' or 'draft'
+        if (!in_array($status, ['published', 'draft'], true)) {
+            $status = 'draft';
+        }
 
         if ($id <= 0 || empty($title)) { echo json_encode(['success'=>false,'error'=>'Invalid data']); exit(); }
 
