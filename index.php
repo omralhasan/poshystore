@@ -824,13 +824,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 70px;
-            height: 70px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background: linear-gradient(135deg, #f8f4f0, #fff);
             border: 2px solid var(--border);
             color: var(--accent);
-            font-size: 1.8rem;
+            font-size: 2.5rem;
             transition: all 0.3s ease;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
@@ -848,7 +848,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             font-weight: 600;
             color: var(--text-secondary);
             text-align: center;
-            max-width: 75px;
+            max-width: 110px;
             word-wrap: break-word;
             transition: color 0.3s ease;
             line-height: 1.2;
@@ -870,13 +870,17 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             .category-explore-links { gap: 0.5rem; }
             .cat-explore-link { padding: 0.45rem 0.9rem; font-size: 0.75rem; }
             .subcategory-chips { gap: 0.4rem; }
-            .subcategory-chip { padding: 0.35rem 0.75rem; font-size: 0.72rem; }
+            .chip-icon { width: 85px; height: 85px; font-size: 2rem; }
+            .chip-label { max-width: 95px; }
         }
 
         @media (max-width: 480px) {
             .category-hero-banner { height: 90px; border-radius: 10px; }
             .category-hero-banner .cat-banner-title { font-size: 1rem; }
             .category-explore { padding: 0 1rem; }
+            .subcategory-chips { gap: 0.3rem; }
+            .chip-icon { width: 70px; height: 70px; font-size: 1.6rem; }
+            .chip-label { font-size: 0.65rem; max-width: 80px; }
         }
 
         /* Responsive hero */

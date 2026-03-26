@@ -80,6 +80,10 @@ RewriteRule ^سلة/?$ pages/shop/guest_checkout.php?lang=ar [L,QSA]
 RewriteRule ^podcast/?$ podcast.php [L,QSA]
 RewriteRule ^podcast/([a-z0-9]+(?:-[a-z0-9]+)*)/?$ podcast.php?slug=$1 [L,QSA]
 
+# ─── Category URLs ───────────────────────────────────────────────────
+# /category/skincare → pages/shop/category.php?slug=skincare
+RewriteRule ^category/([a-z0-9]+(?:-[a-z0-9]+)*)/?$ pages/shop/category.php?slug=$1 [L,QSA]
+
 # ─── Clean product URLs ──────────────────────────────────────────────
 # /the-ordinary-retinol → product.php?slug=the-ordinary-retinol
 # BUT: Don't apply to /pages/ directory (admin, shop, auth, policies)

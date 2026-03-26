@@ -29,11 +29,28 @@ if ($is_logged_in) {
     } catch (Exception $e) {}
 }
 
-// Get category ID
+// Helper function to convert string to slug
+function stringToSlug($str) {
+    return strtolower(trim(preg_replace('/[^a-z0-9-]/i', '-', preg_replace('/\s+/', '-', trim($str)))));
+}
+
+// Helper function to find category by slug
+function findCategoryBySlug($categories, $slug) {
+    foreach ($categories as $cat) {
+        $cat_slug = stringToSlug($cat['name_en']);
+        if ($cat_slug === $slug) {
+            return $cat;
+        }
+    }
+    return null;
+}
+
+// Get category ID or slug
 $category_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$category_slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
 $active_subcategory = isset($_GET['subcategory']) ? (int)$_GET['subcategory'] : 0;
 
-if ($category_id <= 0) {
+if ($category_id <= 0 && empty($category_slug)) {
     header('Location: ../../index.php');
     exit;
 }
@@ -46,12 +63,22 @@ try {
     error_log("Failed to load categories: " . $e->getMessage());
 }
 
-// Find the current category
+// Find the current category by ID or slug
 $current_category = null;
-foreach ($all_categories as $cat) {
-    if ((int)$cat['id'] === $category_id) {
-        $current_category = $cat;
-        break;
+
+if (!empty($category_slug)) {
+    // Find by slug
+    $current_category = findCategoryBySlug($all_categories, $category_slug);
+    if ($current_category) {
+        $category_id = $current_category['id'];
+    }
+} else if ($category_id > 0) {
+    // Find by ID
+    foreach ($all_categories as $cat) {
+        if ((int)$cat['id'] === $category_id) {
+            $current_category = $cat;
+            break;
+        }
     }
 }
 
@@ -274,13 +301,13 @@ header('X-Frame-Options: SAMEORIGIN');
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 65px;
-            height: 65px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background: linear-gradient(135deg, #f8f4f0, #fff);
             border: 2px solid var(--border);
             color: var(--accent);
-            font-size: 1.5rem;
+            font-size: 2.5rem;
             transition: all 0.3s ease;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
@@ -305,7 +332,7 @@ header('X-Frame-Options: SAMEORIGIN');
             font-weight: 600;
             color: var(--text-secondary);
             text-align: center;
-            max-width: 70px;
+            max-width: 110px;
             word-wrap: break-word;
             transition: color 0.3s ease;
             line-height: 1.2;
@@ -546,11 +573,14 @@ header('X-Frame-Options: SAMEORIGIN');
             .category-hero { padding: 2rem 1rem; }
             .category-hero h1 { font-size: 1.6rem; }
             .subcategory-chips { gap: 0.75rem; }
-            .sub-chip .chip-icon { width: 60px; height: 60px; font-size: 1.3rem; }
-            .sub-chip .chip-label { font-size: 0.7rem; max-width: 65px; }
+            .sub-chip .chip-icon { width: 85px; height: 85px; font-size: 2rem; }
+            .sub-chip .chip-label { font-size: 0.7rem; max-width: 95px; }
         }
         @media (max-width: 480px) {
             .product-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .subcategory-chips { gap: 0.5rem; }
+            .sub-chip .chip-icon { width: 70px; height: 70px; font-size: 1.6rem; }
+            .sub-chip .chip-label { font-size: 0.65rem; max-width: 80px; }
             .p-card-body { padding: 0.6rem; }
             .p-card-name { font-size: 0.8rem; }
             .price-now { font-size: 0.95rem; }

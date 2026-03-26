@@ -369,18 +369,18 @@ if ($result) {
             <?php foreach ($categories as $cat): ?>
             <div class="category-block" id="catBlock-<?= $cat['id'] ?>">
                 <div class="category-header">
-                    <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="display:flex; align-items:center; gap:1.5rem;">
                         <!-- Category Image -->
-                        <div style="position:relative; width:60px; height:60px; border-radius:10px; overflow:hidden; background:#f3f4f6; flex-shrink:0; cursor:pointer;" onclick="document.getElementById('catImgInput-<?= $cat['id'] ?>').click()" title="Click to upload category image">
+                        <div style="position:relative; width:120px; height:120px; border-radius:15px; overflow:hidden; background:#f3f4f6; flex-shrink:0; cursor:pointer;" onclick="document.getElementById('catImgInput-<?= $cat['id'] ?>').click()" title="Click to upload category image">
                             <?php if (!empty($cat['image_url'])): ?>
                                 <img src="../../<?= htmlspecialchars($cat['image_url']) ?>" style="width:100%;height:100%;object-fit:cover;" id="catImgPreview-<?= $cat['id'] ?>">
                             <?php else: ?>
-                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:1.2rem;" id="catImgPreview-<?= $cat['id'] ?>">
+                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:2rem;" id="catImgPreview-<?= $cat['id'] ?>">
                                     <i class="fas fa-camera"></i>
                                 </div>
                             <?php endif; ?>
                             <input type="file" id="catImgInput-<?= $cat['id'] ?>" accept="image/*" style="display:none" onchange="uploadCategoryImage(<?= $cat['id'] ?>, this)">
-                            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;text-align:center;font-size:.55rem;padding:2px;">📷 Upload</div>
+                            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;text-align:center;font-size:.7rem;padding:4px;font-weight:600;">📷 UPLOAD</div>
                         </div>
                         <div>
                             <div class="cat-title">
