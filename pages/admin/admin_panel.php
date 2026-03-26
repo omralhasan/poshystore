@@ -1106,42 +1106,42 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 <i class="fas fa-users"></i>
                 <span>Users Management</span>
             </div>
-            <a href="add_product.php" class="nav-item">
+            <a href="/pages/admin/add_product.php" class="nav-item">
                 <i class="fas fa-plus-circle"></i>
                 <span>Add New Product</span>
             </a>
-            <a href="manage_coupons.php" class="nav-item">
+            <a href="/pages/admin/manage_coupons.php" class="nav-item">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Coupon Management</span>
             </a>
-            <a href="manage_categories.php" class="nav-item">
+            <a href="/pages/admin/manage_categories.php" class="nav-item">
                 <i class="fas fa-layer-group"></i>
                 <span>Categories</span>
             </a>
-            <a href="manage_brands.php" class="nav-item">
+            <a href="/pages/admin/manage_brands.php" class="nav-item">
                 <i class="fas fa-copyright"></i>
                 <span>Brands</span>
             </a>
-            <a href="manage_banners.php" class="nav-item">
+            <a href="/pages/admin/manage_banners.php" class="nav-item">
                 <i class="fas fa-images"></i>
                 <span>Homepage Banners</span>
             </a>
-            <a href="upload_center.php" class="nav-item">
+            <a href="/pages/admin/upload_center.php" class="nav-item">
                 <i class="fas fa-cloud-upload-alt"></i>
                 <span>Upload Center</span>
             </a>
-            <a href="daily_reports.php" class="nav-item">
+            <a href="/pages/admin/daily_reports.php" class="nav-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Daily Reports & Profits</span>
             </a>
-            <a href="../../index.php" class="nav-item">
+            <a href="/index.php" class="nav-item">
                 <i class="fas fa-store"></i>
                 <span>Visit Store</span>
             </a>
         </div>
         
         <div class="sidebar-footer">
-            <a href="../auth/logout.php" class="logout-btn">
+            <a href="/pages/auth/logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>
@@ -1154,7 +1154,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
         <div class="admin-header">
             <h1><i class="fas fa-chart-line"></i> Admin Dashboard</h1>
             <div class="header-actions">
-                <a href="../../index.php" class="home-btn">
+                <a href="/index.php" class="home-btn">
                     <i class="fas fa-store"></i>
                     View Store
                 </a>
@@ -1293,7 +1293,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                         </div>
                                         
                                         <div style="margin-top: 8px;">
-                                            <a href="daily_reports.php" class="btn-print" style="width: 100%; display: inline-block; text-align: center; text-decoration: none; background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                            <a href="/pages/admin/daily_reports.php" class="btn-print" style="width: 100%; display: inline-block; text-align: center; text-decoration: none; background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
                                                 <i class="fas fa-chart-line"></i> View Reports
                                             </a>
                                         </div>
@@ -1406,7 +1406,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="edit_product.php?id=<?= $product['id'] ?>" class="btn-update" style="display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;margin-bottom:.4rem;">
+                                        <a href="/pages/admin/edit_product.php?id=<?= $product['id'] ?>" class="btn-update" style="display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;margin-bottom:.4rem;">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
                                         <button class="btn-remove-discount" onclick="deleteProduct(<?= $product['id'] ?>, this)" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
