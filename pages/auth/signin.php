@@ -340,7 +340,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                         </div>
                         
                         <!-- Email/Password Login Form -->
-                        <form action="signin.php" method="POST">
+                        <form action="" method="POST">
                             <div class="mb-3">
                                 <label for="email" class="form-label" style="color: var(--gold-color); font-weight: 500;"><?= t('email') ?></label>
                                 <input type="email" id="email" name="email" class="form-control-ramadan" required placeholder="<?= t('enter_email') ?>">

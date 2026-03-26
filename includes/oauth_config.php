@@ -14,12 +14,17 @@ if (!defined('POSHY_CONFIG_LOADED')) {
     require_once __DIR__ . '/../config.php';
 }
 
-// Always use canonical domain for OAuth — redirect_uri MUST exactly match
-// what is registered in Google Cloud Console / Facebook App Dashboard.
-$oauth_domain = 'https://poshystore.com';
+// Use SITE_URL from config - this MUST match what's registered in Google/Facebook
+// If SITE_URL is http://159.223.180.154, you need to update Google/Facebook dashboard
+// If SITE_URL is https://poshystore.com, make sure it resolves correctly
+$oauth_domain = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://poshystore.com';
 
-// Runtime SITE_URL used for non-OAuth links only
-$site = defined('SITE_URL') ? SITE_URL : $oauth_domain;
+// Make sure we use a proper protocol for OAuth (http for localhost, https for production)
+if (strpos($oauth_domain, '://') === false) {
+    $oauth_domain = (stripos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false ? 'http://' : 'https://') . $oauth_domain;
+}
+
+$site = $oauth_domain;
 $bp   = defined('BASE_PATH') ? BASE_PATH : '';
 
 return [
