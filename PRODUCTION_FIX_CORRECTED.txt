@@ -1,0 +1,129 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║         HTTP 500 FIX - CORRECTED INSTRUCTIONS (MYSQL SYNTAX ERROR)          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+ERROR: "ERROR 1064 (42000) at line 23: You have an error in your SQL syntax"
+
+SOLUTION: Use correct MySQL command syntax (no EXIT at end)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+METHOD 1: COPY & PASTE (Recommended)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ssh root@159.223.180.154
+
+mysql -uroot -p poshy_lifestyle << 'SQLEND'
+CREATE DATABASE IF NOT EXISTS poshy_lifestyle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON poshy_lifestyle.* TO 'poshy_user'@'localhost';
+FLUSH PRIVILEGES;
+CREATE TABLE IF NOT EXISTS homepage_banners (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  title_ar VARCHAR(255) DEFAULT NULL,
+  image_url VARCHAR(500) DEFAULT NULL,
+  link_url VARCHAR(500) DEFAULT NULL,
+  position INT DEFAULT 0,
+  is_active TINYINT DEFAULT 1,
+  banner_type ENUM('hero', 'section') NOT NULL DEFAULT 'section',
+  subtitle VARCHAR(500) DEFAULT NULL,
+  subtitle_ar VARCHAR(500) DEFAULT NULL,
+  cta_text VARCHAR(100) DEFAULT NULL,
+  cta_text_ar VARCHAR(100) DEFAULT NULL,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_banner_type_active (banner_type, is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQLEND
+
+(When prompted for password, enter your MySQL root password)
+
+Expected output: Query OK messages (no errors)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+METHOD 2: USING SQL FILE (Also works)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+scp /home/omar/poshystore/production_fix.sql root@159.223.180.154:/tmp/
+
+ssh root@159.223.180.154
+
+mysql -uroot -p < /tmp/production_fix.sql
+
+(When prompted for password, enter your MySQL root password)
+
+Then clean up: rm /tmp/production_fix.sql
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+METHOD 3: STEP BY STEP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ssh root@159.223.180.154
+
+mysql -uroot -p
+
+Then run each command one at a time in the MySQL prompt (mysql>):
+
+CREATE DATABASE IF NOT EXISTS poshy_lifestyle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+GRANT ALL PRIVILEGES ON poshy_lifestyle.* TO 'poshy_user'@'localhost';
+
+FLUSH PRIVILEGES;
+
+USE poshy_lifestyle;
+
+CREATE TABLE IF NOT EXISTS homepage_banners (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  title_ar VARCHAR(255) DEFAULT NULL,
+  image_url VARCHAR(500) DEFAULT NULL,
+  link_url VARCHAR(500) DEFAULT NULL,
+  position INT DEFAULT 0,
+  is_active TINYINT DEFAULT 1,
+  banner_type ENUM('hero', 'section') NOT NULL DEFAULT 'section',
+  subtitle VARCHAR(500) DEFAULT NULL,
+  subtitle_ar VARCHAR(500) DEFAULT NULL,
+  cta_text VARCHAR(100) DEFAULT NULL,
+  cta_text_ar VARCHAR(100) DEFAULT NULL,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_banner_type_active (banner_type, is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+Then type: quit
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFY SUCCESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After running the fix, test:
+
+https://poshystore.com
+
+Should load WITHOUT HTTP 500 error ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you still get SQL syntax error:
+
+Problem: Using "EXIT" at the end of a heredoc
+Solution: Don't use EXIT - use SQLEND or SQLEOF as delimiter instead
+
+If database still doesn't exist:
+
+mysql -uroot -p
+SHOW DATABASES;
+
+Should see: poshy_lifestyle
+
+If table doesn't exist:
+
+mysql -uroot -p poshy_lifestyle
+SHOW TABLES;
+
+Should see: homepage_banners
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
