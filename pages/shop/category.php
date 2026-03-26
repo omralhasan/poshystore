@@ -235,41 +235,101 @@ header('X-Frame-Options: SAMEORIGIN');
 
         .subcategory-chips {
             display: flex;
-            gap: 0.5rem;
+            gap: 1rem;
             overflow-x: auto;
-            padding: 0.25rem 0;
-            scrollbar-width: none;
+            overflow-y: hidden;
+            padding-bottom: 0.5rem;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            align-items: center;
+            scrollbar-width: thin;
         }
-        .subcategory-chips::-webkit-scrollbar { display: none; }
+        .subcategory-chips::-webkit-scrollbar {
+            height: 4px;
+        }
+        .subcategory-chips::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .subcategory-chips::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 2px;
+        }
+        .subcategory-chips::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
 
         .sub-chip {
-            display: inline-flex;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.5rem 1.2rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            justify-content: flex-start;
+            gap: 0.5rem;
             text-decoration: none;
-            border: 1.5px solid var(--border);
-            color: var(--text-secondary);
-            background: var(--surface);
-            white-space: nowrap;
-            transition: var(--transition);
-            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.3s ease;
         }
-        .sub-chip:hover { border-color: #000; color: #000; }
-        .sub-chip.active { background: #000; color: #fff; border-color: #000; }
-        .sub-chip i { font-size: 0.8rem; }
-        .sub-chip .chip-count {
-            font-size: 0.72rem;
-            background: var(--border-light);
-            color: var(--text-muted);
-            padding: 0.1rem 0.45rem;
-            border-radius: 10px;
+        
+        .sub-chip .chip-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f8f4f0, #fff);
+            border: 2px solid var(--border);
+            color: var(--accent);
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .sub-chip:hover .chip-icon {
+            background: linear-gradient(135deg, var(--accent), #d4a574);
+            border-color: var(--accent);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(212, 165, 116, 0.3);
+        }
+        
+        .sub-chip.active .chip-icon {
+            background: linear-gradient(135deg, #000, #333);
+            border-color: #000;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .sub-chip .chip-label {
+            font-size: 0.75rem;
             font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 70px;
+            word-wrap: break-word;
+            transition: color 0.3s ease;
+            line-height: 1.2;
         }
-        .sub-chip.active .chip-count { background: rgba(255,255,255,0.2); color: #fff; }
+
+        .sub-chip:hover .chip-label,
+        .sub-chip.active .chip-label {
+            color: var(--accent);
+        }
+        
+        .sub-chip.active .chip-label {
+            color: #000;
+        }
+        
+        .sub-chip .chip-count {
+            font-size: 0.65rem;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sub-chip:hover .chip-count,
+        .sub-chip.active .chip-count {
+            opacity: 1;
+        }
 
         /* Products */
         .products-section {
@@ -485,12 +545,19 @@ header('X-Frame-Options: SAMEORIGIN');
             .btn-cart { font-size: 0.75rem; padding: 0.55rem 0.5rem; }
             .category-hero { padding: 2rem 1rem; }
             .category-hero h1 { font-size: 1.6rem; }
+            .subcategory-chips { gap: 0.75rem; }
+            .sub-chip .chip-icon { width: 60px; height: 60px; font-size: 1.3rem; }
+            .sub-chip .chip-label { font-size: 0.7rem; max-width: 65px; }
         }
         @media (max-width: 480px) {
             .product-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
             .p-card-body { padding: 0.6rem; }
             .p-card-name { font-size: 0.8rem; }
             .price-now { font-size: 0.95rem; }
+            .subcategory-chips { gap: 0.5rem; padding-bottom: 0.25rem; }
+            .sub-chip .chip-icon { width: 55px; height: 55px; font-size: 1.2rem; }
+            .sub-chip .chip-label { font-size: 0.65rem; max-width: 60px; }
+            .sub-chip .chip-count { font-size: 0.6rem; }
             .p-card-actions { flex-direction: column; }
             .btn-view { width: 100%; height: 36px; }
         }
@@ -535,20 +602,26 @@ header('X-Frame-Options: SAMEORIGIN');
     <?php if (!empty($current_category['subcategories'])): ?>
     <div class="subcategory-bar">
         <div class="subcategory-chips">
-            <a href="category.php?id=<?= $category_id ?>" class="sub-chip <?= $active_subcategory === 0 ? 'active' : '' ?>">
-                <i class="fas fa-th-large"></i>
-                <?= $lang === 'ar' ? 'الكل' : 'All' ?>
+            <a href="category.php?id=<?= $category_id ?>" class="sub-chip <?= $active_subcategory === 0 ? 'active' : '' ?>" title="<?= $lang === 'ar' ? 'الكل' : 'All' ?>">
+                <div class="chip-icon">
+                    <i class="fas fa-th-large"></i>
+                </div>
+                <div class="chip-label"><?= $lang === 'ar' ? 'الكل' : 'All' ?></div>
+                <span class="chip-count">(0)</span>
             </a>
             <?php foreach ($current_category['subcategories'] as $sub): ?>
                 <a href="category.php?id=<?= $category_id ?>&subcategory=<?= $sub['id'] ?>"
-                   class="sub-chip <?= $active_subcategory === (int)$sub['id'] ? 'active' : '' ?>">
-                    <?php if (!empty($sub['icon'])): ?>
-                        <i class="<?= htmlspecialchars($sub['icon']) ?>"></i>
-                    <?php else: ?>
-                        <i class="fas fa-tag"></i>
-                    <?php endif; ?>
-                    <?= htmlspecialchars($lang === 'ar' && !empty($sub['name_ar']) ? $sub['name_ar'] : $sub['name_en']) ?>
-                    <span class="chip-count"><?= $sub['product_count'] ?></span>
+                   class="sub-chip <?= $active_subcategory === (int)$sub['id'] ? 'active' : '' ?>"
+                   title="<?= htmlspecialchars($lang === 'ar' && !empty($sub['name_ar']) ? $sub['name_ar'] : $sub['name_en']) ?>">
+                    <div class="chip-icon">
+                        <?php if (!empty($sub['icon'])): ?>
+                            <i class="<?= htmlspecialchars($sub['icon']) ?>"></i>
+                        <?php else: ?>
+                            <i class="fas fa-tag"></i>
+                        <?php endif; ?>
+                    </div>
+                    <div class="chip-label"><?= htmlspecialchars($lang === 'ar' && !empty($sub['name_ar']) ? $sub['name_ar'] : $sub['name_en']) ?></div>
+                    <span class="chip-count">(<?= $sub['product_count'] ?>)</span>
                 </a>
             <?php endforeach; ?>
         </div>

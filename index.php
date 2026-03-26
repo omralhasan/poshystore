@@ -773,41 +773,95 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
         .subcategory-chips {
             display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
+            gap: 1rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            align-items: center;
+        }
+
+        /* Scrollbar styling */
+        .subcategory-chips::-webkit-scrollbar {
+            height: 4px;
+        }
+        .subcategory-chips::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .subcategory-chips::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 2px;
+        }
+        .subcategory-chips::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .category-label {
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
         }
 
         .subcategory-chip {
-            display: inline-flex;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.45rem 1rem;
-            border-radius: 50px;
-            font-size: 0.78rem;
-            font-weight: 500;
+            justify-content: flex-start;
+            gap: 0.5rem;
             text-decoration: none;
-            background: var(--surface);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            transition: all 0.25s ease;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.3s ease;
         }
 
-        .subcategory-chip:hover {
+        .chip-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #f8f4f0, #fff);
-            border-color: var(--accent);
+            border: 2px solid var(--border);
             color: var(--accent);
-            transform: translateY(-1px);
+            font-size: 1.8rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        .subcategory-chip i {
+        .subcategory-chip:hover .chip-icon {
+            background: linear-gradient(135deg, var(--accent), #d4a574);
+            border-color: var(--accent);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(212, 165, 116, 0.3);
+        }
+
+        .chip-label {
             font-size: 0.75rem;
-            opacity: 0.7;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 75px;
+            word-wrap: break-word;
+            transition: color 0.3s ease;
+            line-height: 1.2;
         }
 
-        .subcategory-chip .chip-count {
-            font-size: 0.68rem;
-            opacity: 0.6;
+        .subcategory-chip:hover .chip-label {
+            color: var(--accent);
+        }
+
+        .chip-count {
+            font-size: 0.65rem;
+            opacity: 0.5;
+            margin-top: -0.2rem;
         }
 
         @media (max-width: 768px) {
@@ -2070,13 +2124,15 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
                 <?php if (!empty($sec_cat['subcategories'])): ?>
                 <div class="subcategory-chips">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; margin-right: 0.5rem;">
+                    <span class="category-label">
                         <?= $lang === 'ar' ? 'تسوق حسب الفئة:' : 'Shop by Category:' ?>
                     </span>
                     <?php foreach ($sec_cat['subcategories'] as $sub): ?>
-                        <a href="pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip">
-                            <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
-                            <?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>
+                        <a href="/pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
+                            <div class="chip-icon">
+                                <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
+                            </div>
+                            <div class="chip-label"><?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?></div>
                             <span class="chip-count">(<?= $sub['product_count'] ?>)</span>
                         </a>
                     <?php endforeach; ?>
