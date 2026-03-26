@@ -235,6 +235,20 @@ function exchangeCodeForToken($provider, $code) {
         error_log("CURL Error ($curl_errno): $curl_error");
     }
     
+    // Validate response
+    if (empty($response)) {
+        error_log("ERROR: Empty response from token endpoint (HTTP $http_code, curl errno: $curl_errno)");
+        return ['error' => 'empty_response', 'error_description' => 'Empty response from OAuth provider'];
+    }
+    
+    // Try to decode JSON response
+    $decoded = json_decode($response, true);
+    if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+        error_log("ERROR: Invalid JSON response from token endpoint: " . json_last_error_msg());
+        error_log("Raw response: " . substr($response, 0, 500)); // Log first 500 chars
+        return ['error' => 'invalid_json', 'error_description' => 'Invalid JSON from OAuth provider'];
+    }
+    
     // Write detailed debug info to a separate file
     $debug_file = __DIR__ . '/oauth_token_debug.txt';
     $debug_info = date('Y-m-d H:i:s') . " - Token Exchange Debug\n";
@@ -243,12 +257,12 @@ function exchangeCodeForToken($provider, $code) {
     $debug_info .= "HTTP Code: $http_code\n";
     $debug_info .= "CURL errno: $curl_errno\n";
     $debug_info .= "POST Data: " . json_encode($post_data, JSON_PRETTY_PRINT) . "\n";
-    $debug_info .= "Response: $response\n";
+    $debug_info .= "Response (first 1000 chars): " . substr($response, 0, 1000) . "\n";
     $debug_info .= "CURL Error: $curl_error\n";
     $debug_info .= str_repeat("-", 80) . "\n\n";
     file_put_contents($debug_file, $debug_info, FILE_APPEND);
     
-    return json_decode($response, true);
+    return $decoded;
 }
 
 /**
@@ -277,16 +291,51 @@ function getOAuthUserInfo($provider, $access_token) {
         */
             
         default:
+            error_log("getOAuthUserInfo: Unknown provider - $provider");
             return null;
     }
     
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    $response = curl_exec($ch);
-    curl_close($ch);
-    
-    return json_decode($response, true);
+    try {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
+        $curl_errno = curl_errno($ch);
+        curl_close($ch);
+        
+        if ($curl_errno !== 0) {
+            error_log("getOAuthUserInfo CURL error ($curl_errno): $curl_error for $provider");
+            return null;
+        }
+        
+        if ($http_code !== 200) {
+            error_log("getOAuthUserInfo: HTTP $http_code from $provider - Response: " . substr($response, 0, 500));
+            return null;
+        }
+        
+        if (empty($response)) {
+            error_log("getOAuthUserInfo: Empty response from $provider");
+            return null;
+        }
+        
+        $user_data = json_decode($response, true);
+        if ($user_data === null && json_last_error() !== JSON_ERROR_NONE) {
+            error_log("getOAuthUserInfo: Invalid JSON from $provider - Error: " . json_last_error_msg());
+            return null;
+        }
+        
+        return $user_data;
+    } catch (Exception $e) {
+        error_log("getOAuthUserInfo Exception: " . $e->getMessage());
+        return null;
+    }
 }
 
 /**
@@ -295,11 +344,12 @@ function getOAuthUserInfo($provider, $access_token) {
 function processOAuthUser($provider, $oauth_data) {
     global $conn;
     
+    try {
     // Extract user info based on provider
     switch ($provider) {
         case 'google':
-            $oauth_id = $oauth_data['id'];
-            $email = $oauth_data['email'];
+            $oauth_id = $oauth_data['id'] ?? null;
+            $email = $oauth_data['email'] ?? null;
             $firstname = $oauth_data['given_name'] ?? '';
             $lastname = $oauth_data['family_name'] ?? '';
             $profile_picture = $oauth_data['picture'] ?? null;
@@ -326,11 +376,24 @@ function processOAuthUser($provider, $oauth_data) {
         */
             
         default:
+            error_log("processOAuthUser: Invalid provider - $provider");
             return ['success' => false, 'error' => 'Invalid OAuth provider'];
     }
     
+    if (!$oauth_id) {
+        error_log("processOAuthUser: No OAuth ID from $provider");
+        return ['success' => false, 'error' => 'No OAuth ID received from provider'];
+    }
+    
     if (!$email) {
+        error_log("processOAuthUser: No email from $provider");
         return ['success' => false, 'error' => 'Email not provided by OAuth provider'];
+    }
+    
+    // Validate database connection
+    if (!$conn || !$conn->ping()) {
+        error_log("processOAuthUser: Database connection lost");
+        return ['success' => false, 'error' => 'Database connection error. Please try again.'];
     }
     
     // Check if user exists with this OAuth provider
@@ -338,8 +401,18 @@ function processOAuthUser($provider, $oauth_data) {
                   FROM users 
                   WHERE oauth_provider = ? AND oauth_id = ?";
     $stmt = $conn->prepare($check_sql);
+    if (!$stmt) {
+        error_log("processOAuthUser prepare error: " . $conn->error);
+        return ['success' => false, 'error' => 'Database error'];
+    }
+    
     $stmt->bind_param('ss', $provider, $oauth_id);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        error_log("processOAuthUser execute error: " . $stmt->error);
+        $stmt->close();
+        return ['success' => false, 'error' => 'Database error'];
+    }
+    
     $result = $stmt->get_result();
     
     if ($result->num_rows > 0) {
@@ -347,13 +420,17 @@ function processOAuthUser($provider, $oauth_data) {
         $user = $result->fetch_assoc();
         $stmt->close();
         
+        error_log("processOAuthUser: Existing user - " . $user['email']);
+        
         // Update profile picture if available
         if ($profile_picture) {
             $update_sql = "UPDATE users SET profile_picture = ? WHERE id = ?";
             $update_stmt = $conn->prepare($update_sql);
-            $update_stmt->bind_param('si', $profile_picture, $user['id']);
-            $update_stmt->execute();
-            $update_stmt->close();
+            if ($update_stmt) {
+                $update_stmt->bind_param('si', $profile_picture, $user['id']);
+                $update_stmt->execute();
+                $update_stmt->close();
+            }
         }
         
         return [
@@ -368,12 +445,23 @@ function processOAuthUser($provider, $oauth_data) {
     // Check if email already exists (regular account)
     $check_email_sql = "SELECT id FROM users WHERE email = ?";
     $stmt = $conn->prepare($check_email_sql);
+    if (!$stmt) {
+        error_log("processOAuthUser email check prepare error: " . $conn->error);
+        return ['success' => false, 'error' => 'Database error'];
+    }
+    
     $stmt->bind_param('s', $email);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        error_log("processOAuthUser email check execute error: " . $stmt->error);
+        $stmt->close();
+        return ['success' => false, 'error' => 'Database error'];
+    }
+    
     $stmt->store_result();
     
     if ($stmt->num_rows > 0) {
         $stmt->close();
+        error_log("processOAuthUser: Email already exists - $email");
         return [
             'success' => false,
             'error' => 'An account with this email already exists. Please sign in with your email and password.'
@@ -382,31 +470,46 @@ function processOAuthUser($provider, $oauth_data) {
     $stmt->close();
     
     // Create new user
+    error_log("processOAuthUser: Creating new user - $email from $provider");
     $insert_sql = "INSERT INTO users (firstname, lastname, email, oauth_provider, oauth_id, profile_picture, role, password) 
                    VALUES (?, ?, ?, ?, ?, ?, 'customer', NULL)";
     $stmt = $conn->prepare($insert_sql);
-    $stmt->bind_param('ssssss', $firstname, $lastname, $email, $provider, $oauth_id, $profile_picture);
-    
-    if ($stmt->execute()) {
-        $user_id = $stmt->insert_id;
-        $stmt->close();
-        
-        return [
-            'success' => true,
-            'user' => [
-                'id' => $user_id,
-                'firstname' => $firstname,
-                'lastname' => $lastname,
-                'email' => $email,
-                'role' => 'customer',
-                'profile_picture' => $profile_picture
-            ],
-            'is_new_user' => true
-        ];
+    if (!$stmt) {
+        error_log("processOAuthUser insert prepare error: " . $conn->error);
+        return ['success' => false, 'error' => 'Failed to create account'];
     }
     
+    $stmt->bind_param('ssssss', $firstname, $lastname, $email, $provider, $oauth_id, $profile_picture);
+    
+    if (!$stmt->execute()) {
+        error_log("processOAuthUser insert execute error: " . $stmt->error);
+        $stmt->close();
+        return ['success' => false, 'error' => 'Failed to create account'];
+    }
+    
+    $user_id = $stmt->insert_id;
     $stmt->close();
-    return ['success' => false, 'error' => 'Failed to create user account'];
+    
+    error_log("processOAuthUser: New user created - ID $user_id, Email: $email");
+    
+    return [
+        'success' => true,
+        'user' => [
+            'id' => $user_id,
+            'firstname' => $firstname,
+            'lastname' => $lastname,
+            'email' => $email,
+            'role' => 'customer',
+            'profile_picture' => $profile_picture
+        ],
+        'is_new_user' => true
+    ];
+    
+    } catch (Exception $e) {
+        error_log("processOAuthUser Exception: " . $e->getMessage());
+        error_log("Stack trace: " . $e->getTraceAsString());
+        return ['success' => false, 'error' => 'Authentication service error'];
+    }
 }
 
 /**
