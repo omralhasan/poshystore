@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# Comprehensive test for admin and Arabic routing issues
+
+echo "=================================================="
+echo "Admin Panel & Arabic Routing Diagnostics"
+echo "=================================================="
+echo ""
+
+echo "1. Admin Panel File Existence:"
+echo "   Checking if admin files exist in both locations..."
+echo ""
+echo "   Workspace files:"
+ls -1 /home/omar/poshystore/pages/admin/*.php | head -5 | sed 's/^/   /'
+echo ""
+echo "   Web root files:"
+ls -1 /var/www/html/pages/admin/*.php 2>/dev/null | head -5 | sed 's/^/   /' || echo "   Files not found"
+echo ""
+
+echo "2. Admin Page Accessibility (unauthenticated):"
+echo "   Testing 302 redirects (expected)..."
+echo "   add_product: $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/add_product.php)"
+echo "   manage_categories: $(curl -s -o /dev/null -w '%{http_code}' http://localhost/pages/admin/manage_categories.php)"
+echo ""
+
+echo "3. .htaccess Rewrite Rules:"
+echo "   Checking for conflicts that might intercept admin pages..."
+echo ""
+echo " Problem: Catch-all rule might rewrite admin links:"
+echo "   Rule: RewriteRule ^([a-z0-9]+(?:-[a-z0-9]+)*)/?$ product.php?slug=$1"
+echo "   This matches: 'add_product' -> rewrites to product.php?slug=add_product"
+echo "   Then product.php rejects it as invalid slug format (contains underscore)"
+echo "   Result: 404 error"
+echo ""
+
+echo "4. Arabic URL Test:"
+echo "   Testing Arabic product URLs..."
+echo ""
+echo "   URL-encoded Arabic: %D9%85%D9%86%D8%AA%D8%AC/retinol-serum"
+HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost/%D9%85%D9%86%D8%AA%D8%AC/retinol-serum")
+echo "   Response: $HTTP_CODE"
+echo ""
+echo "   Issue: .htaccess Arabic rule uses (.+?) which should match any slug"
+echo "   But product.php validates slug with: /^[a-z0-9]+(-[a-z0-9]+)*$/"
+echo "   This only allows English lowercase! Arabic characters will be rejected."
+echo ""
+
+echo "5. .htaccess Rules Analysis:"
+echo ""
+echo "   ✗ PROBLEM 1: Admin pages not excluded from catch-all"
+echo "     The catch-all rule at the end catches everything not matching:"
+echo "     - /pages/admin/add_product.php → matches as a slug"
+echo "     - /pages/admin/manage_categories.php → matches as a slug"
+echo "     Should be: Skip /pages/ directory from catch-all"
+echo ""
+echo "   ✗ PROBLEM 2: Arabic routes rewrite but product.php rejects"
+echo "     .htaccess: RewriteRule ^منتج/(.+?)/?$ product.php?slug=$1&lang=ar"
+echo "     product.php: if (!preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $slug))"
+echo "     Result: Arabic slug rejected, redirects to index.php"
+echo ""
+
+echo "=================================================="
+echo "FIXES NEEDED:"
+echo "=================================================="
+echo ""
+echo "Fix 1: Modify .htaccess catch-all to skip /pages/ directory"
+echo "Fix 2: Update product.php slug validation to allow Arabic characters"
+echo ""
