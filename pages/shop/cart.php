@@ -618,37 +618,45 @@ $total_items = $cart['total_items'] ?? 0;
                             <div class="cart-item">
                                 <div class="item-image">
                                     <?php
-                                        // Try to get the product's main image
+                                        // Build a robust image URL for cart thumbnails.
                                         $cart_img = '';
-                                        
-                                        // First, prioritize the database image_link field (direct path to main image)
-                                        if (!empty($item['image_url']) && $item['image_url'] !== 'NULL') {
-                                            $cart_img = $item['image_url'];
+                                        $db_image = trim((string)($item['image_url'] ?? ''));
+
+                                        // Prefer DB image_link when present, and URL-encode local paths safely.
+                                        if ($db_image !== '' && strtoupper($db_image) !== 'NULL') {
+                                            if (preg_match('#^https?://#i', $db_image)) {
+                                                $cart_img = $db_image;
+                                            } else {
+                                                $cart_img = '/' . encode_image_path(ltrim($db_image, '/'));
+                                            }
                                         }
-                                        
-                                        // If not found, use get_product_thumbnail to find the main image
+
+                                        // Fallback: try smart folder matching helper.
                                         if (empty($cart_img)) {
                                             $cart_img = get_product_thumbnail(
                                                 $item['name_en'] ?? '',
                                                 $item['image_url'] ?? '',
                                                 __DIR__ . '/../..'
                                             );
+                                            if (!empty($cart_img) && !preg_match('#^https?://#i', $cart_img)) {
+                                                $cart_img = '/' . ltrim($cart_img, '/');
+                                            }
                                         }
-                                        // Ensure absolute path from domain root
-                                        if (!empty($cart_img) && $cart_img[0] !== '/' && !str_starts_with($cart_img, 'http')) {
-                                            $cart_img = '/' . $cart_img;
+
+                                        if (empty($cart_img)) {
+                                            $cart_img = '/images/placeholder-cosmetics.svg';
                                         }
                                     ?>
                                     <?php if (!empty($cart_img) && $cart_img !== '/images/placeholder-cosmetics.svg'): ?>
                                         <img src="<?= htmlspecialchars($cart_img) ?>" 
                                              alt="<?= htmlspecialchars($item['name_en']) ?>"
-                                             style="width:100%; height:100%; object-fit:cover; border-radius:12px;"
+                                             style="width:100%; height:100%; object-fit:contain; border-radius:12px; background:#faf8f5; padding:4px;"
                                              loading="lazy"
                                              onerror="this.onerror=null; this.src='/images/placeholder-cosmetics.svg';">
                                     <?php else: ?>
                                         <img src="/images/placeholder-cosmetics.svg" 
                                              alt="<?= htmlspecialchars($item['name_en']) ?>"
-                                             style="width:100%; height:100%; object-fit:cover; border-radius:12px;"
+                                             style="width:100%; height:100%; object-fit:contain; border-radius:12px; background:#faf8f5; padding:4px;"
                                              loading="lazy">
                                     <?php endif; ?>
                                 </div>
