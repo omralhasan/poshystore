@@ -619,7 +619,7 @@ header('X-Frame-Options: SAMEORIGIN');
             <li><a href="/index.php"><i class="fas fa-home"></i> <?= $lang === 'ar' ? 'الرئيسية' : 'Home' ?></a></li>
             <li>/</li>
             <?php if ($active_subcategory > 0): ?>
-                <li><a href="category.php?id=<?= $category_id ?>"><?= htmlspecialchars($category_name) ?></a></li>
+                <li><a href="/pages/shop/category.php?id=<?= $category_id ?>"><?= htmlspecialchars($category_name) ?></a></li>
                 <li>/</li>
                 <li class="active"><?= htmlspecialchars($active_sub_name) ?></li>
             <?php else: ?>
@@ -632,7 +632,7 @@ header('X-Frame-Options: SAMEORIGIN');
     <?php if (!empty($current_category['subcategories'])): ?>
     <div class="subcategory-bar">
         <div class="subcategory-chips">
-            <a href="category.php?id=<?= $category_id ?>" class="sub-chip <?= $active_subcategory === 0 ? 'active' : '' ?>" title="<?= $lang === 'ar' ? 'الكل' : 'All' ?>">
+            <a href="/pages/shop/category.php?id=<?= $category_id ?>" class="sub-chip <?= $active_subcategory === 0 ? 'active' : '' ?>" title="<?= $lang === 'ar' ? 'الكل' : 'All' ?>">
                 <div class="chip-icon">
                     <i class="fas fa-th-large"></i>
                 </div>
@@ -640,7 +640,7 @@ header('X-Frame-Options: SAMEORIGIN');
                 <span class="chip-count">(0)</span>
             </a>
             <?php foreach ($current_category['subcategories'] as $sub): ?>
-                <a href="category.php?id=<?= $category_id ?>&subcategory=<?= $sub['id'] ?>"
+                <a href="/pages/shop/category.php?id=<?= $category_id ?>&subcategory=<?= $sub['id'] ?>"
                    class="sub-chip <?= $active_subcategory === (int)$sub['id'] ? 'active' : '' ?>"
                    title="<?= htmlspecialchars($lang === 'ar' && !empty($sub['name_ar']) ? $sub['name_ar'] : $sub['name_en']) ?>">
                     <div class="chip-icon">
