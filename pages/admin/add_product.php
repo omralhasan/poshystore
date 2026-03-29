@@ -9,14 +9,51 @@ require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/slug_helper.php';
 
+$is_ajax_request =
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    (
+        isset($_POST['ajax']) ||
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+    );
+
 if (!isAdmin()) {
+    if ($is_ajax_request) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Session expired or unauthorized. Please refresh and log in again.'
+        ]);
+        exit();
+    }
     header('Location: ../../index.php');
     exit();
 }
 
 // Handle AJAX submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
-    header('Content-Type: application/json');
+if ($is_ajax_request) {
+    // Ensure any warnings/notices during AJAX become JSON responses, not HTML output.
+    set_error_handler(function($severity, $message, $file, $line) {
+        if (error_reporting() & $severity) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        }
+    });
+
+    set_exception_handler(function($e) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server Error: ' . $e->getMessage()
+        ]);
+        exit();
+    });
+
+    ob_start();
+    header('Content-Type: application/json; charset=utf-8');
 
     $name_en    = trim($_POST['name_en'] ?? '');
     $name_ar    = trim($_POST['name_ar'] ?? '');
@@ -40,8 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $has_disc   = ($discount > 0) ? 1 : 0;
 
     // Validation
-    if (empty($name_en)) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
-    if ($price <= 0)      { echo json_encode(['success' => false, 'error' => 'Price must be greater than 0']); exit(); }
+    if (empty($name_en)) {
+        while (ob_get_level() > 0) ob_end_clean();
+        echo json_encode(['success' => false, 'error' => 'English name is required']);
+        exit();
+    }
+    if ($price <= 0) {
+        while (ob_get_level() > 0) ob_end_clean();
+        echo json_encode(['success' => false, 'error' => 'Price must be greater than 0']);
+        exit();
+    }
 
     // Generate unique slug
     $slug = generateUniqueSlug($conn, $name_en);
@@ -103,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
+        while (ob_get_level() > 0) ob_end_clean();
         echo json_encode(['success' => false, 'error' => 'DB error: ' . $conn->error]);
         exit();
     }
@@ -156,6 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
         }
 
+        while (ob_get_level() > 0) ob_end_clean();
         echo json_encode([
             'success' => true,
             'message' => 'Product added successfully!',
@@ -163,6 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             'slug'    => $slug
         ]);
     } else {
+        while (ob_get_level() > 0) ob_end_clean();
         echo json_encode(['success' => false, 'error' => 'Insert failed: ' . $stmt->error]);
         $stmt->close();
     }
@@ -606,8 +654,25 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
     showLoading(true);
     document.getElementById('submitBtn').disabled = true;
 
-    fetch('add_product.php', { method: 'POST', body: fd })
-        .then(r => r.json())
+    fetch(window.location.pathname, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(async (r) => {
+            const raw = await r.text();
+            const sanitized = raw.replace(/^\uFEFF/, '').trim();
+
+            try {
+                return JSON.parse(sanitized);
+            } catch (e) {
+                const textOnly = sanitized.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(textOnly ? textOnly.slice(0, 200) : `HTTP ${r.status}`);
+            }
+        })
         .then(data => {
             showLoading(false);
             document.getElementById('submitBtn').disabled = false;
