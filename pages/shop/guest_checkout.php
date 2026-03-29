@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../includes/product_image_helper.php';
 
 // If user is logged in, redirect to normal checkout
 if (isset($_SESSION['user_id'])) {
-    header('Location: checkout_page.php');
+    header('Location: /pages/shop/checkout_page.php');
     exit;
 }
 
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
                     $_SESSION['guest_order_id'] = $order_id;
                     $_SESSION['guest_order_name'] = $guest_name;
                     
-                    header('Location: guest_order_success.php?order_id=' . $order_id);
+                    header('Location: /pages/shop/guest_order_success.php?order_id=' . $order_id);
                     exit;
                     
                 } catch (Exception $e) {

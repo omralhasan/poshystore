@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../includes/guest_cart_handler.php';
 
 // If not logged in, redirect to guest checkout (guests can add to cart)
 if (!isset($_SESSION['user_id'])) {
-    header('Location: guest_checkout.php');
+    header('Location: /pages/shop/guest_checkout.php');
     exit;
 }
 
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = $result['success'] ? t('cart_cleared') : $result['error'];
                 break;
         }
-        header('Location: cart.php?msg=' . urlencode($message ?? ''));
+        header('Location: /pages/shop/cart.php?msg=' . urlencode($message ?? ''));
         exit;
     }
 }
@@ -757,7 +757,7 @@ $total_items = $cart['total_items'] ?? 0;
                                       data-raw-total="<?= $total_amount_raw ?>"><?= $total_amount ?></span>
                             </div>
                             
-                            <a href="checkout_page.php" class="btn-ramadan w-100 mt-3" style="padding: 1.1rem; font-size: 1.1rem; font-weight: 700; box-shadow: 0 6px 20px rgba(72, 54, 110, 0.3); transition: all 0.3s; position: relative; z-index: 1;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(72, 54, 110, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(72, 54, 110, 0.3)';">
+                            <a href="/pages/shop/checkout_page.php" class="btn-ramadan w-100 mt-3" style="padding: 1.1rem; font-size: 1.1rem; font-weight: 700; box-shadow: 0 6px 20px rgba(72, 54, 110, 0.3); transition: all 0.3s; position: relative; z-index: 1;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(72, 54, 110, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(72, 54, 110, 0.3)';">
                                 <i class="fas fa-credit-card me-2"></i><?= t('proceed_to_checkout') ?>
                             </a>
                             

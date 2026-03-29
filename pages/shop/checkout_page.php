@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../includes/product_image_helper.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/signin.php');
+    header('Location: /pages/auth/signin.php');
     exit;
 }
 
@@ -29,7 +29,7 @@ $wallet_balance_formatted = formatJOD($wallet_balance);
 // Get cart
 $cart = viewCart();
 if (empty($cart['cart_items'])) {
-    header('Location: cart.php');
+    header('Location: /pages/shop/cart.php');
     exit;
 }
 
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         $result = processCheckout($_SESSION['user_id'], $additional_data);
         
         if ($result['success']) {
-            header('Location: order_success.php?order_id=' . $result['order']['order_id']);
+            header('Location: /pages/shop/order_success.php?order_id=' . $result['order']['order_id']);
             exit;
         } else {
             $error = $result['error'];
