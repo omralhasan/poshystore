@@ -98,46 +98,66 @@ try {
     error_log("Failed to load categories: " . $e->getMessage());
 }
 
-// Homepage category set: Skin Care, Hair Care, Makeup
+// Homepage category set: Skin Care, Hair Care, Makeup, Lip Balm, Dental Care, Body Care
 $homepage_categories = [];
 $home_category_slots = [
-    'skin' => null,
-    'hair' => null,
-    'makeup' => null,
+    'skin'    => ['category' => null, 'keywords' => ['skin', 'skincare']],
+    'hair'    => ['category' => null, 'keywords' => ['hair', 'haircare']],
+    'makeup'  => ['category' => null, 'keywords' => ['makeup', 'cosmetic', 'cosmetics']],
+    'lipbalm' => ['category' => null, 'keywords' => ['lipbalm', 'lipcare', 'lip', 'balm']],
+    'dental'  => ['category' => null, 'keywords' => ['dentalcare', 'dental', 'oralcare', 'oral', 'tooth', 'teeth']],
+    'body'    => ['category' => null, 'keywords' => ['bodycare', 'body', 'bath']],
 ];
+
+$categories_by_id = [];
+foreach ($all_categories as $cat) {
+    $categories_by_id[(int)($cat['id'] ?? 0)] = $cat;
+}
 
 foreach ($all_categories as $cat) {
     $name_en = strtolower(trim((string)($cat['name_en'] ?? '')));
     $normalized = preg_replace('/[^a-z0-9]+/', '', $name_en);
 
-    if ($home_category_slots['skin'] === null && (str_contains($normalized, 'skin') || str_contains($normalized, 'skincare'))) {
-        $home_category_slots['skin'] = $cat;
-        continue;
-    }
-    if ($home_category_slots['hair'] === null && (str_contains($normalized, 'hair') || str_contains($normalized, 'haircare'))) {
-        $home_category_slots['hair'] = $cat;
-        continue;
-    }
-    if ($home_category_slots['makeup'] === null && (str_contains($normalized, 'makeup') || str_contains($normalized, 'cosmetic'))) {
-        $home_category_slots['makeup'] = $cat;
-        continue;
+    foreach ($home_category_slots as $slot_key => $slot_data) {
+        if (!empty($home_category_slots[$slot_key]['category'])) {
+            continue;
+        }
+
+        foreach ($slot_data['keywords'] as $keyword) {
+            if (str_contains($normalized, $keyword)) {
+                $home_category_slots[$slot_key]['category'] = $cat;
+                break;
+            }
+        }
     }
 }
 
-foreach (['skin', 'hair', 'makeup'] as $slot) {
-    if (!empty($home_category_slots[$slot])) {
-        $homepage_categories[] = $home_category_slots[$slot];
+// Fallback: pin known homepage categories by ID if keyword matching misses any.
+foreach (['skin' => 1, 'lipbalm' => 2, 'dental' => 3, 'hair' => 4, 'body' => 5, 'makeup' => 6] as $slot_key => $category_id) {
+    if (empty($home_category_slots[$slot_key]['category']) && !empty($categories_by_id[$category_id])) {
+        $home_category_slots[$slot_key]['category'] = $categories_by_id[$category_id];
+    }
+}
+
+foreach (['skin', 'hair', 'makeup', 'lipbalm', 'dental', 'body'] as $slot_key) {
+    if (!empty($home_category_slots[$slot_key]['category'])) {
+        $homepage_categories[] = $home_category_slots[$slot_key]['category'];
     }
 }
 
 // Allow category filter by keyword slug (e.g. category=skin-care)
 if ($active_category === 0 && $active_category_keyword !== '') {
-    if (str_contains($active_category_keyword, 'skin') && !empty($home_category_slots['skin'])) {
-        $active_category = (int)$home_category_slots['skin']['id'];
-    } elseif (str_contains($active_category_keyword, 'hair') && !empty($home_category_slots['hair'])) {
-        $active_category = (int)$home_category_slots['hair']['id'];
-    } elseif ((str_contains($active_category_keyword, 'makeup') || str_contains($active_category_keyword, 'cosmetic')) && !empty($home_category_slots['makeup'])) {
-        $active_category = (int)$home_category_slots['makeup']['id'];
+    foreach (['skin', 'hair', 'makeup', 'lipbalm', 'dental', 'body'] as $slot_key) {
+        if (empty($home_category_slots[$slot_key]['category'])) {
+            continue;
+        }
+
+        foreach ($home_category_slots[$slot_key]['keywords'] as $keyword) {
+            if (str_contains($active_category_keyword, $keyword)) {
+                $active_category = (int)$home_category_slots[$slot_key]['category']['id'];
+                break 2;
+            }
+        }
     }
 }
 
@@ -1759,7 +1779,6 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     </style>
 </head>
 <body>
-
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
 
     <!-- ======== ANNOUNCEMENT BAR ======== -->
@@ -1885,6 +1904,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                             if (str_contains($catName, 'skin')) echo '<i class="fas fa-spa"></i>';
                             elseif (str_contains($catName, 'hair')) echo '<i class="fas fa-wind"></i>';
                             elseif (str_contains($catName, 'makeup') || str_contains($catName, 'cosmetic')) echo '<i class="fas fa-palette"></i>';
+                            elseif (str_contains($catName, 'lip') || str_contains($catName, 'balm')) echo '<i class="fas fa-heart"></i>';
+                            elseif (str_contains($catName, 'dental') || str_contains($catName, 'oral') || str_contains($catName, 'tooth')) echo '<i class="fas fa-tooth"></i>';
+                            elseif (str_contains($catName, 'body')) echo '<i class="fas fa-shower"></i>';
                             else echo '<i class="fas fa-star"></i>';
                         ?>
                     </div>
@@ -2075,6 +2097,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             if (str_contains($sec_cat_lower, 'skin')) $sec_icon = 'fas fa-spa';
             elseif (str_contains($sec_cat_lower, 'hair')) $sec_icon = 'fas fa-wind';
             elseif (str_contains($sec_cat_lower, 'makeup') || str_contains($sec_cat_lower, 'cosmetic')) $sec_icon = 'fas fa-palette';
+            elseif (str_contains($sec_cat_lower, 'lip') || str_contains($sec_cat_lower, 'balm')) $sec_icon = 'fas fa-heart';
+            elseif (str_contains($sec_cat_lower, 'dental') || str_contains($sec_cat_lower, 'oral') || str_contains($sec_cat_lower, 'tooth')) $sec_icon = 'fas fa-tooth';
+            elseif (str_contains($sec_cat_lower, 'body')) $sec_icon = 'fas fa-shower';
         ?>
 
         <?php
