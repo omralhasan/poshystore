@@ -1604,7 +1604,7 @@ if ($is_logged_in) {
                                 <button 
                                     id="addToCartBtn"
                                     class="btn-ramadan flex-grow-1" 
-                                    onclick="addToCart(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name_en']) ?>')"
+                                    onclick="addToCart(<?= $product['id'] ?>)"
                                     <?= !$product['in_stock'] ? 'disabled' : '' ?>
                                     style="<?= !$product['in_stock'] ? 'opacity: 0.5; cursor: not-allowed;' : '' ?>"
                                 >
@@ -1617,7 +1617,7 @@ if ($is_logged_in) {
                             <button 
                                 id="addToCartBtn"
                                 class="btn-ramadan flex-grow-1" 
-                                onclick="guestAddToCart(<?= $product['id'] ?>, '<?= htmlspecialchars($product['name_en']) ?>')"
+                                onclick="guestAddToCart(<?= $product['id'] ?>)"
                                 <?= !$product['in_stock'] ? 'disabled' : '' ?>
                                 style="<?= !$product['in_stock'] ? 'opacity: 0.5; cursor: not-allowed;' : '' ?>"
                             >
@@ -1998,7 +1998,7 @@ if ($is_logged_in) {
         const BASE_URL = '<?= $base_url ?>';
         
         // Guest Add to Cart
-        function guestAddToCart(productId, productName) {
+        function guestAddToCart(productId) {
             const btn = document.getElementById('addToCartBtn');
             if (btn) {
                 btn.disabled = true;
@@ -2039,7 +2039,7 @@ if ($is_logged_in) {
         }
         
         // Add to Cart (logged in)
-        function addToCart(productId, productName) {
+        function addToCart(productId) {
             const btn = document.getElementById('addToCartBtn');
             
             // Disable button and show loading state
@@ -2115,13 +2115,13 @@ if ($is_logged_in) {
         }
         
         // Replace Quantity Controls with Add to Cart button
-        function replaceQuantityControlsWithButton(productId, productName, inStock) {
+        function replaceQuantityControlsWithButton(productId, inStock) {
             const quantityControls = document.getElementById('quantityControls');
             if (quantityControls) {
                 const addToCartBtn = document.createElement('button');
                 addToCartBtn.id = 'addToCartBtn';
                 addToCartBtn.className = 'btn-ramadan flex-grow-1';
-                addToCartBtn.onclick = function() { addToCart(productId, productName); };
+                addToCartBtn.onclick = function() { addToCart(productId); };
                 if (!inStock) {
                     addToCartBtn.disabled = true;
                     addToCartBtn.style.opacity = '0.5';
@@ -2149,7 +2149,7 @@ if ($is_logged_in) {
                 if (data.success) {
                     if (data.action === 'removed') {
                         // Product removed from cart, show Add to Cart button
-                        replaceQuantityControlsWithButton(productId, '', true);
+                        replaceQuantityControlsWithButton(productId, true);
                         showAlert('success', '<?= t("product_removed") ?>');
                     } else {
                         // Update quantity display
