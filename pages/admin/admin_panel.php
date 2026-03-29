@@ -1307,7 +1307,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                             <option value="delivered" <?= $order['status'] === 'delivered' ? 'selected' : '' ?>>Delivered</option>
                                             <option value="cancelled" <?= $order['status'] === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
                                         </select>
-                                        <button class="btn-update" onclick="updateOrderStatus(<?= $order['order_id'] ?>)">
+                                        <button class="btn-update" onclick="updateOrderStatus(<?= $order['order_id'] ?>, this)">
                                             <i class="fas fa-sync-alt"></i> Update
                                         </button>
                                         
@@ -1316,7 +1316,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                                 <option value="customer" <?= ($order['order_type'] ?? 'customer') === 'customer' ? 'selected' : '' ?>>Customer Order</option>
                                                 <option value="supplier" <?= ($order['order_type'] ?? 'customer') === 'supplier' ? 'selected' : '' ?>>Supplier Order</option>
                                             </select>
-                                            <button class="btn-update" onclick="updateOrderType(<?= $order['order_id'] ?>)" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                                            <button class="btn-update" onclick="updateOrderType(<?= $order['order_id'] ?>, this)" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
                                                 <i class="fas fa-tag"></i> Update Type
                                             </button>
                                         </div>
@@ -1428,14 +1428,14 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                                max="100">
                                     </td>
                                     <td>
-                                        <button class="btn-update" onclick="updateProductPrice(<?= $product['id'] ?>)">
+                                        <button class="btn-update" onclick="updateProductPrice(<?= $product['id'] ?>, this)">
                                             <i class="fas fa-dollar-sign"></i> Update Price
                                         </button>
-                                        <button class="btn-discount" onclick="applyDiscount(<?= $product['id'] ?>)">
+                                        <button class="btn-discount" onclick="applyDiscount(<?= $product['id'] ?>, this)">
                                             <i class="fas fa-percent"></i> Apply Discount
                                         </button>
                                         <?php if ($product['has_discount']): ?>
-                                            <button class="btn-remove-discount" onclick="removeDiscount(<?= $product['id'] ?>)">
+                                            <button class="btn-remove-discount" onclick="removeDiscount(<?= $product['id'] ?>, this)">
                                                 <i class="fas fa-times"></i> Remove Discount
                                             </button>
                                         <?php endif; ?>
@@ -1505,7 +1505,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                                 <option value="supplier" <?= $user['role'] === 'supplier' ? 'selected' : '' ?>>Supplier</option>
                                                 <option value="manager" <?= $user['role'] === 'manager' ? 'selected' : '' ?>>Manager</option>
                                             </select>
-                                            <button class="btn-update" onclick="updateUserRole(<?= $user['id'] ?>)">
+                                            <button class="btn-update" onclick="updateUserRole(<?= $user['id'] ?>, this)">
                                                 <i class="fas fa-save"></i> Update
                                             </button>
                                         <?php else: ?>
@@ -1571,11 +1571,34 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 alertDiv.innerHTML = '';
             }, 5000);
         }
+
+        const adminApiUrl = window.location.pathname;
+
+        async function sendAdminRequest(formData) {
+            const response = await fetch(adminApiUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const raw = await response.text();
+            const sanitized = raw.replace(/^\uFEFF/, '').trim();
+
+            try {
+                return JSON.parse(sanitized);
+            } catch (parseError) {
+                const textOnly = sanitized.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                const details = textOnly ? textOnly.slice(0, 200) : `HTTP ${response.status}`;
+                throw new Error(`Server returned non-JSON response: ${details}`);
+            }
+        }
         
-        async function updateOrderStatus(orderId) {
+        async function updateOrderStatus(orderId, button) {
             const selectEl = document.getElementById('status-' + orderId);
             const newStatus = selectEl.value;
-            const button = event.target;
             
             button.disabled = true;
             button.textContent = 'Updating...';
@@ -1585,13 +1608,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 formData.append('action', 'update_order_status');
                 formData.append('order_id', orderId);
                 formData.append('status', newStatus);
-                
-                const response = await fetch('admin_panel.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
+
+                const result = await sendAdminRequest(formData);
                 
                 if (result.success) {
                     let message = `✅ Order #${orderId} status updated: ${result.old_status} → ${result.new_status}`;
@@ -1615,10 +1633,9 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             }
         }
         
-        async function updateOrderType(orderId) {
+        async function updateOrderType(orderId, button) {
             const selectEl = document.getElementById('order-type-' + orderId);
             const orderType = selectEl.value;
-            const button = event.target;
             
             button.disabled = true;
             button.textContent = 'Updating...';
@@ -1628,13 +1645,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 formData.append('action', 'update_order_type');
                 formData.append('order_id', orderId);
                 formData.append('order_type', orderType);
-                
-                const response = await fetch('admin_panel.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
+
+                const result = await sendAdminRequest(formData);
                 
                 if (result.success) {
                     showAlert('orders', `✅ Order #${orderId} type updated to: ${orderType}`, true);
@@ -1658,10 +1670,9 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             window.open(url, '_blank');
         }
         
-        async function updateProductPrice(productId) {
+        async function updateProductPrice(productId, button) {
             const inputEl = document.getElementById('price-' + productId);
             const newPrice = parseFloat(inputEl.value);
-            const button = event.target;
             
             if (isNaN(newPrice) || newPrice < 0) {
                 showAlert('products', '❌ Please enter a valid price', false);
@@ -1676,13 +1687,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 formData.append('action', 'update_product_price');
                 formData.append('product_id', productId);
                 formData.append('new_price', newPrice);
-                
-                const response = await fetch('admin_panel.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
+
+                const result = await sendAdminRequest(formData);
                 
                 if (result.success) {
                     showAlert('products', `✅ ${result.product_name}: ${result.old_price_formatted} → ${result.new_price_formatted}`, true);
@@ -1699,10 +1705,9 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             }
         }
         
-        async function applyDiscount(productId) {
+        async function applyDiscount(productId, button) {
             const inputEl = document.getElementById('discount-' + productId);
             const discountPercentage = parseFloat(inputEl.value);
-            const button = event.target;
             
             if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
                 showAlert('products', '❌ Please enter a valid discount percentage (0-100)', false);
@@ -1722,13 +1727,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 formData.append('action', 'apply_discount');
                 formData.append('product_id', productId);
                 formData.append('discount_percentage', discountPercentage);
-                
-                const response = await fetch('admin_panel.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
+
+                const result = await sendAdminRequest(formData);
                 
                 if (result.success) {
                     showAlert('products', `✅ ${result.product_name}: ${discountPercentage}% discount applied! ${result.old_price_formatted} → ${result.new_price_formatted}`, true);
@@ -1745,8 +1745,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
             }
         }
         
-        async function removeDiscount(productId) {
-            const button = event.target;
+        async function removeDiscount(productId, button) {
             
             if (!confirm('Are you sure you want to remove the discount from this product?')) {
                 return;
@@ -1759,13 +1758,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 const formData = new FormData();
                 formData.append('action', 'remove_discount');
                 formData.append('product_id', productId);
-                
-                const response = await fetch('admin_panel.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
+
+                const result = await sendAdminRequest(formData);
                 
                 if (result.success) {
                     showAlert('products', `✅ ${result.product_name}: Discount removed! Price restored to ${result.restored_price_formatted}`, true);
@@ -1790,8 +1784,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 const fd = new FormData();
                 fd.append('action', 'delete_product');
                 fd.append('product_id', productId);
-                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
-                const data = await res.json();
+                const data = await sendAdminRequest(fd);
                 if (data.success) {
                     btn.closest('tr').style.opacity = '0';
                     btn.closest('tr').style.transition = 'opacity .4s';
@@ -1803,16 +1796,15 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                     btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
                 }
             } catch (e) {
-                showAlert('products', '❌ Network error', false);
+                showAlert('products', '❌ Error: ' + e.message, false);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
             }
         }
 
-        async function updateUserRole(userId) {
+        async function updateUserRole(userId, button) {
             const selectEl = document.getElementById('user-role-' + userId);
             const newRole = selectEl.value;
-            const button = event.target;
             
             button.disabled = true;
             button.textContent = 'Updating...';
@@ -1822,13 +1814,8 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 formData.append('action', 'update_user_role');
                 formData.append('user_id', userId);
                 formData.append('role', newRole);
-                
-                const response = await fetch('admin_panel.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
+
+                const result = await sendAdminRequest(formData);
                 
                 if (result.success) {
                     showAlert('users', `✅ ${result.message}`, true);
@@ -1853,8 +1840,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 const fd = new FormData();
                 fd.append('action', 'delete_order');
                 fd.append('order_id', orderId);
-                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
-                const data = await res.json();
+                const data = await sendAdminRequest(fd);
                 if (data.success) {
                     btn.closest('tr').style.opacity = '0';
                     btn.closest('tr').style.transition = 'opacity .4s';
@@ -1866,7 +1852,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                     btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Order';
                 }
             } catch (e) {
-                showAlert('orders', '❌ Network error', false);
+                showAlert('orders', '❌ Error: ' + e.message, false);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Order';
             }
@@ -1878,8 +1864,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 const fd = new FormData();
                 fd.append('action', 'toggle_recommended');
                 fd.append('product_id', productId);
-                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
-                const data = await res.json();
+                const data = await sendAdminRequest(fd);
                 if (data.success) {
                     if (data.is_recommended) {
                         btn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
@@ -1896,7 +1881,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 }
                 btn.disabled = false;
             } catch (e) {
-                showAlert('products', '❌ Network error', false);
+                showAlert('products', '❌ Error: ' + e.message, false);
                 btn.disabled = false;
             }
         }
@@ -1907,8 +1892,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 const fd = new FormData();
                 fd.append('action', 'toggle_best_seller');
                 fd.append('product_id', productId);
-                const res = await fetch('admin_panel.php', { method: 'POST', body: fd });
-                const data = await res.json();
+                const data = await sendAdminRequest(fd);
                 if (data.success) {
                     if (data.is_best_seller) {
                         btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
@@ -1925,7 +1909,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 }
                 btn.disabled = false;
             } catch (e) {
-                showAlert('products', '❌ Network error', false);
+                showAlert('products', '❌ Error: ' + e.message, false);
                 btn.disabled = false;
             }
         }
