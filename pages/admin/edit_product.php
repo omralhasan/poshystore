@@ -9,9 +9,50 @@ require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_image_helper.php';
 
+$is_ajax_request =
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    (
+        isset($_POST['ajax']) ||
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+    );
+
 if (!isAdmin()) {
+    if ($is_ajax_request) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Session expired or unauthorized. Please refresh and log in again.'
+        ]);
+        exit();
+    }
     header('Location: ../../index.php');
     exit();
+}
+
+if ($is_ajax_request) {
+    // Convert notices/warnings during AJAX into JSON-safe errors.
+    set_error_handler(function ($severity, $message, $file, $line) {
+        if (error_reporting() & $severity) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        }
+    });
+
+    set_exception_handler(function ($e) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server Error: ' . $e->getMessage()
+        ]);
+        exit();
+    });
+
+    ob_start();
+    header('Content-Type: application/json; charset=utf-8');
 }
 
 $product_id = intval($_GET['id'] ?? 0);
@@ -63,8 +104,10 @@ function syncProductImagesTable(mysqli $conn, int $productId, string $productNam
 }
 
 // ─── AJAX handler ─────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
-    header('Content-Type: application/json');
+if ($is_ajax_request) {
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
 
     // ── Delete product handler ──
     if (($_POST['action'] ?? '') === 'delete_product') {
@@ -843,6 +886,43 @@ function showLoading(on) {
     document.getElementById('loadingOverlay').classList.toggle('active', on);
 }
 
+async function parseJsonResponse(response) {
+    const raw = await response.text();
+    const sanitized = raw.replace(/^\uFEFF/, '').trim();
+    try {
+        return JSON.parse(sanitized);
+    } catch (e) {
+        const textOnly = sanitized.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        throw new Error(textOnly ? textOnly.slice(0, 200) : `HTTP ${response.status}`);
+    }
+}
+
+async function postEdit(fd) {
+    if (!fd.has('ajax')) {
+        fd.append('ajax', '1');
+    }
+    const r = await fetch(window.location.pathname + window.location.search, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    return parseJsonResponse(r);
+}
+
+async function requestJson(url, options = {}) {
+    const mergedHeaders = {
+        ...(options.headers || {}),
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    const r = await fetch(url, {
+        ...options,
+        credentials: 'same-origin',
+        headers: mergedHeaders
+    });
+    return parseJsonResponse(r);
+}
+
 document.getElementById('videoFileInput').addEventListener('change', function() {
     const prev = document.getElementById('videoPreview');
     if (this.files[0]) { prev.src = URL.createObjectURL(this.files[0]); prev.style.display = 'block'; }
@@ -857,12 +937,11 @@ async function deleteProduct() {
     fd.append('product_id', '<?= $product_id ?>');
     showLoading(true);
     try {
-        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await postEdit(fd);
         showLoading(false);
         if (d.success) { showToast('Product deleted!'); setTimeout(() => window.location.href = 'admin_panel.php', 1000); }
         else showToast(d.error || 'Delete failed', 'error');
-    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    } catch(e) { showLoading(false); showToast('Network error: ' + e.message, 'error'); }
 }
 
 // ─── Image Management Functions ───
@@ -902,8 +981,7 @@ async function deleteImage(imgFile) {
     fd.append('image_file', imgFile);
     showLoading(true);
     try {
-        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await postEdit(fd);
         showLoading(false);
         if (d.success) {
             showToast('Image deleted');
@@ -911,7 +989,7 @@ async function deleteImage(imgFile) {
         } else {
             showToast(d.error || 'Failed to delete image', 'error');
         }
-    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    } catch(e) { showLoading(false); showToast('Network error: ' + e.message, 'error'); }
 }
 
 function triggerReplace(imgFile) {
@@ -929,8 +1007,7 @@ document.getElementById('replaceImageInput').addEventListener('change', async fu
     fd.append('new_image', this.files[0]);
     showLoading(true);
     try {
-        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await postEdit(fd);
         showLoading(false);
         if (d.success) {
             showToast('Image replaced');
@@ -938,7 +1015,7 @@ document.getElementById('replaceImageInput').addEventListener('change', async fu
         } else {
             showToast(d.error || 'Failed to replace image', 'error');
         }
-    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    } catch(e) { showLoading(false); showToast('Network error: ' + e.message, 'error'); }
     this.value = '';
     replaceTarget = '';
 });
@@ -951,8 +1028,7 @@ async function setMainImage(imgFile) {
     fd.append('image_file', imgFile);
     showLoading(true);
     try {
-        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await postEdit(fd);
         showLoading(false);
         if (d.success) {
             showToast('Main image updated');
@@ -960,7 +1036,7 @@ async function setMainImage(imgFile) {
         } else {
             showToast(d.error || 'Failed to set main image', 'error');
         }
-    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    } catch(e) { showLoading(false); showToast('Network error: ' + e.message, 'error'); }
 }
 
 // Add more images
@@ -975,8 +1051,7 @@ document.getElementById('addMoreInput').addEventListener('change', async functio
     }
     showLoading(true);
     try {
-        const r = await fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await postEdit(fd);
         showLoading(false);
         if (d.success) {
             showToast(`${d.added} image(s) added`);
@@ -984,11 +1059,11 @@ document.getElementById('addMoreInput').addEventListener('change', async functio
         } else {
             showToast(d.error || 'Failed to add images', 'error');
         }
-    } catch(e) { showLoading(false); showToast('Network error', 'error'); }
+    } catch(e) { showLoading(false); showToast('Network error: ' + e.message, 'error'); }
     this.value = '';
 });
 
-document.getElementById('editProductForm').addEventListener('submit', function(e) {
+document.getElementById('editProductForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const nameEn = this.querySelector('[name="name_en"]').value.trim();
     const price  = parseFloat(this.querySelector('[name="price_jod"]').value) || 0;
@@ -996,28 +1071,25 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
     if (price <= 0) { showToast('Price must be greater than 0', 'error'); return; }
 
     const fd = new FormData(this);
-    fd.append('ajax', '1');
 
     showLoading(true);
     document.getElementById('submitBtn').disabled = true;
 
-    fetch('edit_product.php?id=<?= $product_id ?>', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(data => {
-            showLoading(false);
-            document.getElementById('submitBtn').disabled = false;
-            if (data.success) {
-                showToast(data.message || 'Product updated!');
-                setTimeout(() => window.location.href = 'admin_panel.php', 1500);
-            } else {
-                showToast(data.error || 'Something went wrong', 'error');
-            }
-        })
-        .catch(err => {
-            showLoading(false);
-            document.getElementById('submitBtn').disabled = false;
-            showToast('Network error: ' + err.message, 'error');
-        });
+    try {
+        const data = await postEdit(fd);
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+        if (data.success) {
+            showToast(data.message || 'Product updated!');
+            setTimeout(() => window.location.href = 'admin_panel.php', 1500);
+        } else {
+            showToast(data.error || 'Something went wrong', 'error');
+        }
+    } catch (err) {
+        showLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+        showToast('Network error: ' + err.message, 'error');
+    }
 });
 
 // ====== Auto-Translate English → Arabic ======
@@ -1068,8 +1140,7 @@ const PRODUCT_ID = <?= $product_id ?>;
 
 async function loadOptions() {
     try {
-        const r = await fetch(`${OPTIONS_API}?action=get_options&product_id=${PRODUCT_ID}`);
-        const d = await r.json();
+        const d = await requestJson(`${OPTIONS_API}?action=get_options&product_id=${PRODUCT_ID}`);
         if (d.success) { renderOptions(d.options); }
         else { document.getElementById('optionsLoading').innerHTML = '<p style="color:var(--danger);">Failed to load</p>'; }
     } catch(e) {
@@ -1157,11 +1228,10 @@ async function addNewOption(type) {
     fd.append('product_id', PRODUCT_ID);
     fd.append('option_type', type);
     try {
-        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await requestJson(OPTIONS_API, { method: 'POST', body: fd });
         if (d.success) { showToast('Option added!'); loadOptions(); }
         else showToast(d.error || 'Failed', 'error');
-    } catch(e) { showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error: ' + e.message, 'error'); }
 }
 
 async function deleteOption(optionId) {
@@ -1170,11 +1240,10 @@ async function deleteOption(optionId) {
     fd.append('action', 'delete_option');
     fd.append('option_id', optionId);
     try {
-        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await requestJson(OPTIONS_API, { method: 'POST', body: fd });
         if (d.success) { showToast('Option deleted'); loadOptions(); }
         else showToast(d.error || 'Failed', 'error');
-    } catch(e) { showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error: ' + e.message, 'error'); }
 }
 
 async function addOptionValue(optionId) {
@@ -1196,11 +1265,10 @@ async function addOptionValue(optionId) {
     if (imgEl && imgEl.files[0]) fd.append('image', imgEl.files[0]);
 
     try {
-        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await requestJson(OPTIONS_API, { method: 'POST', body: fd });
         if (d.success) { showToast('Value added!'); loadOptions(); }
         else showToast(d.error || 'Failed', 'error');
-    } catch(e) { showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error: ' + e.message, 'error'); }
 }
 
 async function deleteOptionValue(valueId) {
@@ -1209,11 +1277,10 @@ async function deleteOptionValue(valueId) {
     fd.append('action', 'delete_value');
     fd.append('value_id', valueId);
     try {
-        const r = await fetch(OPTIONS_API, { method: 'POST', body: fd });
-        const d = await r.json();
+        const d = await requestJson(OPTIONS_API, { method: 'POST', body: fd });
         if (d.success) { showToast('Value deleted'); loadOptions(); }
         else showToast(d.error || 'Failed', 'error');
-    } catch(e) { showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error: ' + e.message, 'error'); }
 }
 
 loadOptions();

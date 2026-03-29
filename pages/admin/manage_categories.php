@@ -8,9 +8,50 @@ session_start();
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 
+$is_ajax_request =
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    (
+        isset($_POST['ajax']) ||
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+    );
+
 if (!isAdmin()) {
+    if ($is_ajax_request) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Session expired or unauthorized. Please refresh and log in again.'
+        ]);
+        exit();
+    }
     header('Location: ../../index.php');
     exit();
+}
+
+if ($is_ajax_request) {
+    // Convert notices/warnings during AJAX into JSON-safe errors.
+    set_error_handler(function ($severity, $message, $file, $line) {
+        if (error_reporting() & $severity) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        }
+    });
+
+    set_exception_handler(function ($e) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server Error: ' . $e->getMessage()
+        ]);
+        exit();
+    });
+
+    ob_start();
+    header('Content-Type: application/json; charset=utf-8');
 }
 
 $cat_upload_dir = __DIR__ . '/../../uploads/categories/';
@@ -24,7 +65,9 @@ $has_image_col = ($img_col_check && $img_col_check->num_rows > 0);
 
 // ─── AJAX handlers ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
     $action = $_POST['action'] ?? '';
 
     // ADD CATEGORY
@@ -81,7 +124,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         // Delete subcategories first
-        $conn->prepare("DELETE FROM subcategories WHERE category_id = ?")->execute() || true;
         $del_subs = $conn->prepare("DELETE FROM subcategories WHERE category_id = ?");
         $del_subs->bind_param('i', $id);
         $del_subs->execute();
@@ -510,10 +552,28 @@ function showToast(msg, type = 'success') {
     setTimeout(() => t.classList.remove('show'), 4000);
 }
 
+async function postFormData(fd) {
+    fd.append('ajax', '1');
+    const r = await fetch(window.location.pathname, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const raw = await r.text();
+    const sanitized = raw.replace(/^\uFEFF/, '').trim();
+    try {
+        return JSON.parse(sanitized);
+    } catch (e) {
+        const textOnly = sanitized.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        throw new Error(textOnly ? textOnly.slice(0, 200) : `HTTP ${r.status}`);
+    }
+}
+
 function post(data) {
     const fd = new FormData();
     for (const k in data) fd.append(k, data[k]);
-    return fetch('manage_categories.php', { method: 'POST', body: fd }).then(r => r.json());
+    return postFormData(fd);
 }
 
 // ─── Add Category ─────────────────────────────────────────────────────────────
@@ -537,6 +597,8 @@ document.getElementById('addCategoryForm').addEventListener('submit', function(e
         } else {
             showToast(data.error || 'Failed', 'error');
         }
+    }).catch(err => {
+        showToast('Network error: ' + err.message, 'error');
     });
 });
 
@@ -558,6 +620,8 @@ document.getElementById('addSubcategoryForm').addEventListener('submit', functio
         } else {
             showToast(data.error || 'Failed', 'error');
         }
+    }).catch(err => {
+        showToast('Network error: ' + err.message, 'error');
     });
 });
 
@@ -573,6 +637,9 @@ function deleteCategory(id, btn) {
             showToast(data.error || 'Failed', 'error');
             btn.disabled = false;
         }
+    }).catch(err => {
+        btn.disabled = false;
+        showToast('Network error: ' + err.message, 'error');
     });
 }
 
@@ -597,6 +664,9 @@ function deleteSubcategory(subId, catId, btn) {
             showToast(data.error || 'Failed', 'error');
             btn.disabled = false;
         }
+    }).catch(err => {
+        btn.disabled = false;
+        showToast('Network error: ' + err.message, 'error');
     });
 }
 
@@ -672,8 +742,7 @@ function uploadCategoryImage(catId, input) {
     
     showToast('Uploading image...');
     
-    fetch('manage_categories.php', { method: 'POST', body: fd })
-        .then(r => r.json())
+    postFormData(fd)
         .then(data => {
             if (data.success) {
                 showToast('Category image updated!');
@@ -690,7 +759,7 @@ function uploadCategoryImage(catId, input) {
                 showToast(data.error || 'Upload failed', 'error');
             }
         })
-        .catch(() => showToast('Upload failed', 'error'));
+        .catch(err => showToast('Upload failed: ' + err.message, 'error'));
 }
 
 // ─── Upload Subcategory Image ─────────────────────────────────────────────────
@@ -703,8 +772,7 @@ function uploadSubcategoryImage(subId, input) {
     fd.append('subcategory_id', subId);
     fd.append('subcategory_image', file);
 
-    fetch('manage_categories.php', { method: 'POST', body: fd })
-        .then(r => r.json())
+    postFormData(fd)
         .then(data => {
             if (data.success) {
                 showToast('Subcategory image updated!');
@@ -721,7 +789,7 @@ function uploadSubcategoryImage(subId, input) {
                 showToast(data.error || 'Upload failed', 'error');
             }
         })
-        .catch(() => showToast('Upload failed', 'error'));
+        .catch(err => showToast('Upload failed: ' + err.message, 'error'));
 }
 </script>
 </body>

@@ -7,11 +7,57 @@ session_start();
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 
-if (!isAdmin()) { header('Location: ../../index.php'); exit(); }
+$is_ajax_request =
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    (
+        isset($_POST['ajax']) ||
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+    );
+
+if (!isAdmin()) {
+    if ($is_ajax_request) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Session expired or unauthorized. Please refresh and log in again.'
+        ]);
+        exit();
+    }
+    header('Location: ../../index.php');
+    exit();
+}
+
+if ($is_ajax_request) {
+    // Convert notices/warnings during AJAX into JSON-safe errors.
+    set_error_handler(function ($severity, $message, $file, $line) {
+        if (error_reporting() & $severity) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        }
+    });
+
+    set_exception_handler(function ($e) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server Error: ' . $e->getMessage()
+        ]);
+        exit();
+    });
+
+    ob_start();
+    header('Content-Type: application/json; charset=utf-8');
+}
 
 // ─── AJAX handlers ───────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_brand') {
@@ -173,27 +219,36 @@ th{background:var(--bg-light);font-weight:700;font-size:.85rem;text-transform:up
 <script>
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast toast-'+type+' show';setTimeout(()=>t.classList.remove('show'),4000);}
 
+async function postJson(fd){
+    const r=await fetch(window.location.pathname,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const raw=await r.text();
+    const sanitized=raw.replace(/^\uFEFF/,'').trim();
+    try{return JSON.parse(sanitized);}catch(e){
+        const textOnly=sanitized.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+        throw new Error(textOnly?textOnly.slice(0,200):`HTTP ${r.status}`);
+    }
+}
+
 document.getElementById('addBrandForm').addEventListener('submit',async function(e){
     e.preventDefault();
     const fd=new FormData(this);
     fd.append('action','add_brand');
+    fd.append('ajax','1');
     try{
-        const r=await fetch('manage_brands.php',{method:'POST',body:fd});
-        const d=await r.json();
+        const d=await postJson(fd);
         if(d.success){showToast('Brand added!');setTimeout(()=>location.reload(),800);}
         else showToast(d.error||'Error','error');
-    }catch(err){showToast('Network error','error');}
+    }catch(err){showToast('Network error: '+err.message,'error');}
 });
 
 async function deleteBrand(id,btn){
     if(!confirm('Delete this brand?'))return;
-    const fd=new FormData();fd.append('action','delete_brand');fd.append('id',id);
+    const fd=new FormData();fd.append('action','delete_brand');fd.append('id',id);fd.append('ajax','1');
     try{
-        const r=await fetch('manage_brands.php',{method:'POST',body:fd});
-        const d=await r.json();
+        const d=await postJson(fd);
         if(d.success){btn.closest('tr').style.opacity='0';setTimeout(()=>btn.closest('tr').remove(),400);showToast('Brand deleted!');}
         else showToast(d.error||'Error','error');
-    }catch(err){showToast('Network error','error');}
+    }catch(err){showToast('Network error: '+err.message,'error');}
 }
 </script>
 </body>
