@@ -1666,7 +1666,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
         function printInvoice(orderId) {
             const orderTypeEl = document.getElementById('order-type-' + orderId);
             const invoiceType = orderTypeEl.value;
-            const url = `print_invoice.php?order_id=${orderId}&invoice_type=${invoiceType}`;
+            const url = `/pages/admin/print_invoice.php?order_id=${orderId}&invoice_type=${invoiceType}`;
             window.open(url, '_blank');
         }
         
