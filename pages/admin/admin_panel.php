@@ -13,12 +13,46 @@ require_once __DIR__ . '/../../includes/product_manager.php';
 
 // Check if user is admin
 if (!isAdmin()) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Session expired or unauthorized. Please refresh and log in again.'
+        ]);
+        exit();
+    }
     header('Location: ../../index.php');
     exit();
 }
 
+// Global Exception/Error Handler for AJAX
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    set_error_handler(function($severity, $message, $file, $line) {
+        if (error_reporting() & $severity) {
+            throw new ErrorException($message, 0, $severity, $file, $line);
+        }
+    });
+
+    set_exception_handler(function($e) {
+        // Clear anything that might have been output before the exception
+        while (ob_get_level()) { if (ob_get_length() !== false) ob_end_clean(); }
+        
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+        }
+        echo json_encode([
+            'success' => false,
+            'error' => 'Server Error: ' . $e->getMessage()
+        ]);
+        exit();
+    });
+}
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    ob_start();
     header('Content-Type: application/json');
     
     $action = $_POST['action'] ?? '';
@@ -28,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $new_status = $_POST['status'] ?? '';
         
         $result = updateOrderStatus($order_id, $new_status);
+        if (ob_get_length() !== false) ob_end_clean();
         echo json_encode($result);
         exit();
     }
