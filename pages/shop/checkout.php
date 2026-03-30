@@ -649,6 +649,7 @@ function getAllOrders($limit = 50, $offset = 0, $status_filter = null) {
     
     // Build SQL query
     $sql = "SELECT o.id, o.user_id, o.total_amount, o.status, o.order_type, o.order_date as created_at,
+                   o.shipping_address, o.phone, o.city, o.notes, o.guest_name, o.guest_email, o.is_guest,
                    u.firstname, u.lastname, u.email, u.phonenumber
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id";
@@ -674,6 +675,17 @@ function getAllOrders($limit = 50, $offset = 0, $status_filter = null) {
     while ($row = $result->fetch_assoc()) {
         $row['total_amount_formatted'] = formatJOD($row['total_amount']);
         $row['order_id'] = $row['id'];
+
+        // Prefer order-level contact/shipping details so admin sees exact checkout data.
+        $full_name = trim(((string)($row['firstname'] ?? '')) . ' ' . ((string)($row['lastname'] ?? '')));
+        $guest_name = trim((string)($row['guest_name'] ?? ''));
+        $guest_email = trim((string)($row['guest_email'] ?? ''));
+        $order_phone = trim((string)($row['phone'] ?? ''));
+        $profile_phone = trim((string)($row['phonenumber'] ?? ''));
+
+        $row['customer_name'] = $guest_name !== '' ? $guest_name : ($full_name !== '' ? $full_name : 'Guest Customer');
+        $row['customer_email'] = $guest_email !== '' ? $guest_email : (string)($row['email'] ?? '');
+        $row['customer_phone'] = $order_phone !== '' ? $order_phone : $profile_phone;
         
         // Get order items for this order with product details
         $items_sql = "SELECT oi.product_id, oi.product_name_en, oi.product_name_ar, 
@@ -699,7 +711,6 @@ function getAllOrders($limit = 50, $offset = 0, $status_filter = null) {
         
         $row['items'] = $order_items;
         $row['items_count'] = $total_items_count;
-        $row['customer_name'] = trim($row['firstname'] . ' ' . $row['lastname']);
         
         $orders[] = $row;
     }

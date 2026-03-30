@@ -32,7 +32,8 @@ if (!$order_id) {
 
 // Fetch order details
 $sql = "SELECT o.id, o.user_id, o.total_amount, o.status, 
-               o.order_date,
+         o.order_date, o.shipping_address, o.phone, o.city, o.notes,
+         o.guest_name, o.guest_email, o.is_guest,
                u.firstname, u.lastname, u.email, u.phonenumber
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
@@ -49,6 +50,27 @@ if ($result->num_rows === 0) {
 
 $order = $result->fetch_assoc();
 $stmt->close();
+
+$customer_name = trim((string)($order['guest_name'] ?? ''));
+if ($customer_name === '') {
+    $customer_name = trim(((string)($order['firstname'] ?? '')) . ' ' . ((string)($order['lastname'] ?? '')));
+}
+if ($customer_name === '') {
+    $customer_name = 'Guest Customer';
+}
+
+$customer_email = trim((string)($order['guest_email'] ?? ''));
+if ($customer_email === '') {
+    $customer_email = trim((string)($order['email'] ?? ''));
+}
+
+$customer_phone = trim((string)($order['phone'] ?? ''));
+if ($customer_phone === '') {
+    $customer_phone = trim((string)($order['phonenumber'] ?? ''));
+}
+
+$shipping_address = trim((string)($order['shipping_address'] ?? ''));
+$shipping_city = trim((string)($order['city'] ?? ''));
 
 // Fetch order items with product ID as SKU and pricing info
 $items_sql = "SELECT oi.product_id, oi.product_name_en, oi.product_name_ar, 
@@ -432,19 +454,37 @@ $company = [
             
             <div class="details-box">
                 <h3>Ship To</h3>
-                <p><strong><?php echo htmlspecialchars($order['firstname'] . ' ' . $order['lastname']); ?></strong></p>
-                <p><?php echo htmlspecialchars($order['email']); ?></p>
-                <p><?php echo htmlspecialchars($order['phonenumber']); ?></p>
+                <p><strong><?php echo htmlspecialchars($customer_name); ?></strong></p>
+                <?php if ($customer_email !== ''): ?>
+                    <p><?php echo htmlspecialchars($customer_email); ?></p>
+                <?php endif; ?>
+                <?php if ($customer_phone !== ''): ?>
+                    <p><?php echo htmlspecialchars($customer_phone); ?></p>
+                <?php endif; ?>
+                <?php if ($shipping_city !== ''): ?>
+                    <p><?php echo htmlspecialchars($shipping_city); ?></p>
+                <?php endif; ?>
+                <?php if ($shipping_address !== ''): ?>
+                    <p><?php echo nl2br(htmlspecialchars($shipping_address)); ?></p>
+                <?php endif; ?>
                 <p>Customer ID: <?php echo $order['user_id']; ?></p>
             </div>
             
             <div class="details-box">
                 <h3>Bill To</h3>
-                <p><strong><?php echo htmlspecialchars($order['firstname'] . ' ' . $order['lastname']); ?></strong></p>
-                <p><?php echo htmlspecialchars($order['email']); ?></p>
-                <p><?php echo htmlspecialchars($order['phonenumber']); ?></p>
-                <p><?php echo $company['city']; ?></p>
-                <p><?php echo $company['country']; ?></p>
+                <p><strong><?php echo htmlspecialchars($customer_name); ?></strong></p>
+                <?php if ($customer_email !== ''): ?>
+                    <p><?php echo htmlspecialchars($customer_email); ?></p>
+                <?php endif; ?>
+                <?php if ($customer_phone !== ''): ?>
+                    <p><?php echo htmlspecialchars($customer_phone); ?></p>
+                <?php endif; ?>
+                <?php if ($shipping_city !== ''): ?>
+                    <p><?php echo htmlspecialchars($shipping_city); ?></p>
+                <?php endif; ?>
+                <?php if ($shipping_address !== ''): ?>
+                    <p><?php echo nl2br(htmlspecialchars($shipping_address)); ?></p>
+                <?php endif; ?>
             </div>
         </div>
         

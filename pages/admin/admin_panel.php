@@ -1278,9 +1278,17 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                                     <td><strong>#<?= $order['order_id'] ?></strong></td>
                                     <td>
                                         <div><?= htmlspecialchars($order['customer_name']) ?></div>
-                                        <div class="customer-info"><?= htmlspecialchars($order['email']) ?></div>
-                                        <?php if ($order['phonenumber']): ?>
-                                            <div class="customer-info">📞 <?= htmlspecialchars($order['phonenumber']) ?></div>
+                                        <?php if (!empty($order['customer_email'])): ?>
+                                            <div class="customer-info"><?= htmlspecialchars($order['customer_email']) ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($order['customer_phone'])): ?>
+                                            <div class="customer-info">📞 <?= htmlspecialchars($order['customer_phone']) ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($order['city'])): ?>
+                                            <div class="customer-info">🏙️ <?= htmlspecialchars($order['city']) ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($order['shipping_address'])): ?>
+                                            <div class="customer-info">📍 <?= nl2br(htmlspecialchars($order['shipping_address'])) ?></div>
                                         <?php endif; ?>
                                     </td>
                                     <td><?= date('M j, Y', strtotime($order['created_at'])) ?></td>
