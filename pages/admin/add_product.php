@@ -9,6 +9,22 @@ require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/slug_helper.php';
 
+function trigger_feed_csv_regeneration(): void {
+    $generator = realpath(__DIR__ . '/../../generate_feed_csv.php');
+    if ($generator === false || !is_file($generator)) {
+        return;
+    }
+
+    $disabled = array_map('trim', explode(',', (string)ini_get('disable_functions')));
+    if (!function_exists('exec') || in_array('exec', $disabled, true)) {
+        return;
+    }
+
+    $php_binary = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
+    $cmd = escapeshellarg($php_binary) . ' ' . escapeshellarg($generator) . ' > /tmp/feed_csv_autogen.log 2>&1 &';
+    @exec($cmd);
+}
+
 $is_ajax_request =
     $_SERVER['REQUEST_METHOD'] === 'POST' &&
     (
@@ -120,16 +136,30 @@ if ($is_ajax_request) {
         $files = $_FILES['product_images'];
         for ($i = 0; $i < count($files['name']); $i++) {
             if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
-            $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array($files['type'][$i], $allowed)) continue;
+            $allowed_mime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            $allowed_ext  = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+            $detected_mime = '';
+            if (!empty($files['tmp_name'][$i]) && function_exists('mime_content_type')) {
+                $detected_mime = (string)mime_content_type($files['tmp_name'][$i]);
+            }
+
+            $client_mime = strtolower((string)($files['type'][$i] ?? ''));
+            $orig_ext = strtolower((string)pathinfo((string)$files['name'][$i], PATHINFO_EXTENSION));
+            if ($orig_ext === 'jpeg') {
+                $orig_ext = 'jpg';
+            }
+
+            if (!in_array($orig_ext, $allowed_ext, true)) continue;
+            if (!in_array($client_mime, $allowed_mime, true) && !in_array(strtolower($detected_mime), $allowed_mime, true)) continue;
 
             $num = $i + 1;
-            $dest = $folder_path . $num . '.png';
+            $dest = $folder_path . $num . '.' . $orig_ext;
             if (!move_uploaded_file($files['tmp_name'][$i], $dest)) {
                 continue;
             }
 
-            $relative_path = 'images/' . $folder_name . '/' . $num . '.png';
+            $relative_path = 'images/' . $folder_name . '/' . $num . '.' . $orig_ext;
             $uploaded_image_paths[] = $relative_path;
 
             if ($num === 1) {
@@ -201,6 +231,9 @@ if ($is_ajax_request) {
                 }
             }
         }
+
+        // Regenerate CSV feed asynchronously so new products appear automatically.
+        trigger_feed_csv_regeneration();
 
         while (ob_get_level() > 0) ob_end_clean();
         echo json_encode([
