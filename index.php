@@ -139,6 +139,41 @@ foreach (['skin' => 1, 'lipbalm' => 2, 'dental' => 3, 'hair' => 4, 'body' => 5, 
     }
 }
 
+// If Lip balm doesn't exist as a standalone category, use the lip-related subcategory as a homepage slot.
+if (empty($home_category_slots['lipbalm']['category'])) {
+    $lip_subcategory = null;
+    $lip_parent_category = null;
+
+    foreach ($all_categories as $cat) {
+        foreach (($cat['subcategories'] ?? []) as $sub) {
+            $sub_name_en = strtolower(trim((string)($sub['name_en'] ?? '')));
+            $sub_normalized = preg_replace('/[^a-z0-9]+/', '', $sub_name_en);
+            foreach ($home_category_slots['lipbalm']['keywords'] as $keyword) {
+                if (str_contains($sub_normalized, $keyword)) {
+                    $lip_subcategory = $sub;
+                    $lip_parent_category = $cat;
+                    break 3;
+                }
+            }
+        }
+    }
+
+    if (!empty($lip_subcategory) && !empty($lip_parent_category)) {
+        $home_category_slots['lipbalm']['category'] = [
+            'id' => (int)$lip_subcategory['id'],
+            'name_en' => $lip_subcategory['name_en'] ?? 'Lip balm',
+            'name_ar' => $lip_subcategory['name_ar'] ?? '',
+            'icon' => $lip_subcategory['icon'] ?? '',
+            'image_url' => !empty($lip_subcategory['image_url'])
+                ? $lip_subcategory['image_url']
+                : ($lip_parent_category['image_url'] ?? ''),
+            'subcategories' => [$lip_subcategory],
+            'is_subcategory_home_slot' => true,
+            'parent_category_id' => (int)$lip_parent_category['id'],
+        ];
+    }
+}
+
 foreach (['skin', 'hair', 'makeup', 'lipbalm', 'dental', 'body'] as $slot_key) {
     if (!empty($home_category_slots[$slot_key]['category'])) {
         $homepage_categories[] = $home_category_slots[$slot_key]['category'];
@@ -154,7 +189,12 @@ if ($active_category === 0 && $active_category_keyword !== '') {
 
         foreach ($home_category_slots[$slot_key]['keywords'] as $keyword) {
             if (str_contains($active_category_keyword, $keyword)) {
-                $active_category = (int)$home_category_slots[$slot_key]['category']['id'];
+                if (!empty($home_category_slots[$slot_key]['category']['is_subcategory_home_slot'])) {
+                    $active_subcategory = (int)$home_category_slots[$slot_key]['category']['id'];
+                    $active_category = (int)($home_category_slots[$slot_key]['category']['parent_category_id'] ?? 0);
+                } else {
+                    $active_category = (int)$home_category_slots[$slot_key]['category']['id'];
+                }
                 break 2;
             }
         }
@@ -232,6 +272,9 @@ $category_recommended = [];
 if (!$is_filtered_mode) {
     foreach ($homepage_categories as $cat) {
         $cat_id = (int)$cat['id'];
+        $is_home_subcategory = !empty($cat['is_subcategory_home_slot']);
+        $where_filter_sql = $is_home_subcategory ? 'p.subcategory_id = ?' : 's.category_id = ?';
+        $fill_where_sql = $is_home_subcategory ? "p.subcategory_id = $cat_id" : "s.category_id = $cat_id";
         try {
             // Get recommended products first (is_recommended=1) for this category
             $rec_sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
@@ -245,7 +288,7 @@ if (!$is_filtered_mode) {
                         LEFT JOIN subcategories s ON p.subcategory_id = s.id
                         LEFT JOIN categories c ON s.category_id = c.id
                         LEFT JOIN brands b ON p.brand_id = b.id
-                        WHERE s.category_id = ? AND p.is_recommended = 1
+                        WHERE $where_filter_sql AND p.is_recommended = 1
                         ORDER BY p.is_best_seller DESC, p.id DESC
                         LIMIT 4";
             $rec_stmt = $conn->prepare($rec_sql);
@@ -275,7 +318,7 @@ if (!$is_filtered_mode) {
                              LEFT JOIN subcategories s ON p.subcategory_id = s.id
                              LEFT JOIN categories c ON s.category_id = c.id
                              LEFT JOIN brands b ON p.brand_id = b.id
-                             WHERE s.category_id = $cat_id AND p.id NOT IN ($exclude)
+                             WHERE $fill_where_sql AND p.id NOT IN ($exclude)
                              ORDER BY p.is_best_seller DESC, p.id DESC
                              LIMIT $remaining";
                 $fill_result = $conn->query($fill_sql);
@@ -288,7 +331,9 @@ if (!$is_filtered_mode) {
             }
 
             // Count total products in this category
-            $count_sql = "SELECT COUNT(*) as cnt FROM products p JOIN subcategories s ON p.subcategory_id = s.id WHERE s.category_id = ?";
+            $count_sql = $is_home_subcategory
+                ? "SELECT COUNT(*) as cnt FROM products p WHERE p.subcategory_id = ?"
+                : "SELECT COUNT(*) as cnt FROM products p JOIN subcategories s ON p.subcategory_id = s.id WHERE s.category_id = ?";
             $count_stmt = $conn->prepare($count_sql);
             $count_stmt->bind_param('i', $cat_id);
             $count_stmt->execute();
@@ -1896,7 +1941,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <section style="max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 0.5rem;">
         <div style="display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap;">
             <?php foreach ($homepage_categories as $cat): ?>
-            <a href="pages/shop/category.php?id=<?= (int)$cat['id'] ?>" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <?php
+                $cat_target_id = !empty($cat['is_subcategory_home_slot']) ? (int)($cat['parent_category_id'] ?? 0) : (int)$cat['id'];
+                $cat_sub_filter = !empty($cat['is_subcategory_home_slot']) ? '&subcategory=' . (int)$cat['id'] : '';
+            ?>
+            <a href="pages/shop/category.php?id=<?= $cat_target_id ?><?= $cat_sub_filter ?>" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="width: 80px; height: 80px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--rose)); margin: 0 auto;">
                     <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark);">
                         <?php
@@ -1967,7 +2016,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                             onchange="applySearchFilter()">
                         <option value="0"><?= $lang === 'ar' ? '📂 كل الفئات' : '📂 All Categories' ?></option>
                         <?php foreach ($homepage_categories as $cat): ?>
-                            <option value="<?= (int)$cat['id'] ?>" <?= $active_category === (int)$cat['id'] ? 'selected' : '' ?>>
+                            <?php
+                                $is_sub_option = !empty($cat['is_subcategory_home_slot']);
+                                $is_selected = $is_sub_option
+                                    ? ($active_subcategory === (int)$cat['id'])
+                                    : ($active_category === (int)$cat['id']);
+                            ?>
+                            <option value="<?= (int)$cat['id'] ?>" data-is-sub="<?= $is_sub_option ? '1' : '0' ?>" <?= $is_selected ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($lang === 'ar' && !empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -1984,8 +2039,17 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <?php if (!$is_search_mode && !$is_tag_mode && !$is_brand_mode && !empty($homepage_categories)): ?>
             <div class="category-chips">
                 <?php foreach ($homepage_categories as $cat): ?>
-                    <a href="index.php?category=<?= (int)$cat['id'] ?>#products"
-                       class="cat-chip <?= ($active_category === (int)$cat['id'] && $active_subcategory === 0) ? 'active' : '' ?>">
+                    <?php
+                        $chip_is_sub = !empty($cat['is_subcategory_home_slot']);
+                        $chip_href = $chip_is_sub
+                            ? 'index.php?subcategory=' . (int)$cat['id'] . '#products'
+                            : 'index.php?category=' . (int)$cat['id'] . '#products';
+                        $chip_active = $chip_is_sub
+                            ? ($active_subcategory === (int)$cat['id'])
+                            : ($active_category === (int)$cat['id'] && $active_subcategory === 0);
+                    ?>
+                    <a href="<?= $chip_href ?>"
+                       class="cat-chip <?= $chip_active ? 'active' : '' ?>">
                         <?php if (!empty($cat['icon'])): ?>
                             <i class="<?= htmlspecialchars($cat['icon']) ?>"></i>
                         <?php else: ?>
@@ -2093,6 +2157,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             $sec_total = $section['total_count'];
             $sec_cat_name = $lang === 'ar' && !empty($sec_cat['name_ar']) ? $sec_cat['name_ar'] : $sec_cat['name_en'];
             $sec_cat_lower = strtolower(trim($sec_cat['name_en'] ?? ''));
+            $sec_target_category_id = !empty($sec_cat['is_subcategory_home_slot']) ? (int)($sec_cat['parent_category_id'] ?? 0) : (int)$sec_cat['id'];
+            $sec_sub_filter = !empty($sec_cat['is_subcategory_home_slot']) ? '&subcategory=' . (int)$sec_cat['id'] : '';
             $sec_icon = 'fas fa-star';
             if (str_contains($sec_cat_lower, 'skin')) $sec_icon = 'fas fa-spa';
             elseif (str_contains($sec_cat_lower, 'hair')) $sec_icon = 'fas fa-wind';
@@ -2127,7 +2193,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                     <i class="<?= $sec_icon ?>" style="color: var(--accent);"></i>
                     <?= $lang === 'ar' ? 'مختارات ' . htmlspecialchars($sec_cat_name) : htmlspecialchars($sec_cat_name) . ' Picks' ?>
                 </h2>
-                <a href="pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>" class="view-all-link">
+                <a href="pages/shop/category.php?id=<?= $sec_target_category_id ?><?= $sec_sub_filter ?>" class="view-all-link">
                     <?= $lang === 'ar' ? 'عرض الكل' : 'View All' ?> (<?= $sec_total ?>)
                     <i class="fas fa-arrow-<?= $lang === 'ar' ? 'left' : 'right' ?>"></i>
                 </a>
@@ -2145,7 +2211,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php endif; ?>
 
                 <div class="category-explore-links">
-                    <a href="pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&sort=newest" class="cat-explore-link new-arrivals">
+                    <a href="pages/shop/category.php?id=<?= $sec_target_category_id ?><?= $sec_sub_filter ?>&sort=newest" class="cat-explore-link new-arrivals">
                         <i class="fas fa-sparkles"></i> 
                         <?= $lang === 'ar' ? 'تسوق أحدث المنتجات' : 'Shop ' . htmlspecialchars($sec_cat['name_en']) . ' New Arrivals' ?>
                     </a>
@@ -2157,7 +2223,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <?= $lang === 'ar' ? 'تسوق حسب الفئة:' : 'Shop by Category:' ?>
                     </span>
                     <?php foreach ($sec_cat['subcategories'] as $sub): ?>
-                        <a href="/pages/shop/category.php?id=<?= (int)$sec_cat['id'] ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
+                        <a href="/pages/shop/category.php?id=<?= $sec_target_category_id ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
                             <div class="chip-icon">
                                 <?php if (!empty($sub['image_url'])): ?>
                                     <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
