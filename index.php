@@ -2226,7 +2226,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <a href="/pages/shop/category.php?id=<?= $sec_target_category_id ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
                             <div class="chip-icon">
                                 <?php if (!empty($sub['image_url'])): ?>
-                                    <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                    <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                                 <?php else: ?>
                                     <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
                                 <?php endif; ?>
@@ -2587,7 +2587,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             focused = -1;
             box.innerHTML = items.map((it, i) => {
                 const imgHtml = it.image
-                    ? `<img class="sugg-img" src="${escHtml(it.image)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                    ? `<img class="sugg-img" src="${escHtml(it.image)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
                       + `<div class="sugg-img-placeholder" style="display:none"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`
                     : `<div class="sugg-img-placeholder"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`;
                 const meta = [it.brand, it.category].filter(Boolean).join(' · ');
@@ -2685,79 +2685,82 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     // ==========================================
     // Hero Banner Slider (horizontal slide) - FIXED
     // ==========================================
-    (function() {
-        const track = document.getElementById('heroBannerTrack');
-        const slides = document.querySelectorAll('.hero-banner-slide');
-        const dots = document.querySelectorAll('.hero-banner-dot');
-        const pauseIcon = document.getElementById('heroPauseIcon');
-        const slideCount = slides.length;
-        let current = 0;
-        let autoInterval = null;
-        let isPaused = false;
-
-        if (!track || slideCount <= 1) return;
-
-        function goTo(index) {
-            if (index < 0) index = slideCount - 1;
-            if (index >= slideCount) index = 0;
-            current = index;
-            // Each slide is 100% of viewport width, move by 100% per slide
-            track.style.transform = 'translateX(-' + (current * 100) + '%)';
-            dots.forEach((d, i) => d.classList.toggle('active', i === current));
-        }
-
-        function next() { goTo(current + 1); }
-        function prev() { goTo(current - 1); }
-
-        function startAuto() {
-            stopAuto();
-            autoInterval = setInterval(next, 5000);
-        }
-
-        function stopAuto() {
-            if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            if (isPaused) {
-                stopAuto();
-                if (pauseIcon) { pauseIcon.className = 'fas fa-play'; }
-            } else {
-                startAuto();
-                if (pauseIcon) { pauseIcon.className = 'fas fa-pause'; }
+    document.addEventListener("DOMContentLoaded", function() {
+        // Defer execution to avoid blocking initial render
+        setTimeout(function() {
+            const track = document.getElementById('heroBannerTrack');
+            const slides = document.querySelectorAll('.hero-banner-slide');
+            const dots = document.querySelectorAll('.hero-banner-dot');
+            const pauseIcon = document.getElementById('heroPauseIcon');
+            const slideCount = slides.length;
+            let current = 0;
+            let autoInterval = null;
+            let isPaused = false;
+    
+            if (!track || slideCount <= 1) return;
+    
+            function goTo(index) {
+                if (index < 0) index = slideCount - 1;
+                if (index >= slideCount) index = 0;
+                current = index;
+                // Each slide is 100% of viewport width, move by 100% per slide
+                track.style.transform = 'translateX(-' + (current * 100) + '%)';
+                dots.forEach((d, i) => d.classList.toggle('active', i === current));
             }
-        }
-
-        // Touch / swipe support
-        let touchStartX = 0;
-        const banner = document.getElementById('heroBanner');
-
-        if (banner) {
-            banner.addEventListener('touchstart', e => {
-                touchStartX = e.changedTouches[0].screenX;
+    
+            function next() { goTo(current + 1); }
+            function prev() { goTo(current - 1); }
+    
+            function startAuto() {
                 stopAuto();
-            }, { passive: true });
-
-            banner.addEventListener('touchend', e => {
-                const diff = touchStartX - e.changedTouches[0].screenX;
-                const isRtl = document.documentElement.dir === 'rtl';
-                if (Math.abs(diff) > 50) {
-                    if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) { next(); } else { prev(); }
+                autoInterval = setInterval(next, 5000);
+            }
+    
+            function stopAuto() {
+                if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+            }
+    
+            function togglePause() {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    stopAuto();
+                    if (pauseIcon) { pauseIcon.className = 'fas fa-play'; }
+                } else {
+                    startAuto();
+                    if (pauseIcon) { pauseIcon.className = 'fas fa-pause'; }
                 }
-                if (!isPaused) startAuto();
-            }, { passive: true });
-        }
-
-        // Expose to global for inline onclick handlers
-        window.heroGoTo = function(i) { goTo(i); if (!isPaused) startAuto(); };
-        window.heroNext = function() { next(); if (!isPaused) startAuto(); };
-        window.heroPrev = function() { prev(); if (!isPaused) startAuto(); };
-        window.heroTogglePause = togglePause;
-
-        // Start auto-slide
-        startAuto();
-    })();
+            }
+    
+            // Touch / swipe support
+            let touchStartX = 0;
+            const banner = document.getElementById('heroBanner');
+    
+            if (banner) {
+                banner.addEventListener('touchstart', e => {
+                    touchStartX = e.changedTouches[0].screenX;
+                    stopAuto();
+                }, { passive: true });
+    
+                banner.addEventListener('touchend', e => {
+                    const diff = touchStartX - e.changedTouches[0].screenX;
+                    const isRtl = document.documentElement.dir === 'rtl';
+                    if (Math.abs(diff) > 50) {
+                        if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) { next(); } else { prev(); }
+                    }
+                    if (!isPaused) startAuto();
+                }, { passive: true });
+            }
+    
+            // Expose to global for inline onclick handlers
+            window.heroGoTo = function(i) { goTo(i); if (!isPaused) startAuto(); };
+            window.heroNext = function() { next(); if (!isPaused) startAuto(); };
+            window.heroPrev = function() { prev(); if (!isPaused) startAuto(); };
+            window.heroTogglePause = togglePause;
+    
+            // Start auto-slide
+            startAuto();
+        }, 100); // Small delay to let main thread breathe
+    });
     // ==========================================
     // Intersection Observer for Scroll Animations
     // ==========================================
