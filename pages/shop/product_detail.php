@@ -1418,8 +1418,9 @@ if ($is_logged_in) {
                         if (!empty($gallery_images)) {
                             foreach ($gallery_images as $index => $image_path) {
                                 $activeClass = $index === 0 ? ' active' : '';
+                                $loadingAttr = $index === 0 ? "loading='eager' fetchpriority='high' decoding='sync'" : "loading='lazy' fetchpriority='low' decoding='async'";
                                 echo "<div class='carousel-slide$activeClass' style='background: #f5f5f5; display: flex; align-items: center; justify-content: center;'>";
-                                echo "<img src='" . htmlspecialchars($image_path) . $cache_bust . "' alt='" . htmlspecialchars($product['name_en']) . "' style='max-width: 100%; max-height: 100%; object-fit: contain; padding: 20px;' loading='lazy' onerror=\"this.onerror=null; this.src='" . $base_url . "/images/placeholder-cosmetics.svg';\">";
+                                echo "<img src='" . htmlspecialchars($image_path) . $cache_bust . "' alt='" . htmlspecialchars($product['name_en']) . "' style='max-width: 100%; max-height: 100%; object-fit: contain; padding: 20px;' " . $loadingAttr . " onerror=\"this.onerror=null; this.src='" . $base_url . "/images/placeholder-cosmetics.svg';\">";
                                 echo "</div>";
                             }
                         } else {
