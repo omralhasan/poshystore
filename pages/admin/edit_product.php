@@ -103,6 +103,82 @@ function syncProductImagesTable(mysqli $conn, int $productId, string $productNam
     $img_stmt->close();
 }
 
+function build_image_abs_path(string $relativePath): ?string
+{
+    $siteRoot = realpath(__DIR__ . '/../../');
+    if ($siteRoot === false) {
+        return null;
+    }
+
+    $normalized = ltrim(str_replace('\\', '/', $relativePath), '/');
+    if ($normalized === '' || str_contains($normalized, '..')) {
+        return null;
+    }
+
+    $full = str_replace('\\', '/', $siteRoot . '/' . $normalized);
+    $imagesPrefix = str_replace('\\', '/', rtrim($siteRoot, '/') . '/images/');
+
+    if (!str_starts_with($full, $imagesPrefix)) {
+        return null;
+    }
+
+    return $full;
+}
+
+function try_prepare_path_writable(string $path): void
+{
+    $dir = is_dir($path) ? $path : dirname($path);
+    if (is_dir($dir)) {
+        @chmod($dir, 0775);
+    }
+    if (is_file($path)) {
+        @chmod($path, 0664);
+    }
+}
+
+function safe_unlink_file(string $path, ?string &$error = null): bool
+{
+    if (!file_exists($path)) {
+        return true;
+    }
+
+    try_prepare_path_writable($path);
+    if (@unlink($path)) {
+        return true;
+    }
+
+    $perms = @fileperms($path);
+    $permStr = ($perms !== false) ? substr(sprintf('%o', $perms), -4) : 'unknown';
+    $error = 'Permission denied while deleting image file. Please set /images ownership to the web server user and permissions to dirs=775, files=664. File: ' . $path . ' perms=' . $permStr;
+    return false;
+}
+
+function safe_rename_file(string $from, string $to, ?string &$error = null): bool
+{
+    try_prepare_path_writable($from);
+    try_prepare_path_writable(dirname($to));
+
+    if (@rename($from, $to)) {
+        @chmod($to, 0664);
+        return true;
+    }
+
+    $error = 'Permission denied while renaming image file. Please set /images ownership to the web server user and permissions to dirs=775, files=664. From: ' . $from . ' To: ' . $to;
+    return false;
+}
+
+function normalize_image_ext(string $filename, string $default = 'png'): string
+{
+    $ext = strtolower((string)pathinfo($filename, PATHINFO_EXTENSION));
+    if ($ext === 'jpeg') {
+        $ext = 'jpg';
+    }
+    if (!in_array($ext, ['jpg', 'png', 'gif', 'webp'], true)) {
+        return $default;
+    }
+    return $ext;
+}
+
 // ─── AJAX handler ─────────────────────────────────────────────────────────────
 if ($is_ajax_request) {
     if (!headers_sent()) {
@@ -152,25 +228,44 @@ if ($is_ajax_request) {
         if (!$prow) { echo json_encode(['success' => false, 'error' => 'Product not found']); exit(); }
 
         $img_base = __DIR__ . '/../../images/' . $prow['name_en'] . '/';
-        $full_path = __DIR__ . '/../../' . $img_file;
-        if (file_exists($full_path)) {
-            unlink($full_path);
+        $full_path = build_image_abs_path($img_file);
+        if ($full_path === null) {
+            echo json_encode(['success' => false, 'error' => 'Invalid image path']);
+            exit();
         }
+
+        if (file_exists($full_path)) {
+            $fs_error = null;
+            if (!safe_unlink_file($full_path, $fs_error)) {
+                echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not delete image file']);
+                exit();
+            }
+        }
+
         // Renumber remaining images sequentially
         if (is_dir($img_base)) {
+            @chmod($img_base, 0775);
             $remaining = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
             sort($remaining);
             // Remove and re-add with correct numbers
             $temp_names = [];
             foreach ($remaining as $idx => $f) {
                 $tmp = $img_base . 'tmp_rename_' . $idx . '_' . basename($f);
-                rename($f, $tmp);
+                $fs_error = null;
+                if (!safe_rename_file($f, $tmp, $fs_error)) {
+                    echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not renumber images']);
+                    exit();
+                }
                 $temp_names[] = $tmp;
             }
             foreach ($temp_names as $idx => $tmp) {
                 $ext = pathinfo($tmp, PATHINFO_EXTENSION);
                 $new_name = $img_base . ($idx + 1) . '.' . $ext;
-                rename($tmp, $new_name);
+                $fs_error = null;
+                if (!safe_rename_file($tmp, $new_name, $fs_error)) {
+                    echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not finalize image numbering']);
+                    exit();
+                }
             }
             // Update image_link to first image if it exists
             $new_files = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
@@ -207,15 +302,29 @@ if ($is_ajax_request) {
         if (!in_array($_FILES['new_image']['type'], $allowed_img)) {
             echo json_encode(['success' => false, 'error' => 'Invalid image type']); exit();
         }
-        $full_path = __DIR__ . '/../../' . $img_file;
+        $full_path = build_image_abs_path($img_file);
+        if ($full_path === null) {
+            echo json_encode(['success' => false, 'error' => 'Invalid image path']); exit();
+        }
         // Get the number from the old filename and keep the same path
         $dir = dirname($full_path) . '/';
         $old_base = pathinfo($full_path, PATHINFO_FILENAME);
-        $new_ext = pathinfo($_FILES['new_image']['name'], PATHINFO_EXTENSION) ?: 'png';
+        $new_ext = normalize_image_ext((string)$_FILES['new_image']['name'], 'png');
         // Remove old file (may have different extension)
-        foreach (glob($dir . $old_base . '.*') as $old_f) { unlink($old_f); }
+        foreach (glob($dir . $old_base . '.*') as $old_f) {
+            $fs_error = null;
+            if (!safe_unlink_file($old_f, $fs_error)) {
+                echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not replace old image']);
+                exit();
+            }
+        }
         $new_path = $dir . $old_base . '.' . strtolower($new_ext);
-        move_uploaded_file($_FILES['new_image']['tmp_name'], $new_path);
+        @chmod($dir, 0775);
+        if (!move_uploaded_file($_FILES['new_image']['tmp_name'], $new_path)) {
+            echo json_encode(['success' => false, 'error' => 'Could not save uploaded image. Check folder write permissions.']);
+            exit();
+        }
+        @chmod($new_path, 0664);
 
         // Get product name to build relative paths
         $pstmt = $conn->prepare('SELECT name_en FROM products WHERE id = ?');
@@ -257,7 +366,11 @@ if ($is_ajax_request) {
         if (!$prow) { echo json_encode(['success' => false, 'error' => 'Product not found']); exit(); }
 
         $img_base = __DIR__ . '/../../images/' . $prow['name_en'] . '/';
-        if (!is_dir($img_base)) mkdir($img_base, 0755, true);
+        if (!is_dir($img_base) && !mkdir($img_base, 0775, true)) {
+            echo json_encode(['success' => false, 'error' => 'Could not create image folder. Check write permissions.']);
+            exit();
+        }
+        @chmod($img_base, 0775);
 
         // Find highest existing number
         $existing = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
@@ -274,15 +387,23 @@ if ($is_ajax_request) {
             if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
             if (!in_array($files['type'][$i], $allowed_img)) continue;
             $max_num++;
-            $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION) ?: 'png';
+            $ext = normalize_image_ext((string)$files['name'][$i], 'png');
             $dest = $img_base . $max_num . '.' . strtolower($ext);
-            move_uploaded_file($files['tmp_name'][$i], $dest);
+            if (!move_uploaded_file($files['tmp_name'][$i], $dest)) {
+                continue;
+            }
+            @chmod($dest, 0664);
             $added++;
             // If this is the first image ever, set image_link
             if (empty($prow['image_link']) && $max_num === 1) {
                 $new_link = 'images/' . $prow['name_en'] . '/1.' . strtolower($ext);
                 $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
             }
+        }
+
+        if ($added === 0) {
+            echo json_encode(['success' => false, 'error' => 'No images were added. Check file types and folder permissions.']);
+            exit();
         }
 
         // Return updated images list
@@ -312,7 +433,11 @@ if ($is_ajax_request) {
         if (!$prow) { echo json_encode(['success' => false, 'error' => 'Product not found']); exit(); }
 
         $img_base = __DIR__ . '/../../images/' . $prow['name_en'] . '/';
-        $target_path = __DIR__ . '/../../' . $img_file;
+        $target_path = build_image_abs_path($img_file);
+        if ($target_path === null) {
+            echo json_encode(['success' => false, 'error' => 'Invalid image path']);
+            exit();
+        }
         $target_num = intval(pathinfo($target_path, PATHINFO_FILENAME));
         $target_ext = pathinfo($target_path, PATHINFO_EXTENSION);
 
@@ -328,11 +453,23 @@ if ($is_ajax_request) {
 
         // Temp rename to avoid collision
         if ($old_main && file_exists($old_main)) {
-            rename($old_main, $img_base . 'tmp_swap_old.' . $old_main_ext);
+            $fs_error = null;
+            if (!safe_rename_file($old_main, $img_base . 'tmp_swap_old.' . $old_main_ext, $fs_error)) {
+                echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not set main image']);
+                exit();
+            }
         }
-        rename($target_path, $img_base . '1.' . $target_ext);
+        $fs_error = null;
+        if (!safe_rename_file($target_path, $img_base . '1.' . $target_ext, $fs_error)) {
+            echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not set main image']);
+            exit();
+        }
         if (file_exists($img_base . 'tmp_swap_old.' . $old_main_ext)) {
-            rename($img_base . 'tmp_swap_old.' . $old_main_ext, $img_base . $target_num . '.' . $old_main_ext);
+            $fs_error = null;
+            if (!safe_rename_file($img_base . 'tmp_swap_old.' . $old_main_ext, $img_base . $target_num . '.' . $old_main_ext, $fs_error)) {
+                echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not finalize main image swap']);
+                exit();
+            }
         }
 
         // Update image_link
