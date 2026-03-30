@@ -67,8 +67,20 @@ if (file_exists($env_backup)) {
 }
 
 // Fix file permissions after pull
-shell_exec("find $web_root -type f -name '*.php' -exec chmod 644 {} \; 2>&1");
-shell_exec("find $web_root -type d -exec chmod 755 {} \; 2>&1");
+// Keep code paths as read-only defaults, but keep images writable for admin edits.
+$web_root_escaped = escapeshellarg($web_root);
+$images_dir = $web_root . '/images';
+$images_dir_escaped = escapeshellarg($images_dir);
+
+shell_exec("find $web_root_escaped -type f -name '*.php' -exec chmod 644 {} \\\; 2>&1");
+shell_exec("find $web_root_escaped -type d ! -path '$images_dir/*' ! -path '$images_dir' -exec chmod 755 {} \\\; 2>&1");
+
+if (is_dir($images_dir)) {
+    shell_exec("find $images_dir_escaped -type d -exec chmod 775 {} \\\; 2>&1");
+    shell_exec("find $images_dir_escaped -type f -exec chmod 664 {} \\\; 2>&1");
+    // Re-apply SELinux default labels if available on this host.
+    shell_exec("restorecon -RF $images_dir_escaped 2>/dev/null");
+}
 
 // ─── Auto-run DB migrations ──────────────────────────────────────────────────
 $db_migration_output = 'skipped';
