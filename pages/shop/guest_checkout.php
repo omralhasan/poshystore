@@ -72,11 +72,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
                     $delivery_fee = ($total_amount >= 35) ? 0 : 2;
                     $total_amount += $delivery_fee;
                     
-                    // Insert guest order
-                    $sql = "INSERT INTO orders (user_id, guest_name, guest_email, total_amount, status, shipping_address, phone, city, notes, order_type, is_guest) 
-                            VALUES (NULL, ?, ?, ?, 'pending', ?, ?, ?, ?, 'customer', 1)";
+                    // Insert guest order with schema-safe optional columns.
+                    $orders_columns = [];
+                    $columns_result = $conn->query("SHOW COLUMNS FROM orders");
+                    if ($columns_result) {
+                        while ($col = $columns_result->fetch_assoc()) {
+                            $orders_columns[$col['Field']] = true;
+                        }
+                    }
+
+                    $order_data = [
+                        'user_id' => null,
+                        'total_amount' => $total_amount,
+                        'status' => 'pending',
+                        'shipping_address' => $shipping_address,
+                        'phone' => $phone,
+                        'city' => $city,
+                        'notes' => $notes
+                    ];
+
+                    if (isset($orders_columns['order_type'])) {
+                        $order_data['order_type'] = 'customer';
+                    }
+                    if (isset($orders_columns['guest_name'])) {
+                        $order_data['guest_name'] = $guest_name;
+                    }
+                    if (isset($orders_columns['guest_email'])) {
+                        $order_data['guest_email'] = $guest_email;
+                    }
+                    if (isset($orders_columns['is_guest'])) {
+                        $order_data['is_guest'] = 1;
+                    }
+
+                    $order_columns = array_keys($order_data);
+                    $order_placeholders = implode(', ', array_fill(0, count($order_columns), '?'));
+                    $sql = "INSERT INTO orders (" . implode(', ', $order_columns) . ") VALUES ({$order_placeholders})";
                     $stmt = $conn->prepare($sql);
-                    $stmt->bind_param('ssdssss', $guest_name, $guest_email, $total_amount, $shipping_address, $phone, $city, $notes);
+
+                    if (!$stmt) {
+                        throw new Exception('Failed to prepare guest order query: ' . $conn->error);
+                    }
+
+                    $order_types = '';
+                    $order_values = [];
+                    foreach ($order_data as $column => $value) {
+                        if ($column === 'user_id' || $column === 'is_guest') {
+                            $order_types .= 'i';
+                        } elseif ($column === 'total_amount') {
+                            $order_types .= 'd';
+                        } else {
+                            $order_types .= 's';
+                        }
+                        $order_values[] = $value;
+                    }
+
+                    $bind_args = [$order_types];
+                    foreach ($order_values as $idx => $val) {
+                        $bind_args[] = &$order_values[$idx];
+                    }
+                    call_user_func_array([$stmt, 'bind_param'], $bind_args);
                     
                     if (!$stmt->execute()) {
                         throw new Exception('Failed to create order: ' . $stmt->error);
@@ -96,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
                             throw new Exception("Stock update failed for product {$item['product_id']}");
                         }
                         
-                        $item_stmt->bind_param('iissids',
+                        $item_stmt->bind_param('iissidd',
                             $order_id, $item['product_id'],
                             $item['name_en'], $item['name_ar'],
                             $item['quantity'], $item['price'], $item['subtotal']

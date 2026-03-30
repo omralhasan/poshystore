@@ -15,6 +15,55 @@ require_once __DIR__ . '/../../includes/product_manager.php';
 require_once __DIR__ . '/../../includes/points_wallet_handler.php';
 
 /**
+ * Get table columns as a fast lookup map.
+ */
+function getTableColumnsLookup($table_name) {
+    global $conn;
+
+    static $cache = [];
+    if (isset($cache[$table_name])) {
+        return $cache[$table_name];
+    }
+
+    $columns = [];
+    $safe_table = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$table_name);
+    $result = $conn->query("SHOW COLUMNS FROM `{$safe_table}`");
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $columns[$row['Field']] = true;
+        }
+    }
+
+    $cache[$table_name] = $columns;
+    return $columns;
+}
+
+/**
+ * Check whether a table has a specific column.
+ */
+function tableHasColumn($table_name, $column_name) {
+    $columns = getTableColumnsLookup($table_name);
+    return isset($columns[$column_name]);
+}
+
+/**
+ * Bind dynamic parameter arrays to prepared statements.
+ */
+function bindDynamicParams($stmt, $types, array &$values) {
+    if ($types === '' || empty($values)) {
+        return true;
+    }
+
+    $bind_args = [$types];
+    foreach ($values as $index => $value) {
+        $bind_args[] = &$values[$index];
+    }
+
+    return call_user_func_array([$stmt, 'bind_param'], $bind_args);
+}
+
+/**
  * Process checkout and create order from cart
  * 
  * @param int|null $user_id User ID (uses current session if null)
@@ -138,17 +187,56 @@ function processCheckout($user_id = null, $additional_data = []) {
             throw new Exception("Shipping address is required for order processing");
         }
         
-        // Insert order into orders table with shipping details
-        // Auto-set order_type based on user role
+        // Insert order into orders table with schema-safe optional columns.
         $order_type = (isset($_SESSION['role']) && $_SESSION['role'] === 'supplier') ? 'supplier' : 'customer';
-        $order_sql = "INSERT INTO orders (user_id, total_amount, status, shipping_address, phone, city, notes, is_gift, gift_recipient_name, gift_message, order_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $order_data = [
+            'user_id' => $user_id,
+            'total_amount' => $total_amount,
+            'status' => $status,
+            'shipping_address' => $shipping_address,
+            'phone' => $phone,
+            'city' => $city,
+            'notes' => $notes
+        ];
+
+        if (tableHasColumn('orders', 'is_gift')) {
+            $order_data['is_gift'] = $is_gift;
+        }
+        if (tableHasColumn('orders', 'gift_recipient_name')) {
+            $order_data['gift_recipient_name'] = $gift_recipient_name;
+        }
+        if (tableHasColumn('orders', 'gift_message')) {
+            $order_data['gift_message'] = $gift_message;
+        }
+        if (tableHasColumn('orders', 'order_type')) {
+            $order_data['order_type'] = $order_type;
+        }
+
+        $order_columns = array_keys($order_data);
+        $order_placeholders = implode(', ', array_fill(0, count($order_columns), '?'));
+        $order_sql = "INSERT INTO orders (" . implode(', ', $order_columns) . ") VALUES ({$order_placeholders})";
         $order_stmt = $conn->prepare($order_sql);
         
         if (!$order_stmt) {
             throw new Exception("Failed to prepare order statement: " . $conn->error);
         }
         
-        $order_stmt->bind_param('idsssssssss', $user_id, $total_amount, $status, $shipping_address, $phone, $city, $notes, $is_gift, $gift_recipient_name, $gift_message, $order_type);
+        $order_types = '';
+        $order_values = [];
+        foreach ($order_data as $column => $value) {
+            if ($column === 'user_id' || $column === 'is_gift') {
+                $order_types .= 'i';
+            } elseif ($column === 'total_amount') {
+                $order_types .= 'd';
+            } else {
+                $order_types .= 's';
+            }
+            $order_values[] = $value;
+        }
+
+        if (!bindDynamicParams($order_stmt, $order_types, $order_values)) {
+            throw new Exception("Failed to bind order parameters");
+        }
         
         if (!$order_stmt->execute()) {
             throw new Exception("Failed to create order: " . $order_stmt->error);
@@ -646,10 +734,21 @@ function updateOrderStatus($order_id, $new_status) {
  */
 function getAllOrders($limit = 50, $offset = 0, $status_filter = null) {
     global $conn;
+
+    $orders_columns = getTableColumnsLookup('orders');
+    $order_date_expr = isset($orders_columns['order_date']) ? 'o.order_date' : (isset($orders_columns['created_at']) ? 'o.created_at' : 'NOW()');
+    $shipping_expr = isset($orders_columns['shipping_address']) ? 'o.shipping_address' : "'' AS shipping_address";
+    $phone_expr = isset($orders_columns['phone']) ? 'o.phone' : "'' AS phone";
+    $city_expr = isset($orders_columns['city']) ? 'o.city' : "'' AS city";
+    $notes_expr = isset($orders_columns['notes']) ? 'o.notes' : "'' AS notes";
+    $order_type_expr = isset($orders_columns['order_type']) ? 'o.order_type' : "'customer' AS order_type";
+    $guest_name_expr = isset($orders_columns['guest_name']) ? 'o.guest_name' : "'' AS guest_name";
+    $guest_email_expr = isset($orders_columns['guest_email']) ? 'o.guest_email' : "'' AS guest_email";
+    $is_guest_expr = isset($orders_columns['is_guest']) ? 'o.is_guest' : '0 AS is_guest';
     
     // Build SQL query
-    $sql = "SELECT o.id, o.user_id, o.total_amount, o.status, o.order_type, o.order_date as created_at,
-                   o.shipping_address, o.phone, o.city, o.notes, o.guest_name, o.guest_email, o.is_guest,
+    $sql = "SELECT o.id, o.user_id, o.total_amount, o.status, {$order_type_expr}, {$order_date_expr} as created_at,
+                   {$shipping_expr}, {$phone_expr}, {$city_expr}, {$notes_expr}, {$guest_name_expr}, {$guest_email_expr}, {$is_guest_expr},
                    u.firstname, u.lastname, u.email, u.phonenumber
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id";
@@ -658,7 +757,7 @@ function getAllOrders($limit = 50, $offset = 0, $status_filter = null) {
         $sql .= " WHERE o.status = ?";
     }
     
-    $sql .= " ORDER BY o.order_date DESC LIMIT ? OFFSET ?";
+    $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
     
     $stmt = $conn->prepare($sql);
     
