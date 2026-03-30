@@ -335,3 +335,47 @@ Stack trace:
 #1 /home/omar/poshystore/run_subcategory_image_migration.php(7): require_once('...')
 #2 {main}
   thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[29-Mar-2026 15:02:27 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[29-Mar-2026 15:05:32 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[29-Mar-2026 15:05:44 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-Mar-2026 05:01:36 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-Mar-2026 05:01:42 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-Mar-2026 05:02:09 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-Mar-2026 05:02:14 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-Mar-2026 05:02:22 UTC] PHP Warning:  mysqli::__construct(): (HY000/1044): Access denied for user 'poshy_user'@'localhost' to database 'poshy_db' in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-Mar-2026 05:02:22 UTC] Database Connection Failed: Access denied for user 'poshy_user'@'localhost' to database 'poshy_db'
