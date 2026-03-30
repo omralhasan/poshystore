@@ -34,55 +34,14 @@ function normalizePhoneNumber(value) {
     return phone;
 }
 
-function isDirReadable(dirPath) {
-    try {
-        fs.accessSync(dirPath, fs.constants.R_OK);
-        return true;
-    } catch (_error) {
-        return false;
-    }
-}
-
 function ensureDir(dirPath) {
     if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
     }
 }
-
-function resolvePendingSmsDir(baseDir) {
-    const fromEnv = String(process.env.WHATSAPP_PENDING_DIR || '').trim();
-    if (fromEnv !== '') {
-        return fromEnv;
-    }
-
-    const candidates = [
-        '/var/www/html/poshy_store/pending_sms',
-        '/var/www/html/pending_sms',
-        path.join(baseDir, 'pending_sms')
-    ];
-
-    for (const candidate of candidates) {
-        if (isDirReadable(candidate)) {
-            return candidate;
-        }
-    }
-
-    return path.join(baseDir, 'pending_sms');
-}
-
-function resolveAuthDataPath() {
-    const fromEnv = String(process.env.WHATSAPP_AUTH_DIR || '').trim();
-    if (fromEnv !== '') {
-        return fromEnv;
-    }
-
-    return path.join(__dirname, '.wwebjs_auth_stable');
-}
-
-const BASE_DIR = path.resolve(__dirname, '..');
-const PENDING_SMS_DIR = resolvePendingSmsDir(BASE_DIR);
+const PENDING_SMS_DIR = '/var/www/html/poshy_store/pending_sms';
 const LOG_FILE = process.env.WHATSAPP_LOG_FILE || path.join(__dirname, 'bot.log');
-const AUTH_DATA_PATH = resolveAuthDataPath();
+const AUTH_DATA_PATH = path.join(__dirname, '.wwebjs_auth_stable');
 const EXPECTED_SENDER_NUMBER = normalizePhoneNumber(process.env.WHATSAPP_SENDER_NUMBER || '962770058416');
 
 let senderVerified = false;
@@ -168,6 +127,8 @@ function startFileWatcher() {
 }
 
 async function processOrderFile(filePath) {
+    let shouldDeleteQueueFile = true;
+
     try {
         if (!senderVerified) {
             log(`Skipped ${path.basename(filePath)} because sender is not verified`);
@@ -190,25 +151,17 @@ async function processOrderFile(filePath) {
         log(`Sending message to ${normalized}`);
         await client.sendMessage(jid, String(orderData.message));
         log(`Message sent to ${normalized}`);
-
-        fs.unlinkSync(filePath);
-        log(`Queue file removed: ${path.basename(filePath)}`);
     } catch (error) {
-        const errorsDir = path.join(PENDING_SMS_DIR, 'errors');
-        ensureDir(errorsDir);
-
-        const failedName = `error_${Date.now()}_${path.basename(filePath)}`;
-        const failedPath = path.join(errorsDir, failedName);
-
-        try {
-            if (fs.existsSync(filePath)) {
-                fs.renameSync(filePath, failedPath);
-            }
-        } catch (_moveError) {
-            // Keep original error as primary signal.
-        }
-
         log(`Failed processing ${path.basename(filePath)}: ${error.message}`);
+    } finally {
+        if (shouldDeleteQueueFile && fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+                log(`Queue file removed: ${path.basename(filePath)}`);
+            } catch (deleteError) {
+                log(`Failed to remove queue file ${path.basename(filePath)}: ${deleteError.message}`);
+            }
+        }
     }
 }
 
