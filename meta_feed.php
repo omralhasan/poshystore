@@ -14,7 +14,7 @@
  *
  * Optional query params (web):
  *   ?lang=ar         Use Arabic title/description where available.
- *   ?serve=1         Generate then stream CSV directly as response.
+ *   ?serve=0         Generate only (debug mode), do not stream CSV.
  */
 
 define('CLI_RUN', php_sapi_name() === 'cli');
@@ -25,7 +25,12 @@ require_once $root . '/includes/db_connect.php';
 require_once $root . '/includes/product_image_helper.php';
 
 $LANG = (isset($_GET['lang']) && $_GET['lang'] === 'ar') ? 'ar' : 'en';
-$SERVE_DIRECT = !CLI_RUN && isset($_GET['serve']) && $_GET['serve'] === '1';
+
+// Default behavior for web requests: generate then stream CSV directly.
+$SERVE_DIRECT = !CLI_RUN;
+if (!CLI_RUN && isset($_GET['serve'])) {
+    $SERVE_DIRECT = ($_GET['serve'] === '1');
+}
 
 $META_CURRENCY = getenv('META_FEED_CURRENCY') ?: 'JOD';
 $OUTPUT_DIR = $root . '/feeds';
