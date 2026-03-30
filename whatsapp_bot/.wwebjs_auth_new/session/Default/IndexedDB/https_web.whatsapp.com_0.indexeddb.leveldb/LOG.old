@@ -1,0 +1,5 @@
+2026/03/30-20:40:23.177 a2bb Reusing MANIFEST /home/omar/poshystore/whatsapp_bot/.wwebjs_auth_new/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/30-20:40:23.178 a2bb Recovering log #113
+2026/03/30-20:40:23.268 a2bb Reusing old log /home/omar/poshystore/whatsapp_bot/.wwebjs_auth_new/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000113.log 
+2026/03/30-20:40:23.269 a2bb Delete type=2 #112
+2026/03/30-20:40:23.269 a2bb Delete type=2 #114
