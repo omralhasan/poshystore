@@ -91,6 +91,11 @@ if (!$result) {
 
 $first_gallery_images = load_first_gallery_images($conn);
 $fallback_relative_image = find_global_fallback_relative_image($root);
+// Product-specific stable image overrides for known GMC image-processing edge cases.
+$feed_safe_overrides_by_slug = [
+    'dr-althea-345-relief-cream' => 'images/feed/dr-althea-345-relief-cream.png',
+    'dr-althea-345-relief-cream-duo-pack' => 'images/feed/dr-althea-345-relief-cream-duo-pack.png',
+];
 if ($fallback_relative_image === '') {
     log_msg('Warn: No supported fallback image found in /images (png/jpg/jpeg/gif).');
 }
@@ -136,6 +141,7 @@ $resolved_from_db_image = 0;
 $resolved_from_gallery = 0;
 $resolved_from_folder_match = 0;
 $resolved_from_global_fallback = 0;
+$resolved_from_slug_override = 0;
 
 while ($p = $result->fetch_assoc()) {
 
@@ -172,6 +178,16 @@ while ($p = $result->fetch_assoc()) {
 
     // image URL — resolve to an on-disk image that uses accepted types for GMC.
     [$image_relative, $image_source] = resolve_supported_product_image_relative($p, $first_gallery_images, $root);
+
+    $slug_key = trim((string)($p['slug'] ?? ''));
+    if ($slug_key !== '' && isset($feed_safe_overrides_by_slug[$slug_key])) {
+        $override_relative = ensure_supported_relative_image($feed_safe_overrides_by_slug[$slug_key], $root);
+        if ($override_relative !== '') {
+            $image_relative = $override_relative;
+            $image_source = 'slug_override';
+        }
+    }
+
     if ($image_relative === '' && $fallback_relative_image !== '') {
         $image_relative = $fallback_relative_image;
         $image_source = 'global_fallback';
@@ -197,6 +213,8 @@ while ($p = $result->fetch_assoc()) {
         $resolved_from_folder_match++;
     } elseif ($image_source === 'global_fallback') {
         $resolved_from_global_fallback++;
+    } elseif ($image_source === 'slug_override') {
+        $resolved_from_slug_override++;
     }
 
     // Google Merchant required values: in_stock / out_of_stock / preorder / backorder
@@ -284,7 +302,8 @@ if ($skipped_missing_image > 0) {
 log_msg('Info: Image sources → db=' . $resolved_from_db_image
     . ', gallery=' . $resolved_from_gallery
     . ', folder_match=' . $resolved_from_folder_match
-    . ', fallback=' . $resolved_from_global_fallback);
+    . ', fallback=' . $resolved_from_global_fallback
+    . ', slug_override=' . $resolved_from_slug_override);
 log_msg('Info: URL → ' . $feed_domain . '/feeds/products.csv');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
