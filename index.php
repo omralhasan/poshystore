@@ -1889,7 +1889,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <div class="hero-banner-track" id="heroBannerTrack">
             <?php foreach ($slides as $i => $slide): ?>
             <div class="hero-banner-slide">
-                <img src="<?= htmlspecialchars($slide['image']) ?>"
+                <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($slide['image'] ?? ''), ROOT_DIR)) ?>"
                      alt="<?= htmlspecialchars($slide['title'] ?: 'Poshy Store Banner') ?>"
                      <?= $i === 0 ? 'loading="eager" fetchpriority="high" decoding="async"' : 'loading="lazy" fetchpriority="low" decoding="async"' ?>>
                 <?php if (!empty($slide['title'])): ?>
@@ -2176,11 +2176,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php foreach ($homepage_banners[$before_key] as $banner): ?>
                 <?php if (!empty($banner['link_url'])): ?>
                     <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($banner['image_path'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </a>
                 <?php else: ?>
                     <div class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($banner['image_path'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </div>
                 <?php endif; ?>
                 <?php endforeach; ?>
@@ -2203,7 +2203,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <div class="category-explore fade-in">
                 <?php if (!empty($sec_cat['image_url'])): ?>
                 <div class="category-hero-banner">
-                    <img src="<?= htmlspecialchars($sec_cat['image_url']) ?>" alt="<?= htmlspecialchars($sec_cat_name) ?>" loading="lazy" decoding="async" fetchpriority="low">
+                    <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($sec_cat['image_url'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($sec_cat_name) ?>" loading="lazy" decoding="async" fetchpriority="low">
                     <div class="cat-banner-overlay">
                         <div class="cat-banner-title"><?= htmlspecialchars($sec_cat_name) ?></div>
                     </div>
@@ -2226,7 +2226,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <a href="/pages/shop/category.php?id=<?= $sec_target_category_id ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
                             <div class="chip-icon">
                                 <?php if (!empty($sub['image_url'])): ?>
-                                    <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" loading="lazy" decoding="async" fetchpriority="low" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                    <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($sub['image_url'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" loading="lazy" decoding="async" fetchpriority="low" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                                 <?php else: ?>
                                     <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
                                 <?php endif; ?>
@@ -2260,11 +2260,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
                 <?php if (!empty($banner['link_url'])): ?>
                     <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($banner['image_path'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </a>
                 <?php else: ?>
                     <div class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($banner['image_path'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </div>
                 <?php endif; ?>
                 <?php endforeach; ?>

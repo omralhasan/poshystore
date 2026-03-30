@@ -103,8 +103,74 @@ function get_png_files($dir_path) {
             $images[] = $file;
         }
     }
-    sort($images);
+
+    // Keep natural filename order, but prefer WebP when both "same-name.jpg" and "same-name.webp" exist.
+    usort($images, function ($a, $b) {
+        $base_a = pathinfo($a, PATHINFO_FILENAME);
+        $base_b = pathinfo($b, PATHINFO_FILENAME);
+        if ($base_a === $base_b) {
+            $rank = ['webp' => 0, 'jpg' => 1, 'jpeg' => 2, 'png' => 3, 'gif' => 4];
+            $ext_a = strtolower(pathinfo($a, PATHINFO_EXTENSION));
+            $ext_b = strtolower(pathinfo($b, PATHINFO_EXTENSION));
+            $rank_a = $rank[$ext_a] ?? 99;
+            $rank_b = $rank[$ext_b] ?? 99;
+            return $rank_a <=> $rank_b;
+        }
+        return strnatcasecmp($a, $b);
+    });
+
     return $images;
+}
+
+/**
+ * Return a WebP filename if a same-basename variant exists in this directory.
+ * Example: "1.jpg" -> "1.webp" if present.
+ */
+function prefer_webp_variant_name($dir_path, $filename) {
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    if ($ext === 'webp') {
+        return $filename;
+    }
+
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif'], true)) {
+        return $filename;
+    }
+
+    $base = pathinfo($filename, PATHINFO_FILENAME);
+    $candidate = $base . '.webp';
+    if (file_exists(rtrim($dir_path, '/') . '/' . $candidate)) {
+        return $candidate;
+    }
+
+    return $filename;
+}
+
+/**
+ * Return a WebP relative path if a same-basename variant exists on disk.
+ * Input and output paths are relative to site root.
+ */
+function prefer_webp_relative_path($relative_path, $base_dir) {
+    if (empty($relative_path)) {
+        return $relative_path;
+    }
+
+    $path_only = parse_url($relative_path, PHP_URL_PATH);
+    if ($path_only === false || $path_only === null || $path_only === '') {
+        $path_only = $relative_path;
+    }
+
+    $clean_path = ltrim($path_only, '/');
+    $ext = strtolower(pathinfo($clean_path, PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif'], true)) {
+        return $clean_path;
+    }
+
+    $webp_path = preg_replace('/\.(jpe?g|png|gif)$/i', '.webp', $clean_path);
+    if (!empty($webp_path) && file_exists(rtrim($base_dir, '/') . '/' . $webp_path)) {
+        return $webp_path;
+    }
+
+    return $clean_path;
 }
 
 /**
@@ -240,7 +306,7 @@ function get_product_thumbnail($product_name, $image_link, $base_dir) {
     if ($folder) {
         $folder_path = $images_dir . '/' . $folder;
         // Check for 1.* (any image extension)
-        $allowed_ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+        $allowed_ext = ['webp', 'jpg', 'jpeg', 'png', 'gif'];
         foreach ($allowed_ext as $ext) {
             $one_img = $folder_path . '/1.' . $ext;
             if (file_exists($one_img)) {
@@ -251,16 +317,18 @@ function get_product_thumbnail($product_name, $image_link, $base_dir) {
         // If no 1.*, use first available image
         $imgs = get_png_files($folder_path);
         if (!empty($imgs)) {
-            $mtime = filemtime($folder_path . '/' . $imgs[0]);
-            return encode_image_path('images/' . $folder . '/' . $imgs[0]) . '?v=' . $mtime;
+            $preferred_img = prefer_webp_variant_name($folder_path, $imgs[0]);
+            $mtime = filemtime($folder_path . '/' . $preferred_img);
+            return encode_image_path('images/' . $folder . '/' . $preferred_img) . '?v=' . $mtime;
         }
     }
     
     // Fallback to database image_link
     if (!empty($image_link) && $image_link !== 'NULL') {
-        $full = $base_dir . '/' . $image_link;
+        $preferred_link = prefer_webp_relative_path($image_link, $base_dir);
+        $full = rtrim($base_dir, '/') . '/' . ltrim($preferred_link, '/');
         $mtime = file_exists($full) ? filemtime($full) : time();
-        return encode_image_path($image_link) . '?v=' . $mtime;
+        return encode_image_path($preferred_link) . '?v=' . $mtime;
     }
     
     return 'images/placeholder-cosmetics.svg';
@@ -279,19 +347,29 @@ function get_product_thumbnail($product_name, $image_link, $base_dir) {
 function get_product_gallery_images($product_name, $image_link, $images_dir, $path_prefix = '') {
     $folder = find_product_image_folder($product_name, $images_dir);
     $gallery = [];
-    $allowed_ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+    $seen_base_names = [];
     
     if ($folder) {
         $folder_path = $images_dir . '/' . $folder;
         $all_imgs = get_png_files($folder_path);
         
         $enc_folder = rawurlencode($folder);
+
+        $add_image = function ($img_name) use (&$gallery, &$seen_base_names, $folder_path, $path_prefix, $enc_folder) {
+            $preferred = prefer_webp_variant_name($folder_path, $img_name);
+            $base = pathinfo($preferred, PATHINFO_FILENAME);
+            if (isset($seen_base_names[$base])) {
+                return;
+            }
+            $gallery[] = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($preferred);
+            $seen_base_names[$base] = true;
+        };
         
         // 1. First add 1.* (main image - any extension)
         foreach ($all_imgs as $img) {
             $base = pathinfo($img, PATHINFO_FILENAME);
             if ($base === '1') {
-                $gallery[] = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
+                $add_image($img);
                 break;
             }
         }
@@ -299,10 +377,7 @@ function get_product_gallery_images($product_name, $image_link, $images_dir, $pa
         // 2. Add img-*.* files (sorted)
         foreach ($all_imgs as $img) {
             if (strpos($img, 'img-') === 0) {
-                $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
-                if (!in_array($path, $gallery)) {
-                    $gallery[] = $path;
-                }
+                $add_image($img);
             }
         }
         
@@ -311,10 +386,7 @@ function get_product_gallery_images($product_name, $image_link, $images_dir, $pa
             foreach ($all_imgs as $img) {
                 $base = pathinfo($img, PATHINFO_FILENAME);
                 if ($base === (string)$i) {
-                    $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
-                    if (!in_array($path, $gallery)) {
-                        $gallery[] = $path;
-                    }
+                    $add_image($img);
                     break;
                 }
             }
@@ -322,16 +394,15 @@ function get_product_gallery_images($product_name, $image_link, $images_dir, $pa
         
         // 4. Add any remaining image files not already included
         foreach ($all_imgs as $img) {
-            $path = $path_prefix . 'images/' . $enc_folder . '/' . rawurlencode($img);
-            if (!in_array($path, $gallery)) {
-                $gallery[] = $path;
-            }
+            $add_image($img);
         }
     }
     
     // Fallback to database image
     if (empty($gallery) && !empty($image_link) && $image_link !== 'NULL') {
-        $gallery[] = $path_prefix . encode_image_path($image_link);
+        $site_root = dirname(rtrim($images_dir, '/'));
+        $preferred_link = prefer_webp_relative_path($image_link, $site_root);
+        $gallery[] = $path_prefix . encode_image_path($preferred_link);
     }
     
     return $gallery;

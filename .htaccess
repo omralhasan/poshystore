@@ -49,6 +49,18 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     Require all denied
 </FilesMatch>
 
+# ─── Serve WebP variants when browser supports it ─────────────────────
+# Example: /uploads/a.jpg -> /uploads/a.webp (if file exists and Accept includes image/webp)
+RewriteCond %{HTTP_ACCEPT} image/webp [NC]
+RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png)$ [NC]
+RewriteCond %{DOCUMENT_ROOT}%1.webp -f
+RewriteRule ^ %1.webp [T=image/webp,E=accept_webp:1,L]
+
+<IfModule mod_headers.c>
+    Header append Vary Accept env=accept_webp
+    Header append Vary Accept env=REDIRECT_accept_webp
+</IfModule>
+
 # ─── Skip real files and directories ──────────────────────────────────
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
@@ -109,6 +121,7 @@ RewriteRule ^([a-z0-9]+(?:-[a-z0-9]+)*)/?$ product.php?slug=$1 [L,QSA]
     ExpiresActive On
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/png  "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
     ExpiresByType image/svg+xml "access plus 1 month"
     ExpiresByType text/css   "access plus 1 week"
     ExpiresByType application/javascript "access plus 1 week"
