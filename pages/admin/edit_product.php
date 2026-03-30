@@ -110,7 +110,7 @@ function build_image_abs_path(string $relativePath): ?string
         return null;
     }
 
-    $normalized = ltrim(str_replace('\\', '/', $relativePath), '/');
+    $normalized = ltrim(str_replace('\\', '/', rawurldecode($relativePath)), '/');
     if ($normalized === '' || str_contains($normalized, '..')) {
         return null;
     }
@@ -136,6 +136,24 @@ function try_prepare_path_writable(string $path): void
     }
 }
 
+function build_path_diagnostics(string $path): string
+{
+    $dir = dirname($path);
+    $exists = file_exists($path) ? 'yes' : 'no';
+    $filePermsRaw = @fileperms($path);
+    $filePerms = ($filePermsRaw !== false) ? substr(sprintf('%o', $filePermsRaw), -4) : 'missing';
+    $dirPermsRaw = @fileperms($dir);
+    $dirPerms = ($dirPermsRaw !== false) ? substr(sprintf('%o', $dirPermsRaw), -4) : 'missing';
+
+    return 'path=' . $path
+        . ' exists=' . $exists
+        . ' file_perms=' . $filePerms
+        . ' file_writable=' . (is_writable($path) ? 'yes' : 'no')
+        . ' dir=' . $dir
+        . ' dir_perms=' . $dirPerms
+        . ' dir_writable=' . ((is_dir($dir) && is_writable($dir)) ? 'yes' : 'no');
+}
+
 function safe_unlink_file(string $path, ?string &$error = null): bool
 {
     if (!file_exists($path)) {
@@ -143,13 +161,22 @@ function safe_unlink_file(string $path, ?string &$error = null): bool
     }
 
     try_prepare_path_writable($path);
-    if (@unlink($path)) {
+    clearstatcache(true, $path);
+
+    $phpWarning = null;
+    set_error_handler(static function ($errno, $errstr) use (&$phpWarning) {
+        $phpWarning = $errstr;
+        return true;
+    });
+    $ok = unlink($path);
+    restore_error_handler();
+
+    if ($ok) {
         return true;
     }
 
-    $perms = @fileperms($path);
-    $permStr = ($perms !== false) ? substr(sprintf('%o', $perms), -4) : 'unknown';
-    $error = 'Permission denied while deleting image file. Please set /images ownership to the web server user and permissions to dirs=775, files=664. File: ' . $path . ' perms=' . $permStr;
+    $error = 'Delete image failed. ' . build_path_diagnostics($path)
+        . ($phpWarning ? ' php_warning=' . $phpWarning : '');
     return false;
 }
 
@@ -158,12 +185,22 @@ function safe_rename_file(string $from, string $to, ?string &$error = null): boo
     try_prepare_path_writable($from);
     try_prepare_path_writable(dirname($to));
 
-    if (@rename($from, $to)) {
+    $phpWarning = null;
+    set_error_handler(static function ($errno, $errstr) use (&$phpWarning) {
+        $phpWarning = $errstr;
+        return true;
+    });
+    $ok = rename($from, $to);
+    restore_error_handler();
+
+    if ($ok) {
         @chmod($to, 0664);
         return true;
     }
 
-    $error = 'Permission denied while renaming image file. Please set /images ownership to the web server user and permissions to dirs=775, files=664. From: ' . $from . ' To: ' . $to;
+    $error = 'Rename image failed. from={' . build_path_diagnostics($from)
+        . '} to={' . build_path_diagnostics($to) . '}'
+        . ($phpWarning ? ' php_warning=' . $phpWarning : '');
     return false;
 }
 
