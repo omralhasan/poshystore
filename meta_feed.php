@@ -37,6 +37,8 @@ $OUTPUT_DIR = $root . '/feeds';
 $OUTPUT_FILE = $OUTPUT_DIR . '/meta_products.csv';
 $LOG_FILE = $root . '/logs/meta_feed.log';
 $FEED_DOMAIN = rtrim(SITE_URL ?: 'https://poshystore.com', '/');
+$FORCE_IN_STOCK = meta_bool_env('META_FEED_FORCE_IN_STOCK', false);
+$TITLE_MAX_LENGTH = 65;
 
 meta_log($LOG_FILE, 'Start: Generating Meta CSV');
 
@@ -107,7 +109,8 @@ $used_webp = 0;
 $skipped = 0;
 
 while ($p = $result->fetch_assoc()) {
-    $title = ($LANG === 'ar' && !empty($p['name_ar'])) ? $p['name_ar'] : (string)$p['name_en'];
+    $raw_title = ($LANG === 'ar' && !empty($p['name_ar'])) ? $p['name_ar'] : (string)$p['name_en'];
+    $title = clean_meta_title((string)$raw_title, $TITLE_MAX_LENGTH);
 
     $raw_desc = '';
     if ($LANG === 'ar') {
@@ -121,7 +124,9 @@ while ($p = $result->fetch_assoc()) {
     }
     $description = clean_meta_description($raw_desc, $title);
 
-    $availability = ((int)$p['stock_quantity'] > 0) ? 'in stock' : 'out of stock';
+    $availability = $FORCE_IN_STOCK
+        ? 'in stock'
+        : (((int)$p['stock_quantity'] > 0) ? 'in stock' : 'out of stock');
     $condition = 'new';
 
     $price_value = (float)$p['price_jod'];
@@ -456,6 +461,78 @@ function find_meta_fallback_relative_image(string $root): string {
 }
 
 /**
+ * Normalize title text and keep it within Meta-friendly length.
+ */
+function clean_meta_title(string $text, int $max_len = 65): string {
+    $clean = strip_tags(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    $clean = preg_replace('/\s+/u', ' ', trim($clean));
+
+    if ($clean === '' || $clean === null) {
+        $clean = 'Product';
+    }
+
+    $clean = meta_fix_caps($clean);
+
+    return truncate_meta_text($clean, $max_len);
+}
+
+/**
+ * Convert all-caps or mostly-uppercase text to title-style casing.
+ */
+function meta_fix_caps(string $text): string {
+    if (!preg_match('/[A-Za-z]/', $text)) {
+        return $text;
+    }
+
+    preg_match_all('/[A-Z]/', $text, $up);
+    preg_match_all('/[a-z]/', $text, $lo);
+
+    if (count($up[0]) >= 3 && count($up[0]) > count($lo[0])) {
+        if (function_exists('mb_convert_case') && function_exists('mb_strtolower')) {
+            return mb_convert_case(mb_strtolower($text, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+        }
+        return ucwords(strtolower($text));
+    }
+
+    return $text;
+}
+
+/**
+ * Truncate text by max length and prefer word boundaries.
+ */
+function truncate_meta_text(string $text, int $max_len): string {
+    if ($max_len <= 0) {
+        return $text;
+    }
+
+    if (function_exists('mb_strlen') && function_exists('mb_substr') && function_exists('mb_strrpos')) {
+        if (mb_strlen($text, 'UTF-8') <= $max_len) {
+            return $text;
+        }
+
+        $cut = mb_substr($text, 0, $max_len, 'UTF-8');
+        $last_space = mb_strrpos($cut, ' ', 0, 'UTF-8');
+        if ($last_space !== false && $last_space >= (int)($max_len * 0.6)) {
+            $cut = mb_substr($cut, 0, (int)$last_space, 'UTF-8');
+        }
+
+        return rtrim($cut, " \t\n\r\0\x0B,.;:-");
+    }
+
+    if (strlen($text) <= $max_len) {
+        return $text;
+    }
+
+    $cut = substr($text, 0, $max_len);
+    $last_space = strrpos($cut, ' ');
+    if ($last_space !== false && $last_space >= (int)($max_len * 0.6)) {
+        $cut = substr($cut, 0, $last_space);
+    }
+
+    return rtrim($cut, " \t\n\r\0\x0B,.;:-");
+}
+
+/**
  * Strip HTML and normalize whitespace for Meta descriptions.
  */
 function clean_meta_description(string $text, string $fallback): string {
@@ -466,11 +543,23 @@ function clean_meta_description(string $text, string $fallback): string {
         $clean = trim($fallback);
     }
 
-    if (!function_exists('mb_substr')) {
-        return substr($clean, 0, 5000);
+    $clean = meta_fix_caps($clean);
+
+    return truncate_meta_text($clean, 5000);
+}
+
+/**
+ * Parse boolean env var with fallback.
+ */
+function meta_bool_env(string $key, bool $default = false): bool {
+    $raw = getenv($key);
+    if ($raw === false || $raw === '') {
+        return $default;
     }
 
-    return mb_substr($clean, 0, 5000, 'UTF-8');
+    $parsed = filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+    return $parsed ?? $default;
 }
 
 /**

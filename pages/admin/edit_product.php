@@ -140,18 +140,33 @@ function build_path_diagnostics(string $path): string
 {
     $dir = dirname($path);
     $exists = file_exists($path) ? 'yes' : 'no';
+    $fileOwner = @fileowner($path);
+    $fileGroup = @filegroup($path);
+    $dirOwner = @fileowner($dir);
+    $dirGroup = @filegroup($dir);
+    $fileOwnerName = ($fileOwner !== false) ? (@posix_getpwuid($fileOwner)['name'] ?? (string)$fileOwner) : 'unknown';
+    $fileGroupName = ($fileGroup !== false) ? (@posix_getgrgid($fileGroup)['name'] ?? (string)$fileGroup) : 'unknown';
+    $dirOwnerName = ($dirOwner !== false) ? (@posix_getpwuid($dirOwner)['name'] ?? (string)$dirOwner) : 'unknown';
+    $dirGroupName = ($dirGroup !== false) ? (@posix_getgrgid($dirGroup)['name'] ?? (string)$dirGroup) : 'unknown';
     $filePermsRaw = @fileperms($path);
     $filePerms = ($filePermsRaw !== false) ? substr(sprintf('%o', $filePermsRaw), -4) : 'missing';
     $dirPermsRaw = @fileperms($dir);
     $dirPerms = ($dirPermsRaw !== false) ? substr(sprintf('%o', $dirPermsRaw), -4) : 'missing';
+    $euid = function_exists('posix_geteuid') ? (int)posix_geteuid() : -1;
+    $egid = function_exists('posix_getegid') ? (int)posix_getegid() : -1;
+    $euser = ($euid >= 0) ? (@posix_getpwuid($euid)['name'] ?? (string)$euid) : 'unknown';
+    $egroup = ($egid >= 0) ? (@posix_getgrgid($egid)['name'] ?? (string)$egid) : 'unknown';
 
     return 'path=' . $path
         . ' exists=' . $exists
         . ' file_perms=' . $filePerms
+        . ' file_owner=' . $fileOwnerName . ':' . $fileGroupName
         . ' file_writable=' . (is_writable($path) ? 'yes' : 'no')
         . ' dir=' . $dir
         . ' dir_perms=' . $dirPerms
-        . ' dir_writable=' . ((is_dir($dir) && is_writable($dir)) ? 'yes' : 'no');
+        . ' dir_owner=' . $dirOwnerName . ':' . $dirGroupName
+        . ' dir_writable=' . ((is_dir($dir) && is_writable($dir)) ? 'yes' : 'no')
+        . ' php_user=' . $euser . ':' . $egroup;
 }
 
 function safe_unlink_file(string $path, ?string &$error = null): bool
@@ -301,15 +316,16 @@ if ($is_ajax_request) {
             exit();
         }
 
-        // Renumber remaining images sequentially
-        if (is_dir($img_base)) {
-            @chmod($img_base, 0775);
-            $remaining = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+        // Renumber remaining images sequentially in the actual folder where deletion happened.
+        $img_dir = dirname($delete_target);
+        if (is_dir($img_dir)) {
+            @chmod($img_dir, 0775);
+            $remaining = glob(rtrim($img_dir, '/') . '/*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
             sort($remaining);
             // Remove and re-add with correct numbers
             $temp_names = [];
             foreach ($remaining as $idx => $f) {
-                $tmp = $img_base . 'tmp_rename_' . $idx . '_' . basename($f);
+                $tmp = rtrim($img_dir, '/') . '/tmp_rename_' . $idx . '_' . basename($f);
                 $fs_error = null;
                 if (!safe_rename_file($f, $tmp, $fs_error)) {
                     echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not renumber images']);
@@ -319,7 +335,7 @@ if ($is_ajax_request) {
             }
             foreach ($temp_names as $idx => $tmp) {
                 $ext = pathinfo($tmp, PATHINFO_EXTENSION);
-                $new_name = $img_base . ($idx + 1) . '.' . $ext;
+                $new_name = rtrim($img_dir, '/') . '/' . ($idx + 1) . '.' . $ext;
                 $fs_error = null;
                 if (!safe_rename_file($tmp, $new_name, $fs_error)) {
                     echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not finalize image numbering']);
