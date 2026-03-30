@@ -1,3 +1,6 @@
-2026/03/30-21:14:11.000 be77 Reusing MANIFEST /home/omar/poshystore/whatsapp_bot/.wwebjs_auth_stable/session/Default/Local Storage/leveldb/MANIFEST-000001
-2026/03/30-21:14:11.014 be77 Recovering log #3
-2026/03/30-21:14:11.015 be77 Reusing old log /home/omar/poshystore/whatsapp_bot/.wwebjs_auth_stable/session/Default/Local Storage/leveldb/000003.log 
+2026/03/30-22:15:22.626 d284 Reusing MANIFEST /home/omar/poshystore/whatsapp_bot/.wwebjs_auth_stable/session/Default/Local Storage/leveldb/MANIFEST-000001
+2026/03/30-22:15:22.641 d284 Recovering log #3
+2026/03/30-22:15:22.642 d284 Reusing old log /home/omar/poshystore/whatsapp_bot/.wwebjs_auth_stable/session/Default/Local Storage/leveldb/000003.log 
+2026/03/30-22:17:24.174 d286 Level-0 table #5: started
+2026/03/30-22:17:24.178 d286 Level-0 table #5: 18911 bytes OK
+2026/03/30-22:17:24.182 d286 Delete type=0 #3

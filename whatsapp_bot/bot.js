@@ -40,6 +40,7 @@ function ensureDir(dirPath) {
     }
 }
 const PENDING_SMS_DIR = '/var/www/html/poshy_store/pending_sms';
+const ERROR_SMS_DIR = path.join(PENDING_SMS_DIR, 'errors');
 const LOG_FILE = process.env.WHATSAPP_LOG_FILE || path.join(__dirname, 'bot.log');
 const AUTH_DATA_PATH = path.join(__dirname, '.wwebjs_auth_stable');
 const EXPECTED_SENDER_NUMBER = normalizePhoneNumber(process.env.WHATSAPP_SENDER_NUMBER || '962770058416');
@@ -47,6 +48,63 @@ const EXPECTED_SENDER_NUMBER = normalizePhoneNumber(process.env.WHATSAPP_SENDER_
 let senderVerified = false;
 
 ensureDir(PENDING_SMS_DIR);
+ensureDir(ERROR_SMS_DIR);
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientSendError(message) {
+    const text = String(message || '').toLowerCase();
+    return (
+        text.includes('detached frame') ||
+        text.includes('execution context was destroyed') ||
+        text.includes('protocol error') ||
+        text.includes('target closed') ||
+        text.includes('session closed') ||
+        text.includes('navigation failed')
+    );
+}
+
+async function sendMessageWithRetry(jid, message, normalizedPhone) {
+    const maxAttempts = 3;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+            if (attempt > 1) {
+                log(`Retry ${attempt}/${maxAttempts} for ${normalizedPhone}`);
+            }
+            await client.sendMessage(jid, String(message));
+            return;
+        } catch (error) {
+            lastError = error;
+            const transient = isTransientSendError(error.message);
+            log(`Send attempt ${attempt}/${maxAttempts} failed for ${normalizedPhone}: ${error.message}`);
+
+            if (!transient || attempt === maxAttempts) {
+                break;
+            }
+
+            await sleep(1200 * attempt);
+        }
+    }
+
+    throw lastError || new Error('Unknown send error');
+}
+
+function moveQueueFileToErrors(filePath) {
+    try {
+        const targetName = `${Date.now()}_${path.basename(filePath)}`;
+        const targetPath = path.join(ERROR_SMS_DIR, targetName);
+        fs.renameSync(filePath, targetPath);
+        log(`Queue file moved to errors: ${targetName}`);
+        return true;
+    } catch (error) {
+        log(`Failed to move queue file to errors: ${error.message}`);
+        return false;
+    }
+}
 
 function log(message) {
     const timestamp = new Date().toISOString();
@@ -128,6 +186,7 @@ function startFileWatcher() {
 
 async function processOrderFile(filePath) {
     let shouldDeleteQueueFile = true;
+    let sendSucceeded = false;
 
     try {
         if (!senderVerified) {
@@ -149,15 +208,27 @@ async function processOrderFile(filePath) {
 
         const jid = `${normalized}@c.us`;
         log(`Sending message to ${normalized}`);
-        await client.sendMessage(jid, String(orderData.message));
+        await sendMessageWithRetry(jid, orderData.message, normalized);
         log(`Message sent to ${normalized}`);
+        sendSucceeded = true;
     } catch (error) {
         log(`Failed processing ${path.basename(filePath)}: ${error.message}`);
+
+        if (fs.existsSync(filePath)) {
+            const moved = moveQueueFileToErrors(filePath);
+            if (moved) {
+                shouldDeleteQueueFile = false;
+            }
+        }
     } finally {
         if (shouldDeleteQueueFile && fs.existsSync(filePath)) {
             try {
                 fs.unlinkSync(filePath);
-                log(`Queue file removed: ${path.basename(filePath)}`);
+                if (sendSucceeded) {
+                    log(`Queue file removed: ${path.basename(filePath)}`);
+                } else {
+                    log(`Queue file removed after failure fallback: ${path.basename(filePath)}`);
+                }
             } catch (deleteError) {
                 log(`Failed to remove queue file ${path.basename(filePath)}: ${deleteError.message}`);
             }
