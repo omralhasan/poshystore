@@ -1891,7 +1891,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <div class="hero-banner-slide">
                 <img src="<?= htmlspecialchars($slide['image']) ?>"
                      alt="<?= htmlspecialchars($slide['title'] ?: 'Poshy Store Banner') ?>"
-                     <?= $i === 0 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"' ?>>
+                     <?= $i === 0 ? 'loading="eager" fetchpriority="high" decoding="async"' : 'loading="lazy" fetchpriority="low" decoding="async"' ?>>
                 <?php if (!empty($slide['title'])): ?>
                 <div class="hero-banner-overlay">
                     <div class="hero-banner-text">
@@ -2176,11 +2176,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php foreach ($homepage_banners[$before_key] as $banner): ?>
                 <?php if (!empty($banner['link_url'])): ?>
                     <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </a>
                 <?php else: ?>
                     <div class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </div>
                 <?php endif; ?>
                 <?php endforeach; ?>
@@ -2203,7 +2203,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <div class="category-explore fade-in">
                 <?php if (!empty($sec_cat['image_url'])): ?>
                 <div class="category-hero-banner">
-                    <img src="<?= htmlspecialchars($sec_cat['image_url']) ?>" alt="<?= htmlspecialchars($sec_cat_name) ?>" loading="lazy">
+                    <img src="<?= htmlspecialchars($sec_cat['image_url']) ?>" alt="<?= htmlspecialchars($sec_cat_name) ?>" loading="lazy" decoding="async" fetchpriority="low">
                     <div class="cat-banner-overlay">
                         <div class="cat-banner-title"><?= htmlspecialchars($sec_cat_name) ?></div>
                     </div>
@@ -2226,7 +2226,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <a href="/pages/shop/category.php?id=<?= $sec_target_category_id ?>&subcategory=<?= (int)$sub['id'] ?>" class="subcategory-chip" title="<?= $lang === 'ar' ? htmlspecialchars($sub['name_ar'] ?: $sub['name_en']) : htmlspecialchars($sub['name_en']) ?>">
                             <div class="chip-icon">
                                 <?php if (!empty($sub['image_url'])): ?>
-                                    <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                    <img src="<?= htmlspecialchars($sub['image_url']) ?>" alt="<?= htmlspecialchars($sub['name_en']) ?>" loading="lazy" decoding="async" fetchpriority="low" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                                 <?php else: ?>
                                     <i class="<?= $sub['icon'] ?: 'fas fa-tag' ?>"></i>
                                 <?php endif; ?>
@@ -2260,11 +2260,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
                 <?php if (!empty($banner['link_url'])): ?>
                     <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </a>
                 <?php else: ?>
                     <div class="section-banner-card">
-                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy">
+                        <img src="<?= htmlspecialchars($banner['image_path']) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </div>
                 <?php endif; ?>
                 <?php endforeach; ?>
@@ -2291,6 +2291,21 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     const VIEW_ALL_LINK_TEXT = '<?= addslashes(t("view_all")) ?>';
     const NO_PRODUCTS_TEXT = '<?= addslashes(t("no_products_found")) ?>';
     const TRY_SEARCHING_TEXT = '<?= addslashes(t("try_searching_else")) ?>';
+
+    // Schedule non-critical work away from initial paint.
+    function runWhenIdle(callback, timeout = 1200) {
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(callback, { timeout });
+        } else {
+            setTimeout(callback, 120);
+        }
+    }
+
+    // Keep inline hero controls safe before slider boot finishes.
+    window.heroGoTo = window.heroGoTo || function() {};
+    window.heroNext = window.heroNext || function() {};
+    window.heroPrev = window.heroPrev || function() {};
+    window.heroTogglePause = window.heroTogglePause || function() {};
     
     // ==========================================
     // AJAX Category Filter (no page refresh)
@@ -2430,7 +2445,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 
                 cardsHtml += '<div class="p-card fade-in" style="animation-delay: ' + (idx * 0.05) + 's;">' +
                     '<div class="p-card-img">' + discountTag + catTag +
-                    '<a href="' + productUrl + '"><img src="' + product.image_src + '" alt="' + product.name_en + '" loading="lazy" ' +
+                    '<a href="' + productUrl + '"><img src="' + product.image_src + '" alt="' + product.name_en + '" loading="lazy" decoding="async" fetchpriority="low" ' +
                     'onerror="this.onerror=null; this.src=\'images/placeholder-cosmetics.svg\';"></a></div>' +
                     '<div class="p-card-body">' +
                     '<a href="' + productUrl + '" style="text-decoration:none; color:inherit;">' +
@@ -2572,7 +2587,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     // ==========================================
     // Search Autocomplete
     // ==========================================
-    (function() {
+    runWhenIdle(function() {
         const input   = document.getElementById('searchInput');
         const box     = document.getElementById('searchSuggestions');
         const LANG    = '<?= $lang ?>';
@@ -2587,7 +2602,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             focused = -1;
             box.innerHTML = items.map((it, i) => {
                 const imgHtml = it.image
-                    ? `<img class="sugg-img" src="${escHtml(it.image)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                    ? `<img class="sugg-img" src="${escHtml(it.image)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
                       + `<div class="sugg-img-placeholder" style="display:none"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`
                     : `<div class="sugg-img-placeholder"><i class="fas fa-box" style="color:white;font-size:0.9rem"></i></div>`;
                 const meta = [it.brand, it.category].filter(Boolean).join(' · ');
@@ -2657,141 +2672,162 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.search-wrapper')) closeBox();
         });
-    })();
+    }, 1400);
 
     // ==========================================
     // Smooth scroll
     // ==========================================
-    document.querySelectorAll('a[href*="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            const hash = href.split('#')[1];
-            if (hash) {
-                const target = document.getElementById(hash);
-                if (target) {
-                    e.preventDefault();
-                    const offset = 20;
-                    const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
-                    
-                    // Update URL without page jump
-                    if (history.pushState) {
-                        history.pushState(null, null, href);
+    runWhenIdle(function() {
+        document.querySelectorAll('a[href*="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                const hash = href.split('#')[1];
+                if (hash) {
+                    const target = document.getElementById(hash);
+                    if (target) {
+                        e.preventDefault();
+                        const offset = 20;
+                        const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+
+                        // Update URL without page jump
+                        if (history.pushState) {
+                            history.pushState(null, null, href);
+                        }
                     }
                 }
-            }
+            });
         });
-    });
+    }, 1200);
+
     // ==========================================
-    // Hero Banner Slider (horizontal slide) - FIXED
+    // Hero Banner Slider (horizontal slide)
     // ==========================================
-    document.addEventListener("DOMContentLoaded", function() {
-        // Defer execution to avoid blocking initial render
-        setTimeout(function() {
+    runWhenIdle(function() {
+        const initHeroSlider = function() {
             const track = document.getElementById('heroBannerTrack');
             const slides = document.querySelectorAll('.hero-banner-slide');
             const dots = document.querySelectorAll('.hero-banner-dot');
             const pauseIcon = document.getElementById('heroPauseIcon');
             const slideCount = slides.length;
             let current = 0;
+            let prevDot = 0;
             let autoInterval = null;
             let isPaused = false;
-    
+
             if (!track || slideCount <= 1) return;
-    
+
+            function updateDots(nextIndex) {
+                if (dots[prevDot]) dots[prevDot].classList.remove('active');
+                if (dots[nextIndex]) dots[nextIndex].classList.add('active');
+                prevDot = nextIndex;
+            }
+
             function goTo(index) {
                 if (index < 0) index = slideCount - 1;
                 if (index >= slideCount) index = 0;
                 current = index;
-                // Each slide is 100% of viewport width, move by 100% per slide
                 track.style.transform = 'translateX(-' + (current * 100) + '%)';
-                dots.forEach((d, i) => d.classList.toggle('active', i === current));
+                updateDots(current);
             }
-    
+
             function next() { goTo(current + 1); }
             function prev() { goTo(current - 1); }
-    
+
             function startAuto() {
                 stopAuto();
                 autoInterval = setInterval(next, 5000);
             }
-    
+
             function stopAuto() {
-                if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+                if (autoInterval) {
+                    clearInterval(autoInterval);
+                    autoInterval = null;
+                }
             }
-    
+
             function togglePause() {
                 isPaused = !isPaused;
                 if (isPaused) {
                     stopAuto();
-                    if (pauseIcon) { pauseIcon.className = 'fas fa-play'; }
+                    if (pauseIcon) pauseIcon.className = 'fas fa-play';
                 } else {
                     startAuto();
-                    if (pauseIcon) { pauseIcon.className = 'fas fa-pause'; }
+                    if (pauseIcon) pauseIcon.className = 'fas fa-pause';
                 }
             }
-    
-            // Touch / swipe support
+
             let touchStartX = 0;
             const banner = document.getElementById('heroBanner');
-    
             if (banner) {
                 banner.addEventListener('touchstart', e => {
                     touchStartX = e.changedTouches[0].screenX;
                     stopAuto();
                 }, { passive: true });
-    
+
                 banner.addEventListener('touchend', e => {
                     const diff = touchStartX - e.changedTouches[0].screenX;
                     const isRtl = document.documentElement.dir === 'rtl';
                     if (Math.abs(diff) > 50) {
-                        if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) { next(); } else { prev(); }
+                        if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) {
+                            next();
+                        } else {
+                            prev();
+                        }
                     }
                     if (!isPaused) startAuto();
                 }, { passive: true });
             }
-    
-            // Expose to global for inline onclick handlers
+
             window.heroGoTo = function(i) { goTo(i); if (!isPaused) startAuto(); };
             window.heroNext = function() { next(); if (!isPaused) startAuto(); };
             window.heroPrev = function() { prev(); if (!isPaused) startAuto(); };
             window.heroTogglePause = togglePause;
-    
-            // Start auto-slide
-            startAuto();
-        }, 100); // Small delay to let main thread breathe
-    });
+
+            // Initialize once and let first paint settle before animation ticks.
+            goTo(0);
+            setTimeout(startAuto, 250);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHeroSlider, { once: true });
+        } else {
+            initHeroSlider();
+        }
+    }, 800);
+
     // ==========================================
     // Intersection Observer for Scroll Animations
     // ==========================================
-    document.addEventListener("DOMContentLoaded", function() {
-        const observerOptions = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.1 // Trigger when 10% of the element is visible
+    runWhenIdle(function() {
+        const initScrollAnimations = function() {
+            if (!('IntersectionObserver' in window)) return;
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observerRef) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observerRef.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const fadeElements = document.querySelectorAll('.fade-in');
+            fadeElements.forEach(el => observer.observe(el));
         };
 
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    // Optional: stop observing once it's visible so it doesn't fade out when scrolling up
-                    observer.unobserve(entry.target); 
-                }
-            });
-        }, observerOptions);
-
-        // Find all elements with fade-in and observe them
-        const fadeElements = document.querySelectorAll('.fade-in');
-        fadeElements.forEach(el => observer.observe(el));
-    });
-    </script>
-</body>
-</html>
-        // Find all elements with fade-in and observe them
-        const fadeElements = document.querySelectorAll('.fade-in');
-        fadeElements.forEach(el => observer.observe(el));
-    });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initScrollAnimations, { once: true });
+        } else {
+            initScrollAnimations();
+        }
+    }, 1600);
     </script>
 </body>
 </html>
