@@ -167,6 +167,24 @@ function safe_rename_file(string $from, string $to, ?string &$error = null): boo
     return false;
 }
 
+function resolve_existing_image_variant_path(string $path): ?string
+{
+    if (is_file($path)) {
+        return $path;
+    }
+
+    $dir = dirname($path);
+    $base = pathinfo($path, PATHINFO_FILENAME);
+    foreach (['webp', 'png', 'jpg', 'jpeg', 'gif'] as $ext) {
+        $candidate = $dir . '/' . $base . '.' . $ext;
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+
+    return null;
+}
+
 function normalize_image_ext(string $filename, string $default = 'png'): string
 {
     $ext = strtolower((string)pathinfo($filename, PATHINFO_EXTENSION));
@@ -234,12 +252,16 @@ if ($is_ajax_request) {
             exit();
         }
 
-        if (file_exists($full_path)) {
-            $fs_error = null;
-            if (!safe_unlink_file($full_path, $fs_error)) {
-                echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not delete image file']);
-                exit();
-            }
+        $delete_target = resolve_existing_image_variant_path($full_path);
+        if ($delete_target === null) {
+            echo json_encode(['success' => false, 'error' => 'Image file not found on disk.']);
+            exit();
+        }
+
+        $fs_error = null;
+        if (!safe_unlink_file($delete_target, $fs_error)) {
+            echo json_encode(['success' => false, 'error' => $fs_error ?: 'Could not delete image file']);
+            exit();
         }
 
         // Renumber remaining images sequentially
