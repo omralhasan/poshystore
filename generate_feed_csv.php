@@ -45,6 +45,17 @@ if (!is_dir($OUTPUT_DIR)) {
 }
 
 // ─── Fetch products ───────────────────────────────────────────────────────────
+$has_gtin = column_exists($conn, 'products', 'gtin');
+$has_mpn  = column_exists($conn, 'products', 'mpn');
+
+$gtin_select = $has_gtin
+    ? "COALESCE(NULLIF(TRIM(p.gtin), ''), '') AS gtin,"
+    : "'' AS gtin,";
+
+$mpn_select = $has_mpn
+    ? "COALESCE(NULLIF(TRIM(p.mpn), ''), '') AS mpn,"
+    : "'' AS mpn,";
+
 $sql = "SELECT
             p.id,
             p.name_en,
@@ -59,6 +70,8 @@ $sql = "SELECT
             p.has_discount,
             p.stock_quantity,
             p.image_link,
+            $gtin_select
+            $mpn_select
             COALESCE(b.name_en, 'Poshy Lifestyle') AS brand_en,
             COALESCE(b.name_ar, 'بوشي لايف ستايل')  AS brand_ar,
             COALESCE(c.name_en, 'Health & Beauty')   AS category_en
@@ -99,6 +112,9 @@ $headers = [
     'price',
     'sale_price',
     'brand',
+    'gtin',
+    'mpn',
+    'identifier_exists',
     'condition',
     'google_product_category',
 ];
@@ -106,9 +122,9 @@ fputcsv($fh, $headers);
 
 // ─── Write rows ───────────────────────────────────────────────────────────────
 // Use canonical domain for all public URLs in the feed (improves Google/Meta indexing)
-$site_url   = rtrim(SITE_URL, '/');
 $feed_domain = 'https://poshystore.com';  // canonical domain for feed image/product URLs
 $count       = 0;
+$skipped_missing_image = 0;
 
 while ($p = $result->fetch_assoc()) {
 
@@ -141,6 +157,7 @@ while ($p = $result->fetch_assoc()) {
     $link = !empty($p['slug'])
         ? $feed_domain . '/' . rawurlencode($p['slug'])
         : $feed_domain . '/product.php?id=' . (int)$p['id'];
+    $link = normalize_feed_url($link);
 
     // image URL — always full absolute URL with canonical domain
     $image_link = '';
@@ -155,12 +172,18 @@ while ($p = $result->fetch_assoc()) {
             // Relative path — prepend full domain
             $image_link = $feed_domain . '/' . ltrim($img, '/');
         }
-        // URL-encode spaces in path for valid URL
-        $image_link = str_replace(' ', '%20', $image_link);
+        $image_link = normalize_feed_url($image_link);
     }
 
-    // availability — Meta requires 'in stock' (with space), not 'in_stock'
-    $availability = ((int)$p['stock_quantity'] > 0) ? 'in stock' : 'out of stock';
+    // Google requires a valid main image. Skip rows with empty image_link.
+    if ($image_link === '') {
+        $skipped_missing_image++;
+        log_msg('Warn: Skipped product ID ' . (int)$p['id'] . ' (missing image_link)');
+        continue;
+    }
+
+    // Google Merchant required values: in_stock / out_of_stock / preorder / backorder
+    $availability = ((int)$p['stock_quantity'] > 0) ? 'in_stock' : 'out_of_stock';
 
     // price & sale_price
     $price_jod  = (float)$p['price_jod'];
@@ -181,6 +204,18 @@ while ($p = $result->fetch_assoc()) {
     $brand = ($LANG === 'ar' && !empty($p['brand_ar']))
         ? $p['brand_ar']
         : (!empty($p['brand_en']) ? $p['brand_en'] : 'Poshy Store');
+
+    // Product identifiers for Google quality/compliance.
+    $gtin_raw = (string)($p['gtin'] ?? '');
+    $gtin = clean_gtin($gtin_raw);
+
+    $mpn = trim((string)($p['mpn'] ?? ''));
+    if ($mpn !== '') {
+        $mpn = mb_substr($mpn, 0, 70, 'UTF-8');
+    }
+
+    // If GTIN/MPN are not available, declare no identifiers explicitly.
+    $identifier_exists = ($gtin === '' && $mpn === '') ? 'no' : 'yes';
 
     // google_product_category (best-effort)
     $cat_lower = strtolower($p['category_en']);
@@ -206,6 +241,9 @@ while ($p = $result->fetch_assoc()) {
         $price_str,
         $sale_str,
         $brand,
+        $gtin,
+        $mpn,
+        $identifier_exists,
         'new',
         $gpc,
     ]);
@@ -223,9 +261,78 @@ $conn->close();
 // ─── Success log ─────────────────────────────────────────────────────────────
 $size = round(filesize($OUTPUT_FILE) / 1024, 1);
 log_msg('Success: ' . $count . ' products written to products.csv (' . $size . ' KB)');
+if ($skipped_missing_image > 0) {
+    log_msg('Info: Skipped ' . $skipped_missing_image . ' product(s) with empty image_link');
+}
 log_msg('Info: URL → ' . $feed_domain . '/feeds/products.csv');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Checks if a table contains a specific column.
+ */
+function column_exists(mysqli $conn, string $table, string $column): bool {
+    $table_esc = $conn->real_escape_string($table);
+    $col_esc = $conn->real_escape_string($column);
+    $sql = "SHOW COLUMNS FROM `{$table_esc}` LIKE '{$col_esc}'";
+    $res = $conn->query($sql);
+    return $res instanceof mysqli_result && $res->num_rows > 0;
+}
+
+/**
+ * Normalizes URL path encoding for Google feeds.
+ * Keeps scheme/host and re-encodes each path segment safely.
+ */
+function normalize_feed_url(string $url): string {
+    $url = trim($url);
+    if ($url === '') {
+        return '';
+    }
+
+    $parts = parse_url($url);
+    if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+        return $url;
+    }
+
+    $path = $parts['path'] ?? '';
+    $segments = explode('/', $path);
+    $encoded_segments = [];
+
+    foreach ($segments as $seg) {
+        if ($seg === '') {
+            $encoded_segments[] = '';
+            continue;
+        }
+        $encoded_segments[] = rawurlencode(rawurldecode($seg));
+    }
+
+    $normalized = $parts['scheme'] . '://' . $parts['host'] . implode('/', $encoded_segments);
+    if (isset($parts['query'])) {
+        $normalized .= '?' . $parts['query'];
+    }
+    if (isset($parts['fragment'])) {
+        $normalized .= '#' . $parts['fragment'];
+    }
+
+    return $normalized;
+}
+
+/**
+ * Cleans GTIN and returns it only when length is valid.
+ */
+function clean_gtin(string $gtin): string {
+    $digits = preg_replace('/\D+/', '', trim($gtin));
+    if ($digits === null) {
+        return '';
+    }
+
+    $len = strlen($digits);
+    if ($len < 8 || $len > 14) {
+        return '';
+    }
+
+    return $digits;
+}
 
 /**
  * Convert ALL-CAPS or mostly-uppercase text to Title Case.
