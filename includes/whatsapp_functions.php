@@ -197,11 +197,44 @@ function sendWhatsAppMessage($phone, $message) {
  */
 function wa_pending_dir() {
     $configured = trim((string)getenv('WHATSAPP_PENDING_DIR'));
+
+    $candidates = [];
     if ($configured !== '') {
-        return $configured;
+        $candidates[] = $configured;
     }
 
-    return __DIR__ . '/../pending_sms';
+    $fallbacks = [
+        '/var/www/html/poshy_store/pending_sms',
+        '/var/www/html/pending_sms',
+        __DIR__ . '/../pending_sms'
+    ];
+
+    foreach ($fallbacks as $fallback) {
+        if (!in_array($fallback, $candidates, true)) {
+            $candidates[] = $fallback;
+        }
+    }
+
+    foreach ($candidates as $candidate) {
+        if (wa_dir_is_writable_or_creatable($candidate)) {
+            return $candidate;
+        }
+    }
+
+    // Last resort: return configured path (if any) to preserve explicit intent.
+    return $configured !== '' ? $configured : (__DIR__ . '/../pending_sms');
+}
+
+/**
+ * Check whether a directory is writable, or can be created by this process.
+ */
+function wa_dir_is_writable_or_creatable($path) {
+    if (is_dir($path)) {
+        return is_writable($path);
+    }
+
+    $parent = dirname($path);
+    return is_dir($parent) && is_writable($parent);
 }
 
 /**

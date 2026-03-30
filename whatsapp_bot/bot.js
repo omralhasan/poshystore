@@ -11,6 +11,35 @@ const chokidar = require('chokidar');
 const fs = require('fs');
 const path = require('path');
 
+function isDirReadable(dirPath) {
+    try {
+        fs.accessSync(dirPath, fs.constants.R_OK);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function resolvePendingSmsDir(baseDir) {
+    if (process.env.WHATSAPP_PENDING_DIR && process.env.WHATSAPP_PENDING_DIR.trim() !== '') {
+        return process.env.WHATSAPP_PENDING_DIR.trim();
+    }
+
+    const candidates = [
+        '/var/www/html/poshy_store/pending_sms',
+        '/var/www/html/pending_sms',
+        path.join(baseDir, 'pending_sms')
+    ];
+
+    for (const candidate of candidates) {
+        if (isDirReadable(candidate)) {
+            return candidate;
+        }
+    }
+
+    return path.join(baseDir, 'pending_sms');
+}
+
 function normalizePhoneNumber(value) {
     let phone = String(value || '').replace(/[^0-9]/g, '');
 
@@ -38,7 +67,7 @@ function normalizePhoneNumber(value) {
 
 // Configuration
 const BASE_DIR = path.resolve(__dirname, '..');
-const PENDING_SMS_DIR = process.env.WHATSAPP_PENDING_DIR || path.join(BASE_DIR, 'pending_sms');
+const PENDING_SMS_DIR = resolvePendingSmsDir(BASE_DIR);
 const LOG_FILE = process.env.WHATSAPP_LOG_FILE || path.join(__dirname, 'bot.log');
 const EXPECTED_SENDER_NUMBER = normalizePhoneNumber(process.env.WHATSAPP_SENDER_NUMBER || '962770058416');
 let senderVerified = false;
