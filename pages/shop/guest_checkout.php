@@ -108,6 +108,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
                     $item_stmt->close();
                     
                     $conn->commit();
+
+                    // Queue WhatsApp confirmation for guest orders.
+                    require_once __DIR__ . '/../../includes/whatsapp_functions.php';
+                    if (!empty($phone)) {
+                        $whatsapp_order = [
+                            'order_id' => $order_id,
+                            'customer_name' => $guest_name ?: 'عزيزنا العميل',
+                            'total_amount' => $total_amount,
+                            'total_amount_formatted' => number_format((float)$total_amount, 3, '.', '') . ' JOD',
+                            'items' => $cart['cart_items'],
+                            'points_earned' => 0,
+                            'status' => 'pending'
+                        ];
+                        sendWhatsAppOrderConfirmation($phone, $whatsapp_order);
+                    }
                     
                     // Clear guest cart
                     guestClearCart();

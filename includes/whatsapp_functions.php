@@ -20,8 +20,12 @@ function sendWhatsAppOrderConfirmation($phone, $order_details) {
         return false;
     }
     
-    // Clean phone number (remove spaces, dashes, etc.)
-    $phone = preg_replace('/[^0-9+]/', '', $phone);
+    // Normalize phone number format.
+    $phone = wa_normalize_phone($phone);
+    if ($phone === '') {
+        error_log("WhatsApp: Invalid phone format");
+        return false;
+    }
     
     // Build message with Ramadan theme
     $message = buildOrderConfirmationMessage($order_details);
@@ -32,13 +36,15 @@ function sendWhatsAppOrderConfirmation($phone, $order_details) {
         'message' => $message,
         'order_id' => $order_details['order_id'] ?? null,
         'timestamp' => date('Y-m-d H:i:s'),
-        'type' => 'order_confirmation'
+        'type' => 'order_confirmation',
+        'sender_number' => getenv('WHATSAPP_SENDER_NUMBER') ?: '962770058416'
     ];
     
     // Save to pending_sms directory
-    $pending_dir = __DIR__ . '/../pending_sms';
-    if (!is_dir($pending_dir)) {
-        mkdir($pending_dir, 0755, true);
+    $pending_dir = wa_pending_dir();
+    if (!is_dir($pending_dir) && !@mkdir($pending_dir, 0755, true)) {
+        error_log("WhatsApp: Failed to create pending directory: {$pending_dir}");
+        return false;
     }
     
     $filename = sprintf(
@@ -72,6 +78,7 @@ function buildOrderConfirmationMessage($order) {
     $items_list = $order['items'] ?? [];
     $points_earned = $order['points_earned'] ?? 0;
     $status = $order['status'] ?? 'pending';
+    $support_phone = getenv('WHATSAPP_SUPPORT_PHONE') ?: '+962 7 7005 8416';
     
     // Ramadan greeting (rotates based on time of day)
     $hour = (int)date('H');
@@ -139,7 +146,7 @@ function buildOrderConfirmationMessage($order) {
     // Footer with contact info
     $message .= "━━━━━━━━━━━━━━━━━━━━\n";
     $message .= "📞 للاستفسار:\n";
-    $message .= "• واتساب: رد على هذه الرسالة\n";
+    $message .= "• واتساب: {$support_phone}\n";
     $message .= "• الموقع: www.poshystore.com\n\n";
     
     // Ramadan blessing
@@ -159,9 +166,14 @@ function buildOrderConfirmationMessage($order) {
  * @return bool Success status
  */
 function sendWhatsAppMessage($phone, $message) {
-    $pending_dir = __DIR__ . '/../pending_sms';
-    if (!is_dir($pending_dir)) {
-        mkdir($pending_dir, 0755, true);
+    $phone = wa_normalize_phone($phone);
+    if ($phone === '') {
+        return false;
+    }
+
+    $pending_dir = wa_pending_dir();
+    if (!is_dir($pending_dir) && !@mkdir($pending_dir, 0755, true)) {
+        return false;
     }
     
     $json_data = [
@@ -178,4 +190,40 @@ function sendWhatsAppMessage($phone, $message) {
     );
     
     return file_put_contents($filename, json_encode($json_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+}
+
+/**
+ * Resolve queue directory for pending WhatsApp messages.
+ */
+function wa_pending_dir() {
+    $configured = trim((string)getenv('WHATSAPP_PENDING_DIR'));
+    if ($configured !== '') {
+        return $configured;
+    }
+
+    return __DIR__ . '/../pending_sms';
+}
+
+/**
+ * Normalize recipient phone number to numeric international format.
+ */
+function wa_normalize_phone($phone) {
+    $digits = preg_replace('/[^0-9]/', '', (string)$phone);
+    if ($digits === '') {
+        return '';
+    }
+
+    if (str_starts_with($digits, '00')) {
+        $digits = substr($digits, 2);
+    }
+
+    if (str_starts_with($digits, '0') && strlen($digits) === 10) {
+        return '962' . substr($digits, 1);
+    }
+
+    if (!str_starts_with($digits, '962') && strlen($digits) === 9) {
+        return '962' . $digits;
+    }
+
+    return $digits;
 }

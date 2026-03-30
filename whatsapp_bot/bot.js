@@ -11,9 +11,37 @@ const chokidar = require('chokidar');
 const fs = require('fs');
 const path = require('path');
 
+function normalizePhoneNumber(value) {
+    let phone = String(value || '').replace(/[^0-9]/g, '');
+
+    if (!phone) {
+        return '';
+    }
+
+    // Support international format written as 00XXXXXXXX.
+    if (phone.startsWith('00')) {
+        phone = phone.substring(2);
+    }
+
+    // Remove a single local leading zero: 07XXXXXXXX -> 7XXXXXXXX
+    if (phone.startsWith('0')) {
+        phone = phone.substring(1);
+    }
+
+    // Force Jordan country code prefix when missing.
+    if (!phone.startsWith('962')) {
+        phone = '962' + phone;
+    }
+
+    return phone;
+}
+
 // Configuration
-const PENDING_SMS_DIR = '/var/www/html/poshy_store/pending_sms';
-const LOG_FILE = '/var/www/html/poshy_store/whatsapp_bot/bot.log';
+const BASE_DIR = path.resolve(__dirname, '..');
+const PENDING_SMS_DIR = process.env.WHATSAPP_PENDING_DIR || path.join(BASE_DIR, 'pending_sms');
+const LOG_FILE = process.env.WHATSAPP_LOG_FILE || path.join(__dirname, 'bot.log');
+const EXPECTED_SENDER_NUMBER = normalizePhoneNumber(process.env.WHATSAPP_SENDER_NUMBER || '962770058416');
+let senderVerified = false;
 
 // Ensure pending_sms directory exists
 if (!fs.existsSync(PENDING_SMS_DIR)) {
@@ -58,6 +86,7 @@ client.on('qr', (qr) => {
     console.log('   2. Go to Settings > Linked Devices');
     console.log('   3. Tap "Link a Device"');
     console.log('   4. Scan the QR code below:\n');
+    console.log('   5. Use business number: +962 7 7005 8416\n');
     
     qrcode.generate(qr, { small: true });
     
@@ -67,8 +96,25 @@ client.on('qr', (qr) => {
 
 // Client Ready
 client.on('ready', () => {
+    const connectedSenderRaw = (client.info && client.info.wid && client.info.wid.user) ? client.info.wid.user : '';
+    const connectedSender = normalizePhoneNumber(connectedSenderRaw);
+
+    senderVerified = connectedSender !== '' && connectedSender === EXPECTED_SENDER_NUMBER;
+
+    if (!senderVerified) {
+        console.error('\n❌ Connected WhatsApp account does not match required business number.');
+        console.error(`Expected: ${EXPECTED_SENDER_NUMBER}`);
+        console.error(`Connected: ${connectedSender || 'unknown'}\n`);
+        log(`Sender mismatch. expected=${EXPECTED_SENDER_NUMBER} connected=${connectedSender || 'unknown'}`);
+        log('Message sending is paused until the correct WhatsApp account is linked.');
+    } else {
+        log(`Sender verified: ${connectedSender}`);
+    }
+
     console.log('\n✅ WhatsApp Bot is READY and connected!');
-    console.log('🚀 Monitoring for order confirmations...');
+    console.log(senderVerified
+        ? '🚀 Monitoring for order confirmations...'
+        : '⚠️ Monitoring queue only (sending paused: wrong sender account).');
     console.log(`📁 Watching directory: ${PENDING_SMS_DIR}\n`);
     log('WhatsApp client is ready and authenticated');
     
@@ -120,6 +166,11 @@ function startFileWatcher() {
 // Process Order File and Send WhatsApp
 async function processOrderFile(filePath) {
     try {
+        if (!senderVerified) {
+            log(`Skipped ${path.basename(filePath)}: sender account is not +962770058416`);
+            return;
+        }
+
         // Read JSON file
         const fileContent = fs.readFileSync(filePath, 'utf8');
         const orderData = JSON.parse(fileContent);
@@ -132,13 +183,9 @@ async function processOrderFile(filePath) {
         }
 
         // Format phone number for WhatsApp
-        let phoneNumber = orderData.phone.replace(/[^0-9]/g, '');
-        
-        // Add country code if missing (Jordan +962)
-        if (!phoneNumber.startsWith('962') && phoneNumber.length === 10) {
-            phoneNumber = '962' + phoneNumber.substring(1); // Remove leading 0 and add 962
-        } else if (!phoneNumber.startsWith('962') && phoneNumber.length === 9) {
-            phoneNumber = '962' + phoneNumber;
+        let phoneNumber = normalizePhoneNumber(orderData.phone);
+        if (!phoneNumber || phoneNumber.length < 11) {
+            throw new Error(`Invalid recipient phone number: ${orderData.phone}`);
         }
 
         const whatsappNumber = phoneNumber + '@c.us';
@@ -193,5 +240,7 @@ process.on('SIGTERM', async () => {
 
 // Start the client
 console.log('🚀 Starting Poshy Lifestyle WhatsApp Bot...\n');
+console.log(`📞 Required sender number: ${EXPECTED_SENDER_NUMBER}`);
+console.log(`📁 Pending directory: ${PENDING_SMS_DIR}`);
 log('Bot starting...');
 client.initialize();

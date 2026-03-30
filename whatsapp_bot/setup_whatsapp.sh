@@ -43,7 +43,10 @@ chown -R apache:apache /var/www/html/poshy_store/pending_sms
 
 echo ""
 echo "🚀 Step 5: Starting WhatsApp bot with PM2..."
-pm2 start bot.js --name "poshy-whatsapp"
+WHATSAPP_SENDER_NUMBER=962770058416 \
+WHATSAPP_PENDING_DIR=/var/www/html/poshy_store/pending_sms \
+WHATSAPP_LOG_FILE=/var/www/html/poshy_store/whatsapp_bot/bot.log \
+pm2 start bot.js --name "poshy-whatsapp" --update-env
 pm2 save
 pm2 startup systemd -u root --hp /root
 
@@ -62,6 +65,7 @@ echo "   • Open WhatsApp on your phone"
 echo "   • Go to: Settings > Linked Devices"
 echo "   • Tap: Link a Device"
 echo "   • Scan the QR code shown in the logs"
+echo "   • Use this number: +962 7 7005 8416"
 echo ""
 echo "3️⃣  Check bot status:"
 echo "   $ pm2 status"

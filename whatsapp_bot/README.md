@@ -39,6 +39,9 @@ This will:
 
 ### Step 2: Connect WhatsApp (IMPORTANT!)
 
+This integration is configured to send from:
+`+962 7 7005 8416`
+
 View the QR code:
 ```bash
 pm2 logs poshy-whatsapp
@@ -62,6 +65,8 @@ You'll see something like this:
 ```
 
 **Scan this QR code with your WhatsApp!**
+
+Important: scan using the business WhatsApp account of +962 7 7005 8416.
 
 ### Step 3: Wait for Connection
 
@@ -104,6 +109,14 @@ graph LR
 pm2 status                    # Show all PM2 processes
 pm2 logs poshy-whatsapp       # View live logs
 pm2 monit                     # Real-time monitoring dashboard
+```
+
+### Start With Sender Number (manual)
+```bash
+WHATSAPP_SENDER_NUMBER=962770058416 \
+WHATSAPP_PENDING_DIR=/var/www/html/poshy_store/pending_sms \
+WHATSAPP_LOG_FILE=/var/www/html/poshy_store/whatsapp_bot/bot.log \
+pm2 start bot.js --name poshy-whatsapp --update-env
 ```
 
 ### Control Bot
