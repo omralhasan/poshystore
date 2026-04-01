@@ -2,3 +2,9 @@ whatsapp_bot/.wwebjs_auth/
 whatsapp_bot/node_modules/
 whatsapp_bot/bot.log
 pending_sms/
+.wwebjs_auth_stable/
+.wwebjs_auth_new/
+node_modules/
+.wwebjs_auth_stable/
+.wwebjs_auth_new/
+node_modules/
