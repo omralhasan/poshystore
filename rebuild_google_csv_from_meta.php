@@ -16,6 +16,7 @@ $root = rtrim(__DIR__, '/');
 $sourceFile = $root . '/feeds/meta_products.csv';
 $targetFile = $root . '/feeds/products_gmc_imagetype_clean.csv';
 $syncTargets = [
+    $root . '/feeds/products.csv',
     $root . '/feeds/products_gmc_reupload_ready.csv',
 ];
 
