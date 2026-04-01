@@ -104,9 +104,18 @@ $total_fetched = $result->num_rows;
 log_msg('Info: Fetched ' . $total_fetched . ' products from database');
 
 // ─── Open file for writing (overwrite) ───────────────────────────────────────
-$fh = fopen($OUTPUT_FILE, 'w');
+if (is_file($OUTPUT_FILE) && !is_writable($OUTPUT_FILE)) {
+    // If a previous deploy left products.csv read-only, replace it atomically.
+    @unlink($OUTPUT_FILE);
+}
+
+$fh = @fopen($OUTPUT_FILE, 'w');
 if (!$fh) {
-    log_msg('Error: Cannot open file for writing: ' . $OUTPUT_FILE);
+    $last_error = error_get_last();
+    $error_msg = is_array($last_error) && !empty($last_error['message'])
+        ? $last_error['message']
+        : 'unknown error';
+    log_msg('Error: Cannot open file for writing: ' . $OUTPUT_FILE . ' (' . $error_msg . ')');
     exit(1);
 }
 
