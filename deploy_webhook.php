@@ -105,6 +105,28 @@ if (file_exists($migration_file)) {
     if (empty($db_migration_output)) $db_migration_output = 'migration ran OK';
 }
 
+// ─── Regenerate feed files after deploy ──────────────────────────────────────
+// Prevent stale static CSVs by rebuilding them on every successful deploy.
+$feed_refresh = [];
+$feed_commands = [
+    'php ' . escapeshellarg($web_root . '/generate_feed_csv.php') . ' 2>&1',
+    'php ' . escapeshellarg($web_root . '/meta_feed.php') . ' 2>&1',
+];
+
+foreach ($feed_commands as $feed_cmd) {
+    $cmd_output = [];
+    $cmd_code = 0;
+    exec($feed_cmd, $cmd_output, $cmd_code);
+    $feed_refresh[] = [
+        'cmd' => $feed_cmd,
+        'exit_code' => $cmd_code,
+        'output' => trim(implode("\n", $cmd_output)),
+    ];
+    if ($cmd_code !== 0) {
+        $success = false;
+    }
+}
+
 // Get current git HEAD info
 $head = trim(shell_exec("git log --oneline -1 2>&1"));
 
@@ -113,5 +135,6 @@ echo json_encode([
     'deployed'       => $head,
     'timestamp'      => date('Y-m-d H:i:s'),
     'db_migration'   => $db_migration_output,
+    'feed_refresh'   => $feed_refresh,
     'details'        => $all_output,
 ], JSON_PRETTY_PRINT);
