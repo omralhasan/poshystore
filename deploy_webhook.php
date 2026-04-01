@@ -82,6 +82,16 @@ if (is_dir($images_dir)) {
     shell_exec("restorecon -RF $images_dir_escaped 2>/dev/null");
 }
 
+// Keep feed CSV directory writable for runtime generators.
+$feeds_dir = $web_root . '/feeds';
+if (is_dir($feeds_dir)) {
+    $feeds_dir_escaped = escapeshellarg($feeds_dir);
+    shell_exec("find $feeds_dir_escaped -type d -exec chmod 775 {} \\\; 2>&1");
+    shell_exec("find $feeds_dir_escaped -type f -name '*.csv' -exec chmod 664 {} \\\; 2>&1");
+    // Ensure SELinux allows httpd/php-fpm to write CSV files.
+    shell_exec("chcon -R -t httpd_sys_rw_content_t $feeds_dir_escaped 2>/dev/null");
+}
+
 // ─── Auto-run DB migrations ──────────────────────────────────────────────────
 $db_migration_output = 'skipped';
 $migration_file = $web_root . '/sql/migrate_bilingual_columns.sql';
