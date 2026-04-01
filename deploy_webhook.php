@@ -109,8 +109,8 @@ if (file_exists($migration_file)) {
 // Prevent stale static CSVs by rebuilding them on every successful deploy.
 $feed_refresh = [];
 $feed_commands = [
-    'php ' . escapeshellarg($web_root . '/generate_feed_csv.php') . ' 2>&1',
-    'php ' . escapeshellarg($web_root . '/meta_feed.php') . ' 2>&1',
+    'curl -fsSL --max-time 120 ' . escapeshellarg('https://poshystore.com/generate_feed_csv.php') . ' 2>&1',
+    'curl -fsSL --max-time 120 ' . escapeshellarg('https://poshystore.com/meta_feed.php?serve=0') . ' 2>&1',
 ];
 
 foreach ($feed_commands as $feed_cmd) {
