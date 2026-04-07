@@ -447,10 +447,15 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <link rel="stylesheet" href="assets/css/home.min.css">
     <style>
         @media (min-width: 1025px) {
-            .hero-banner-slide img,
-            .section-banner-card img {
+            .hero-banner-slide img {
                 object-fit: contain;
                 background: #f5f0eb;
+            }
+
+            .section-banner-card img {
+                height: auto;
+                object-fit: contain;
+                background: transparent;
             }
         }
     </style>
