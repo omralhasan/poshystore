@@ -3,8 +3,12 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
 $lang = $_SESSION['language'] ?? 'en';
 $baseHref = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') . '/' : '/';
+$scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$isAdminPage = str_contains($scriptPath, '/pages/admin/');
 ?>
+<?php if (!$isAdminPage): ?>
 <base href="<?= htmlspecialchars($baseHref) ?>">
+<?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
