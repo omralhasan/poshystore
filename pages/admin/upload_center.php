@@ -337,7 +337,7 @@ if ($pres) {
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 <?php foreach ($banners as $b): ?>
                 <div class="group relative rounded-xl overflow-hidden border border-panel-100 shadow-sm hover:shadow-md transition-all" id="existingBanner-<?= $b['id'] ?>">
-                    <img src="../../<?= htmlspecialchars($b['image_path']) ?>" alt="<?= htmlspecialchars($b['title'] ?? 'Banner') ?>" class="w-full aspect-[21/9] object-cover" loading="lazy">
+                    <img src="../../<?= htmlspecialchars($b['image_path']) ?>" alt="<?= htmlspecialchars($b['title'] ?? 'Banner') ?>" class="w-full aspect-[21/9] object-cover lg:object-contain lg:bg-panel-50" loading="lazy">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
                         <span class="text-white text-xs font-medium truncate flex-1"><?= htmlspecialchars($b['title'] ?: 'Banner #' . $b['id']) ?></span>
                         <button onclick="deleteBannerFile(<?= $b['id'] ?>, this)" class="w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center text-xs hover:bg-red-600 transition-colors shrink-0 ml-2">
@@ -479,7 +479,7 @@ function handleBannerFiles(fileList) {
             const card = document.createElement('div');
             card.className = 'relative rounded-xl overflow-hidden border border-panel-100 shadow-sm card-animate';
             card.innerHTML = `
-                <img src="${e.target.result}" class="w-full aspect-[21/9] object-cover" alt="Preview">
+                <img src="${e.target.result}" class="w-full aspect-[21/9] object-cover lg:object-contain lg:bg-panel-50" alt="Preview">
                 <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
                     <p class="text-white text-[0.7rem] font-medium truncate">${file.name}</p>
                     <p class="text-white/60 text-[0.65rem]">${formatBytes(file.size)}</p>

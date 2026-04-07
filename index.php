@@ -445,6 +445,15 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
     
         <link rel="stylesheet" href="assets/css/home.min.css">
+    <style>
+        @media (min-width: 1025px) {
+            .hero-banner-slide img,
+            .section-banner-card img {
+                object-fit: contain;
+                background: #f5f0eb;
+            }
+        }
+    </style>
     <?php if (!empty($slides) && !empty($slides[0]['image'])): ?>
     <link rel="preload" as="image" href="<?= htmlspecialchars(prefer_webp_relative_path((string)($slides[0]['image'] ?? ''), ROOT_DIR)) ?>">
     <?php endif; ?>

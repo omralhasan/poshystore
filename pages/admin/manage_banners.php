@@ -324,6 +324,10 @@ if ($cat_result) {
         .toast-success { background: linear-gradient(135deg, var(--success), #059669); }
         .toast-error   { background: linear-gradient(135deg, var(--danger), #dc2626); }
 
+        @media (min-width: 1025px) {
+            .banner-card-img { object-fit: contain; background: #f3f4f6; }
+        }
+
         @media (max-width: 1024px) {
             .sidebar { width: 70px; }
             .sidebar .logo, .sidebar .admin-badge, .sidebar .nav-item span, .sidebar .logout-btn span { display: none; }
