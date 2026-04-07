@@ -8,3 +8,5 @@ node_modules/
 .wwebjs_auth_stable/
 .wwebjs_auth_new/
 node_modules/
+includes/oauth_token_debug.txt
+logs/
