@@ -7,20 +7,35 @@
 // Configure session for OAuth compatibility
 ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.cookie_httponly', '1');
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Error handler to catch fatal errors
+// Log non-fatal warnings, but do not break OAuth flow for recoverable issues.
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    error_log("OAuth Callback ERROR [$errno]: $errstr in $errfile:$errline");
-    header('Location: signin.php?error=' . urlencode('Authentication service error. Please try again.'));
-    exit();
+    if (!(error_reporting() & $errno)) {
+        return false;
+    }
+
+    $fatal_like_errors = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR];
+    if (in_array($errno, $fatal_like_errors, true)) {
+        throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+    }
+
+    error_log("OAuth Callback Warning [$errno]: $errstr in $errfile:$errline");
+    return true;
 });
 
 // Exception handler to catch thrown exceptions
 set_exception_handler(function($exception) {
     error_log("OAuth Callback Exception: " . $exception->getMessage());
     error_log("Stack trace: " . $exception->getTraceAsString());
-    header('Location: signin.php?error=' . urlencode('Authentication service error. Please try again.'));
+
+    if (!headers_sent()) {
+        header('Location: signin.php?error=' . urlencode('Authentication service error. Please try again.'));
+    } else {
+        echo 'Authentication service error. Please try again.';
+    }
     exit();
 });
 
@@ -116,6 +131,12 @@ try {
     error_log("Processing OAuth user...");
     $result = processOAuthUser($provider, $user_info);
 
+    if (!is_array($result) || !array_key_exists('success', $result)) {
+        error_log("Invalid response from processOAuthUser");
+        header('Location: signin.php?error=' . urlencode('Authentication service error. Please try again.'));
+        exit();
+    }
+
     if (!$result['success']) {
         error_log("Failed to process OAuth user: " . $result['error']);
         header('Location: signin.php?error=' . urlencode($result['error']));
@@ -138,7 +159,7 @@ try {
     }
     exit();
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log("Caught exception in OAuth callback: " . $e->getMessage());
     error_log("Stack trace: " . $e->getTraceAsString());
     header('Location: signin.php?error=' . urlencode('Authentication service error. Please try again.'));

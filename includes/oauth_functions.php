@@ -12,6 +12,15 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/oauth_debug.log');
 
 /**
+ * Write OAuth debug info without breaking the authentication flow.
+ */
+function appendOAuthDebug($file_path, $content) {
+    if (@file_put_contents($file_path, $content, FILE_APPEND) === false) {
+        error_log("appendOAuthDebug: Unable to write debug file: $file_path");
+    }
+}
+
+/**
  * Generate OAuth authorization URL
  */
 function getOAuthURL($provider) {
@@ -173,34 +182,51 @@ function exchangeCodeForToken($provider, $code) {
     
     error_log("Sending token request...");
     
-    // Try CURL first
-    $ch = curl_init($token_url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Accept: application/json',
-        'Content-Type: application/x-www-form-urlencoded'
-    ]);
-    
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_error = curl_error($ch);
-    $curl_errno = curl_errno($ch);
-    curl_close($ch);
-    
+    $response = '';
+    $http_code = 0;
+    $curl_error = '';
+    $curl_errno = 0;
+
+    // Try cURL first when available.
+    if (function_exists('curl_init')) {
+        $ch = curl_init($token_url);
+
+        if ($ch !== false) {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Accept: application/json',
+                'Content-Type: application/x-www-form-urlencoded'
+            ]);
+
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_error = curl_error($ch);
+            $curl_errno = curl_errno($ch);
+            curl_close($ch);
+        } else {
+            $curl_errno = -1;
+            $curl_error = 'Failed to initialize cURL';
+        }
+    } else {
+        $curl_errno = -2;
+        $curl_error = 'cURL extension not available';
+        error_log("Token exchange: $curl_error. Trying stream fallback if available.");
+    }
+
     error_log("HTTP response code: $http_code");
-    error_log("Response body: $response");
-    
-    // If CURL failed, try file_get_contents as fallback
-    if ($curl_errno !== 0 && function_exists('file_get_contents') && ini_get('allow_url_fopen')) {
-        error_log("CURL failed (errno: $curl_errno), trying file_get_contents...");
-        
+    error_log("Response body: " . ($response === false ? 'false' : $response));
+
+    // If cURL failed (or unavailable), try file_get_contents as fallback.
+    if (($curl_errno !== 0 || $response === false || $response === '') && function_exists('file_get_contents') && ini_get('allow_url_fopen')) {
+        error_log("Primary token request failed, trying file_get_contents fallback...");
+
         $context = stream_context_create([
             'http' => [
                 'method' => 'POST',
@@ -215,19 +241,23 @@ function exchangeCodeForToken($provider, $code) {
                 'verify_peer_name' => true
             ]
         ]);
-        
-        $response = @file_get_contents($token_url, false, $context);
-        if ($response !== false && isset($http_response_header)) {
-            // Extract HTTP code from response headers
-            preg_match('/HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches);
-            $http_code = isset($matches[1]) ? (int)$matches[1] : 0;
-            error_log("file_get_contents succeeded! HTTP code: $http_code");
+
+        $fallback_response = @file_get_contents($token_url, false, $context);
+        if ($fallback_response !== false) {
+            $response = $fallback_response;
+            $http_code = 0;
+
+            if (isset($http_response_header[0]) && preg_match('/HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches)) {
+                $http_code = (int)$matches[1];
+            }
+
+            error_log("file_get_contents succeeded. HTTP code: $http_code");
             $curl_error = '';
             $curl_errno = 0;
         } else {
             $last_error = error_get_last();
             $curl_error = $last_error ? $last_error['message'] : 'Unknown error with file_get_contents';
-            error_log("file_get_contents also failed: $curl_error");
+            error_log("file_get_contents fallback failed: $curl_error");
         }
     }
     
@@ -260,7 +290,7 @@ function exchangeCodeForToken($provider, $code) {
     $debug_info .= "Response (first 1000 chars): " . substr($response, 0, 1000) . "\n";
     $debug_info .= "CURL Error: $curl_error\n";
     $debug_info .= str_repeat("-", 80) . "\n\n";
-    file_put_contents($debug_file, $debug_info, FILE_APPEND);
+    appendOAuthDebug($debug_file, $debug_info);
     
     return $decoded;
 }
@@ -296,43 +326,100 @@ function getOAuthUserInfo($provider, $access_token) {
     }
     
     try {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-        
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_error = curl_error($ch);
-        $curl_errno = curl_errno($ch);
-        curl_close($ch);
-        
+        $response = '';
+        $http_code = 0;
+        $curl_error = '';
+        $curl_errno = 0;
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+
+            if ($ch !== false) {
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+                $response = curl_exec($ch);
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curl_error = curl_error($ch);
+                $curl_errno = curl_errno($ch);
+                curl_close($ch);
+            } else {
+                $curl_errno = -1;
+                $curl_error = 'Failed to initialize cURL';
+            }
+        } else {
+            $curl_errno = -2;
+            $curl_error = 'cURL extension not available';
+        }
+
+        // Fallback for servers without cURL.
+        if (($curl_errno !== 0 || $response === false || $response === '') && function_exists('file_get_contents') && ini_get('allow_url_fopen')) {
+            $header_lines = "Accept: application/json\r\n";
+            foreach ($headers as $header) {
+                $header_lines .= $header . "\r\n";
+            }
+
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'header' => $header_lines,
+                    'timeout' => 30,
+                    'ignore_errors' => true
+                ],
+                'ssl' => [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true
+                ]
+            ]);
+
+            $fallback_response = @file_get_contents($url, false, $context);
+            if ($fallback_response !== false) {
+                $response = $fallback_response;
+                $http_code = 0;
+
+                if (isset($http_response_header[0]) && preg_match('/HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches)) {
+                    $http_code = (int)$matches[1];
+                }
+
+                $curl_error = '';
+                $curl_errno = 0;
+            } else {
+                $last_error = error_get_last();
+                $curl_error = $last_error ? $last_error['message'] : $curl_error;
+            }
+        }
+
+        if ($http_code === 0 && !empty($response)) {
+            $http_code = 200;
+        }
+
         if ($curl_errno !== 0) {
-            error_log("getOAuthUserInfo CURL error ($curl_errno): $curl_error for $provider");
+            error_log("getOAuthUserInfo request error ($curl_errno): $curl_error for $provider");
             return null;
         }
-        
+
         if ($http_code !== 200) {
-            error_log("getOAuthUserInfo: HTTP $http_code from $provider - Response: " . substr($response, 0, 500));
+            error_log("getOAuthUserInfo: HTTP $http_code from $provider - Response: " . substr((string)$response, 0, 500));
             return null;
         }
-        
+
         if (empty($response)) {
             error_log("getOAuthUserInfo: Empty response from $provider");
             return null;
         }
-        
+
         $user_data = json_decode($response, true);
         if ($user_data === null && json_last_error() !== JSON_ERROR_NONE) {
             error_log("getOAuthUserInfo: Invalid JSON from $provider - Error: " . json_last_error_msg());
             return null;
         }
-        
+
         return $user_data;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log("getOAuthUserInfo Exception: " . $e->getMessage());
         return null;
     }
@@ -505,7 +592,7 @@ function processOAuthUser($provider, $oauth_data) {
         'is_new_user' => true
     ];
     
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log("processOAuthUser Exception: " . $e->getMessage());
         error_log("Stack trace: " . $e->getTraceAsString());
         return ['success' => false, 'error' => 'Authentication service error'];
