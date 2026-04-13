@@ -10,6 +10,7 @@ session_start();
 require_once __DIR__ . '/../includes/db_connect.php';
 require_once __DIR__ . '/../includes/product_manager.php';
 require_once __DIR__ . '/../includes/cart_handler.php';
+require_once __DIR__ . '/../includes/guest_cart_handler.php';
 require_once __DIR__ . '/../includes/product_image_helper.php';
 
 if (!isset($_GET['product_id'])) {
@@ -41,12 +42,28 @@ if ($user_id) {
         $cart_quantity = $row['quantity'];
     }
     $stmt->close();
+} else {
+    $guest_session_id = getGuestSessionId();
+    $cart_sql = "SELECT quantity FROM guest_cart WHERE session_id = ? AND product_id = ?";
+    $stmt = $conn->prepare($cart_sql);
+    if ($stmt) {
+        $stmt->bind_param('si', $guest_session_id, $product_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $cart_quantity = (int)$row['quantity'];
+        }
+        $stmt->close();
+    }
 }
 
 // Get cart count
 $cart_count = 0;
 if ($user_id) {
     $cart_info = getCartCount($user_id);
+    $cart_count = $cart_info['count'] ?? 0;
+} else {
+    $cart_info = guestGetCartCount();
     $cart_count = $cart_info['count'] ?? 0;
 }
 

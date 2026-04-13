@@ -1997,6 +1997,7 @@ if ($is_logged_in) {
         
         // Base URL for API calls (works from both direct and clean URL access)
         const BASE_URL = '<?= $base_url ?>';
+        const IS_LOGGED_IN = <?= $is_logged_in ? 'true' : 'false' ?>;
         
         // Guest Add to Cart
         function guestAddToCart(productId) {
@@ -2011,17 +2012,21 @@ if ($is_logged_in) {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=add&product_id=' + productId + '&quantity=1'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server error (HTTP ' + response.status + ')');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    showAlert('success', '<?= $current_lang === "ar" ? "تمت الإضافة! يمكنك إتمام الطلب كزائر" : "Added! You can checkout as guest" ?>');
                     if (btn) {
-                        btn.innerHTML = '<i class="fas fa-check me-2"></i><?= $current_lang === "ar" ? "تمت الإضافة ✓" : "Added ✓" ?>';
-                        setTimeout(() => {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i><?= t("add_to_cart") ?>';
-                        }, 2000);
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i><?= t("add_to_cart") ?>';
                     }
+
+                    // Use the same popup flow as logged-in users.
+                    showCartModal(productId);
                 } else {
                     showAlert('error', data.error || 'Failed to add to cart');
                     if (btn) {
@@ -2262,7 +2267,7 @@ if ($is_logged_in) {
             document.getElementById('modalQuantityValue').textContent = product.quantity;
             
             // Update cart count
-            document.getElementById('cartCountBadge').innerHTML = `<i class="fas fa-shopping-cart"></i> Total Items in Cart: ${data.cart_count}`;
+            document.getElementById('cartCountBadge').innerHTML = `<i class="fas fa-shopping-cart"></i> <?= t('total_items_cart') ?>: ${data.cart_count}`;
             
             // Update recommended products
             const recommendedGrid = document.getElementById('recommendedGrid');
@@ -2308,13 +2313,20 @@ if ($is_logged_in) {
         function updateModalQuantity(action) {
             const productId = window.currentModalProductId;
             if (!productId) return;
+
+            const endpoint = IS_LOGGED_IN
+                ? BASE_URL + '/api/update_cart_quantity.php'
+                : BASE_URL + '/api/guest_cart_api.php';
+            const requestBody = IS_LOGGED_IN
+                ? `product_id=${productId}&action=${action}`
+                : `action=update&product_id=${productId}&cart_action=${action}`;
             
-            fetch(BASE_URL + '/api/update_cart_quantity.php', {
+            fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `product_id=${productId}&action=${action}`
+                body: requestBody
             })
             .then(response => response.json())
             .then(data => {
@@ -2357,12 +2369,19 @@ if ($is_logged_in) {
         }
         
         function addRecommendedToCart(productId, productName) {
-            fetch(BASE_URL + '/api/add_to_cart_api.php', {
+            const endpoint = IS_LOGGED_IN
+                ? BASE_URL + '/api/add_to_cart_api.php'
+                : BASE_URL + '/api/guest_cart_api.php';
+            const requestBody = IS_LOGGED_IN
+                ? 'product_id=' + productId + '&quantity=1'
+                : 'action=add&product_id=' + productId + '&quantity=1';
+
+            fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'product_id=' + productId + '&quantity=1'
+                body: requestBody
             })
             .then(response => response.json())
             .then(data => {
