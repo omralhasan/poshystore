@@ -1169,6 +1169,10 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 <i class="fas fa-chart-line"></i>
                 <span>Daily Reports & Profits</span>
             </a>
+            <a href="/pages/admin/photos_database_report.php" class="nav-item">
+                <i class="fas fa-database"></i>
+                <span>Photos DB Report</span>
+            </a>
             <a href="/index.php" class="nav-item">
                 <i class="fas fa-store"></i>
                 <span>Visit Store</span>

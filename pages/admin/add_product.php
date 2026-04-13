@@ -413,6 +413,7 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
         <a href="/pages/admin/manage_categories.php" class="nav-item"><i class="fas fa-layer-group"></i><span>Categories</span></a>
         <a href="/pages/admin/manage_brands.php" class="nav-item"><i class="fas fa-copyright"></i><span>Brands</span></a>
         <a href="/pages/admin/daily_reports.php" class="nav-item"><i class="fas fa-chart-line"></i><span>Daily Reports</span></a>
+        <a href="/pages/admin/photos_database_report.php" class="nav-item"><i class="fas fa-database"></i><span>Photos DB Report</span></a>
         <a href="/index.php" class="nav-item"><i class="fas fa-store"></i><span>Visit Store</span></a>
     </div>
     <div class="sidebar-footer"><a href="/pages/auth/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></div>
