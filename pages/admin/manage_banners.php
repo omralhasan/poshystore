@@ -137,6 +137,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // UPDATE BANNER LINK URL/PATH
+    if ($action === 'update_banner_link') {
+        $id = intval($_POST['id'] ?? 0);
+        $link_url = trim($_POST['link_url'] ?? '');
+
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Invalid ID']);
+            exit();
+        }
+
+        if (strlen($link_url) > 1000) {
+            echo json_encode(['success' => false, 'error' => 'URL is too long']);
+            exit();
+        }
+
+        $stmt = $conn->prepare("UPDATE homepage_banners SET link_url = ? WHERE id = ?");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'error' => 'Failed to prepare update query']);
+            exit();
+        }
+
+        $stmt->bind_param('si', $link_url, $id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'link_url' => $link_url]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to update banner URL']);
+        }
+        $stmt->close();
+        exit();
+    }
+
     // DELETE BANNER
     if ($action === 'delete_banner') {
         $id = intval($_POST['id'] ?? 0);
@@ -305,6 +336,29 @@ if ($cat_result) {
         .banner-card-title { font-weight: 700; font-size: 1rem; margin-bottom: .25rem; }
         .banner-card-meta { font-size: .8rem; color: var(--text-gray); margin-bottom: .75rem; }
         .banner-card-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+        .banner-link-editor { display: flex; gap: .5rem; margin-top: .75rem; }
+        .banner-link-input {
+            flex: 1;
+            min-width: 0;
+            padding: .5rem .65rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: .78rem;
+            background: var(--bg-light);
+        }
+        .banner-link-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(79,158,255,.15);
+        }
+        .banner-link-preview {
+            margin-top: .45rem;
+            font-size: .76rem;
+            color: var(--text-gray);
+            word-break: break-all;
+        }
+        .banner-link-preview a { color: var(--accent-blue); text-decoration: none; }
+        .banner-link-preview a:hover { text-decoration: underline; }
         .banner-type-badge { display: inline-flex; align-items: center; gap: .25rem; padding: .15rem .6rem; border-radius: 6px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
         .badge-hero { background: linear-gradient(135deg, var(--accent-gold), #d4a847); color: #fff; }
         .badge-section { background: rgba(79,158,255,.1); color: var(--accent-blue); }
@@ -549,6 +603,23 @@ if ($cat_result) {
                                     <i class="fas fa-trash-alt"></i> Delete
                                 </button>
                             </div>
+                            <div class="banner-link-editor">
+                                <input type="text"
+                                       id="bannerLinkInput-<?= $banner['id'] ?>"
+                                       class="banner-link-input"
+                                       placeholder="e.g. /pages/shop/category.php?id=1"
+                                       value="<?= htmlspecialchars($banner['link_url'] ?? '') ?>">
+                                <button class="btn btn-sm btn-gold" onclick="updateBannerLink(<?= $banner['id'] ?>, this)">
+                                    <i class="fas fa-link"></i> Save URL
+                                </button>
+                            </div>
+                            <div class="banner-link-preview" id="bannerLinkPreview-<?= $banner['id'] ?>">
+                                <?php if (!empty($banner['link_url'])): ?>
+                                    Current: <a href="<?= htmlspecialchars($banner['link_url']) ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($banner['link_url']) ?></a>
+                                <?php else: ?>
+                                    Current: none
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -586,6 +657,23 @@ if ($cat_result) {
                                 <button class="btn btn-sm btn-danger" onclick="deleteBanner(<?= $banner['id'] ?>, this)">
                                     <i class="fas fa-trash-alt"></i> Delete
                                 </button>
+                            </div>
+                            <div class="banner-link-editor">
+                                <input type="text"
+                                       id="bannerLinkInput-<?= $banner['id'] ?>"
+                                       class="banner-link-input"
+                                       placeholder="e.g. /pages/shop/category.php?id=1"
+                                       value="<?= htmlspecialchars($banner['link_url'] ?? '') ?>">
+                                <button class="btn btn-sm btn-gold" onclick="updateBannerLink(<?= $banner['id'] ?>, this)">
+                                    <i class="fas fa-link"></i> Save URL
+                                </button>
+                            </div>
+                            <div class="banner-link-preview" id="bannerLinkPreview-<?= $banner['id'] ?>">
+                                <?php if (!empty($banner['link_url'])): ?>
+                                    Current: <a href="<?= htmlspecialchars($banner['link_url']) ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($banner['link_url']) ?></a>
+                                <?php else: ?>
+                                    Current: none
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -722,6 +810,55 @@ function toggleBanner(id, btn) {
             }
         })
         .finally(() => btn.disabled = false);
+}
+
+function updateBannerLink(id, btn) {
+    const input = document.getElementById('bannerLinkInput-' + id);
+    if (!input) return;
+
+    const fd = new FormData();
+    fd.append('action', 'update_banner_link');
+    fd.append('id', id);
+    fd.append('link_url', input.value.trim());
+
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch('manage_banners.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                showToast(data.error || 'Failed to update URL', 'error');
+                return;
+            }
+
+            const preview = document.getElementById('bannerLinkPreview-' + id);
+            if (preview) {
+                preview.innerHTML = '';
+                const label = document.createTextNode('Current: ');
+                preview.appendChild(label);
+
+                if (data.link_url) {
+                    const a = document.createElement('a');
+                    a.href = data.link_url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.textContent = data.link_url;
+                    preview.appendChild(a);
+                } else {
+                    preview.appendChild(document.createTextNode('none'));
+                }
+            }
+
+            input.value = data.link_url || '';
+            showToast('Banner URL updated');
+        })
+        .catch(() => showToast('Network error', 'error'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
+        });
 }
 
 function deleteBanner(id, btn) {
