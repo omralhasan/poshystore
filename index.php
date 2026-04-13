@@ -98,105 +98,29 @@ try {
     error_log("Failed to load categories: " . $e->getMessage());
 }
 
-// Homepage category set: Skin Care, Hair Care, Makeup, Lip Balm, Dental Care, Body Care
+// Homepage categories are dynamic: admin add/remove actions are reflected automatically.
 $homepage_categories = [];
-$home_category_slots = [
-    'skin'    => ['category' => null, 'keywords' => ['skin', 'skincare']],
-    'hair'    => ['category' => null, 'keywords' => ['hair', 'haircare']],
-    'makeup'  => ['category' => null, 'keywords' => ['makeup', 'cosmetic', 'cosmetics']],
-    'lipbalm' => ['category' => null, 'keywords' => ['lipbalm', 'lipcare', 'lip', 'balm']],
-    'dental'  => ['category' => null, 'keywords' => ['dentalcare', 'dental', 'oralcare', 'oral', 'tooth', 'teeth']],
-    'body'    => ['category' => null, 'keywords' => ['bodycare', 'body', 'bath']],
-];
-
-$categories_by_id = [];
 foreach ($all_categories as $cat) {
-    $categories_by_id[(int)($cat['id'] ?? 0)] = $cat;
-}
-
-foreach ($all_categories as $cat) {
-    $name_en = strtolower(trim((string)($cat['name_en'] ?? '')));
-    $normalized = preg_replace('/[^a-z0-9]+/', '', $name_en);
-
-    foreach ($home_category_slots as $slot_key => $slot_data) {
-        if (!empty($home_category_slots[$slot_key]['category'])) {
-            continue;
-        }
-
-        foreach ($slot_data['keywords'] as $keyword) {
-            if (str_contains($normalized, $keyword)) {
-                $home_category_slots[$slot_key]['category'] = $cat;
-                break;
-            }
-        }
+    if (!empty($cat['id'])) {
+        $homepage_categories[] = $cat;
     }
 }
 
-// Fallback: pin known homepage categories by ID if keyword matching misses any.
-foreach (['skin' => 1, 'lipbalm' => 2, 'dental' => 3, 'hair' => 4, 'body' => 5, 'makeup' => 6] as $slot_key => $category_id) {
-    if (empty($home_category_slots[$slot_key]['category']) && !empty($categories_by_id[$category_id])) {
-        $home_category_slots[$slot_key]['category'] = $categories_by_id[$category_id];
-    }
-}
+// Keep recommended sections lightweight while category chips/stories remain fully dynamic.
+$homepage_recommended_categories = array_slice($homepage_categories, 0, 6);
 
-// If Lip balm doesn't exist as a standalone category, use the lip-related subcategory as a homepage slot.
-if (empty($home_category_slots['lipbalm']['category'])) {
-    $lip_subcategory = null;
-    $lip_parent_category = null;
-
-    foreach ($all_categories as $cat) {
-        foreach (($cat['subcategories'] ?? []) as $sub) {
-            $sub_name_en = strtolower(trim((string)($sub['name_en'] ?? '')));
-            $sub_normalized = preg_replace('/[^a-z0-9]+/', '', $sub_name_en);
-            foreach ($home_category_slots['lipbalm']['keywords'] as $keyword) {
-                if (str_contains($sub_normalized, $keyword)) {
-                    $lip_subcategory = $sub;
-                    $lip_parent_category = $cat;
-                    break 3;
-                }
-            }
-        }
-    }
-
-    if (!empty($lip_subcategory) && !empty($lip_parent_category)) {
-        $home_category_slots['lipbalm']['category'] = [
-            'id' => (int)$lip_subcategory['id'],
-            'name_en' => $lip_subcategory['name_en'] ?? 'Lip balm',
-            'name_ar' => $lip_subcategory['name_ar'] ?? '',
-            'icon' => $lip_subcategory['icon'] ?? '',
-            'image_url' => !empty($lip_subcategory['image_url'])
-                ? $lip_subcategory['image_url']
-                : ($lip_parent_category['image_url'] ?? ''),
-            'subcategories' => [$lip_subcategory],
-            'is_subcategory_home_slot' => true,
-            'parent_category_id' => (int)$lip_parent_category['id'],
-        ];
-    }
-}
-
-foreach (['skin', 'hair', 'makeup', 'lipbalm', 'dental', 'body'] as $slot_key) {
-    if (!empty($home_category_slots[$slot_key]['category'])) {
-        $homepage_categories[] = $home_category_slots[$slot_key]['category'];
-    }
-}
-
-// Allow category filter by keyword slug (e.g. category=skin-care)
+// Allow category filter by readable keyword slug (e.g. category=skin-care).
 if ($active_category === 0 && $active_category_keyword !== '') {
-    foreach (['skin', 'hair', 'makeup', 'lipbalm', 'dental', 'body'] as $slot_key) {
-        if (empty($home_category_slots[$slot_key]['category'])) {
+    foreach ($homepage_categories as $cat) {
+        $name_en = strtolower(trim((string)($cat['name_en'] ?? '')));
+        $normalized = preg_replace('/[^a-z0-9]+/', '', $name_en);
+        if ($normalized === '') {
             continue;
         }
 
-        foreach ($home_category_slots[$slot_key]['keywords'] as $keyword) {
-            if (str_contains($active_category_keyword, $keyword)) {
-                if (!empty($home_category_slots[$slot_key]['category']['is_subcategory_home_slot'])) {
-                    $active_subcategory = (int)$home_category_slots[$slot_key]['category']['id'];
-                    $active_category = (int)($home_category_slots[$slot_key]['category']['parent_category_id'] ?? 0);
-                } else {
-                    $active_category = (int)$home_category_slots[$slot_key]['category']['id'];
-                }
-                break 2;
-            }
+        if (str_contains($active_category_keyword, $normalized) || str_contains($normalized, $active_category_keyword)) {
+            $active_category = (int)$cat['id'];
+            break;
         }
     }
 }
@@ -270,7 +194,7 @@ if (!$is_filtered_mode) {
 // ── Homepage recommended sections per category ──
 $category_recommended = [];
 if (!$is_filtered_mode) {
-    foreach ($homepage_categories as $cat) {
+    foreach ($homepage_recommended_categories as $cat) {
         $cat_id = (int)$cat['id'];
         $is_home_subcategory = !empty($cat['is_subcategory_home_slot']);
         $where_filter_sql = $is_home_subcategory ? 'p.subcategory_id = ?' : 's.category_id = ?';
@@ -561,17 +485,27 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             ?>
             <a href="pages/shop/category.php?id=<?= $cat_target_id ?><?= $cat_sub_filter ?>" style="text-decoration: none; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                 <div style="width: 80px; height: 80px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--rose)); margin: 0 auto;">
-                    <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark);">
-                        <?php
-                            $catName = strtolower(trim($cat['name_en'] ?? ''));
-                            if (str_contains($catName, 'skin')) echo '<i class="fas fa-spa"></i>';
-                            elseif (str_contains($catName, 'hair')) echo '<i class="fas fa-wind"></i>';
-                            elseif (str_contains($catName, 'makeup') || str_contains($catName, 'cosmetic')) echo '<i class="fas fa-palette"></i>';
-                            elseif (str_contains($catName, 'lip') || str_contains($catName, 'balm')) echo '<i class="fas fa-heart"></i>';
-                            elseif (str_contains($catName, 'dental') || str_contains($catName, 'oral') || str_contains($catName, 'tooth')) echo '<i class="fas fa-tooth"></i>';
-                            elseif (str_contains($catName, 'body')) echo '<i class="fas fa-shower"></i>';
-                            else echo '<i class="fas fa-star"></i>';
-                        ?>
+                    <div style="width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-dark); overflow: hidden;">
+                        <?php if (!empty($cat['image_url'])): ?>
+                            <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($cat['image_url'] ?? ''), ROOT_DIR)) ?>"
+                                 alt="<?= htmlspecialchars($lang === 'ar' && !empty($cat['name_ar']) ? $cat['name_ar'] : $cat['name_en']) ?>"
+                                 loading="lazy"
+                                 decoding="async"
+                                 fetchpriority="low"
+                                 style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                        <?php else: ?>
+                            <?php
+                                $catName = strtolower(trim($cat['name_en'] ?? ''));
+                                if (!empty($cat['icon'])) echo '<i class="' . htmlspecialchars($cat['icon']) . '"></i>';
+                                elseif (str_contains($catName, 'skin')) echo '<i class="fas fa-spa"></i>';
+                                elseif (str_contains($catName, 'hair')) echo '<i class="fas fa-wind"></i>';
+                                elseif (str_contains($catName, 'makeup') || str_contains($catName, 'cosmetic')) echo '<i class="fas fa-palette"></i>';
+                                elseif (str_contains($catName, 'lip') || str_contains($catName, 'balm')) echo '<i class="fas fa-heart"></i>';
+                                elseif (str_contains($catName, 'dental') || str_contains($catName, 'oral') || str_contains($catName, 'tooth')) echo '<i class="fas fa-tooth"></i>';
+                                elseif (str_contains($catName, 'body')) echo '<i class="fas fa-shower"></i>';
+                                else echo '<i class="fas fa-star"></i>';
+                            ?>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <p style="margin-top: 0.6rem; font-size: 0.82rem; font-weight: 600; color: var(--text-primary);">
