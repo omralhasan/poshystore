@@ -42,6 +42,135 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+/**
+ * Validate identifier-style DB names.
+ */
+function isSafeDbName($name) {
+    return is_string($name) && preg_match('/^[A-Za-z0-9_]+$/', $name) === 1;
+}
+
+/**
+ * Returns true if a table exists inside the provided database.
+ */
+function dbHasTable(mysqli $conn, $database, $table) {
+    if (!isSafeDbName($database) || !isSafeDbName($table)) {
+        return false;
+    }
+
+    $sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param('ss', $database, $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ok = ($res && $res->num_rows > 0);
+    $stmt->close();
+    return $ok;
+}
+
+/**
+ * Returns products count for a candidate DB (0 if unavailable).
+ */
+function dbProductsCount(mysqli $conn, $database) {
+    if (!isSafeDbName($database) || !dbHasTable($conn, $database, 'products')) {
+        return 0;
+    }
+
+    $sql = "SELECT COUNT(*) AS c FROM `" . $database . "`.`products`";
+    $res = $conn->query($sql);
+    if (!$res) {
+        return 0;
+    }
+
+    $row = $res->fetch_assoc();
+    return isset($row['c']) ? (int)$row['c'] : 0;
+}
+
+/**
+ * Auto-select the best available application database when configured DB is
+ * missing core tables or has no product rows while another candidate has data.
+ */
+function selectBestApplicationDatabase(mysqli $conn, $configuredDb) {
+    $configuredDb = isSafeDbName($configuredDb) ? $configuredDb : '';
+
+    $candidates = [];
+    if ($configuredDb !== '') {
+        $candidates[] = $configuredDb;
+    }
+
+    // Known project DB names (legacy + current)
+    $candidates[] = 'poshy_db';
+    $candidates[] = 'poshy_lifestyle';
+
+    // Optional custom candidates from env: DB_FALLBACKS=db1,db2
+    $fallbacksEnv = getenv('DB_FALLBACKS') ?: '';
+    if (!empty($fallbacksEnv)) {
+        $parts = explode(',', $fallbacksEnv);
+        foreach ($parts as $dbName) {
+            $dbName = trim($dbName);
+            if ($dbName !== '') {
+                $candidates[] = $dbName;
+            }
+        }
+    }
+
+    // Keep first occurrence only
+    $seen = [];
+    $ordered = [];
+    foreach ($candidates as $dbName) {
+        if (!isSafeDbName($dbName) || isset($seen[$dbName])) {
+            continue;
+        }
+        $seen[$dbName] = true;
+        $ordered[] = $dbName;
+    }
+
+    if (empty($ordered)) {
+        return $configuredDb;
+    }
+
+    $currentHasProductsTable = ($configuredDb !== '') ? dbHasTable($conn, $configuredDb, 'products') : false;
+    $currentProductsCount = ($configuredDb !== '') ? dbProductsCount($conn, $configuredDb) : 0;
+
+    $bestDb = $configuredDb;
+    $bestCount = $currentProductsCount;
+
+    foreach ($ordered as $dbName) {
+        if (!dbHasTable($conn, $dbName, 'products')) {
+            continue;
+        }
+        $count = dbProductsCount($conn, $dbName);
+        if ($count > $bestCount || $bestDb === '') {
+            $bestDb = $dbName;
+            $bestCount = $count;
+        }
+    }
+
+    // Switch only when needed:
+    // 1) configured DB missing products table, or
+    // 2) configured has 0 products while another candidate has >0.
+    $shouldSwitch = false;
+    if (!$currentHasProductsTable && $bestDb !== '' && $bestDb !== $configuredDb) {
+        $shouldSwitch = true;
+    } elseif ($currentHasProductsTable && $currentProductsCount === 0 && $bestDb !== '' && $bestDb !== $configuredDb && $bestCount > 0) {
+        $shouldSwitch = true;
+    }
+
+    if ($shouldSwitch) {
+        if ($conn->select_db($bestDb)) {
+            error_log("DB auto-switch: using '{$bestDb}' instead of '{$configuredDb}'");
+            return $bestDb;
+        }
+    }
+
+    return $configuredDb;
+}
+
+$activeDatabase = selectBestApplicationDatabase($conn, $db_config['database']);
+
 // Set charset to UTF-8 for Arabic support
 $conn->set_charset($db_config['charset']);
 
