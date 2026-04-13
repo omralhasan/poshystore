@@ -86,6 +86,200 @@ function non_empty_count(mysqli $conn, string $table, string $column): int
     return scalar_int($conn, $sql);
 }
 
+function normalize_relative_path(string $path): string
+{
+    $path = rawurldecode($path);
+    $path = str_replace('\\', '/', $path);
+    $path = ltrim($path, '/');
+    $path = preg_replace('#/+#', '/', $path);
+    return (string)$path;
+}
+
+function choose_primary_filename(array $files): ?string
+{
+    foreach ($files as $file) {
+        $base = pathinfo($file, PATHINFO_FILENAME);
+        if ($base === '1') {
+            return $file;
+        }
+    }
+    return $files[0] ?? null;
+}
+
+function sync_product_photos_to_database(mysqli $conn, string $images_dir): array
+{
+    $stats = [
+        'ok' => true,
+        'message' => 'تمت مزامنة الصور بنجاح.',
+        'products_scanned' => 0,
+        'products_with_folder' => 0,
+        'gallery_rows_inserted' => 0,
+        'image_link_updated' => 0,
+        'errors' => [],
+    ];
+
+    if (!table_exists($conn, 'products')) {
+        $stats['ok'] = false;
+        $stats['message'] = 'جدول products غير موجود.';
+        return $stats;
+    }
+
+    if (!is_dir($images_dir)) {
+        $stats['ok'] = false;
+        $stats['message'] = 'مجلد الصور غير موجود على السيرفر: ' . $images_dir;
+        return $stats;
+    }
+
+    if (!function_exists('find_product_image_folder') || !function_exists('get_png_files')) {
+        $stats['ok'] = false;
+        $stats['message'] = 'دوال product_image_helper غير متاحة.';
+        return $stats;
+    }
+
+    $create_sql = "CREATE TABLE IF NOT EXISTS product_images (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        image_path VARCHAR(500) NOT NULL,
+        sort_order INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id)
+    )";
+    if (!$conn->query($create_sql)) {
+        $stats['ok'] = false;
+        $stats['message'] = 'فشل إنشاء/التحقق من جدول product_images: ' . $conn->error;
+        return $stats;
+    }
+
+    $existing = [];
+    $max_sort = [];
+    $first_image_by_product = [];
+
+    $existing_res = $conn->query("SELECT product_id, image_path, sort_order FROM product_images ORDER BY product_id ASC, sort_order ASC, id ASC");
+    if ($existing_res) {
+        while ($row = $existing_res->fetch_assoc()) {
+            $pid = (int)$row['product_id'];
+            if ($pid <= 0) {
+                continue;
+            }
+            $rel = normalize_relative_path((string)$row['image_path']);
+            if ($rel === '') {
+                continue;
+            }
+
+            $existing[$pid][$rel] = true;
+            $sort = (int)($row['sort_order'] ?? 0);
+            if (!isset($max_sort[$pid]) || $sort > $max_sort[$pid]) {
+                $max_sort[$pid] = $sort;
+            }
+            if (!isset($first_image_by_product[$pid])) {
+                $first_image_by_product[$pid] = $rel;
+            }
+        }
+    }
+
+    $insert_stmt = $conn->prepare("INSERT INTO product_images (product_id, image_path, sort_order) VALUES (?, ?, ?)");
+    $update_stmt = $conn->prepare("UPDATE products SET image_link = ? WHERE id = ?");
+
+    if (!$insert_stmt || !$update_stmt) {
+        $stats['ok'] = false;
+        $stats['message'] = 'فشل تجهيز أوامر الإدخال/التحديث.';
+        return $stats;
+    }
+
+    $products_res = $conn->query("SELECT id, name_en, image_link FROM products ORDER BY id ASC");
+    if (!$products_res) {
+        $stats['ok'] = false;
+        $stats['message'] = 'فشل جلب المنتجات: ' . $conn->error;
+        return $stats;
+    }
+
+    while ($product = $products_res->fetch_assoc()) {
+        $stats['products_scanned']++;
+
+        $pid = (int)($product['id'] ?? 0);
+        if ($pid <= 0) {
+            continue;
+        }
+
+        $name_en = trim((string)($product['name_en'] ?? ''));
+        $current_image_link = trim((string)($product['image_link'] ?? ''));
+
+        $folder = ($name_en !== '') ? find_product_image_folder($name_en, $images_dir) : null;
+        $product_files = [];
+
+        if (!empty($folder)) {
+            $stats['products_with_folder']++;
+            $folder_path = rtrim($images_dir, '/') . '/' . $folder;
+            $files = get_png_files($folder_path);
+            if (!empty($files)) {
+                $product_files = $files;
+                foreach ($files as $file) {
+                    $rel = normalize_relative_path('images/' . $folder . '/' . $file);
+                    if ($rel === '') {
+                        continue;
+                    }
+
+                    if (!isset($existing[$pid][$rel])) {
+                        $next_sort = ($max_sort[$pid] ?? 0) + 1;
+                        $insert_stmt->bind_param('isi', $pid, $rel, $next_sort);
+                        if ($insert_stmt->execute()) {
+                            $stats['gallery_rows_inserted']++;
+                            $existing[$pid][$rel] = true;
+                            $max_sort[$pid] = $next_sort;
+                            if (!isset($first_image_by_product[$pid])) {
+                                $first_image_by_product[$pid] = $rel;
+                            }
+                        } else {
+                            $stats['errors'][] = 'Insert product_images failed for product #' . $pid;
+                        }
+                    }
+                }
+            }
+        }
+
+        $is_empty_link = ($current_image_link === '' || strtolower($current_image_link) === 'null');
+        if ($is_empty_link) {
+            $new_primary = null;
+
+            if (!empty($product_files) && !empty($folder)) {
+                $primary_file = choose_primary_filename($product_files);
+                if ($primary_file !== null) {
+                    $new_primary = normalize_relative_path('images/' . $folder . '/' . $primary_file);
+                }
+            }
+
+            if ($new_primary === null && isset($first_image_by_product[$pid])) {
+                $new_primary = $first_image_by_product[$pid];
+            }
+
+            if (!empty($new_primary)) {
+                $update_stmt->bind_param('si', $new_primary, $pid);
+                if ($update_stmt->execute() && $update_stmt->affected_rows > 0) {
+                    $stats['image_link_updated']++;
+                }
+            }
+        }
+    }
+
+    $insert_stmt->close();
+    $update_stmt->close();
+
+    return $stats;
+}
+
+require_once __DIR__ . '/../../includes/product_image_helper.php';
+
+$sync_result = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_product_images'])) {
+    $sync_result = sync_product_photos_to_database($conn, __DIR__ . '/../../images');
+}
+
+$active_database = '';
+$db_name_res = $conn->query('SELECT DATABASE() AS db_name');
+if ($db_name_res && ($db_row = $db_name_res->fetch_assoc())) {
+    $active_database = (string)($db_row['db_name'] ?? '');
+}
+
 $schema_map = [
     ['table' => 'products', 'column' => 'image_link', 'desc' => 'الصورة الرئيسية للمنتج'],
     ['table' => 'products', 'column' => 'image_url', 'desc' => 'حقل قديم/بديل في بعض الصفحات الإدارية'],
@@ -218,6 +412,10 @@ if (table_exists($conn, 'product_option_values') && !column_exists($conn, 'produ
 
 $notes[] = 'الأرقام الموثقة سابقا في التقارير الداخلية تشير إلى 39/40 منتج بصور (97.5%)، بينما تقرير أقدم أشار إلى 32/40 في image_link.';
 
+if ($total_products === 0) {
+    $notes[] = 'لا توجد منتجات في قاعدة البيانات الحالية داخل هذا التنفيذ. غالبا تحتاج التأكد من DB_NAME في ملف .env أو بيئة السيرفر.';
+}
+
 $generated_at = date('Y-m-d H:i:s');
 ?>
 <!doctype html>
@@ -293,6 +491,32 @@ $generated_at = date('Y-m-d H:i:s');
             border-radius: 10px;
             font-size: 13px;
             font-weight: 700;
+        }
+
+        .btn-sync {
+            border-color: #10b981;
+            color: #065f46;
+            background: #ecfdf5;
+            cursor: pointer;
+        }
+
+        .alert {
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            border: 1px solid #86efac;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .alert-error {
+            border: 1px solid #fca5a5;
+            background: #fef2f2;
+            color: #991b1b;
         }
 
         .metrics {
@@ -412,11 +636,30 @@ $generated_at = date('Y-m-d H:i:s');
     <div class="hero">
         <h1>تقرير شامل لصور قاعدة البيانات</h1>
         <p>هذا التقرير يعرض حالة جميع حقول الصور والجداول المرتبطة بها بشكل مباشر من قاعدة البيانات.</p>
+        <p class="small" style="margin-top:6px;">قاعدة البيانات الحالية: <strong><?php echo htmlspecialchars($active_database !== '' ? $active_database : '(unknown)', ENT_QUOTES, 'UTF-8'); ?></strong></p>
         <div class="actions">
             <a class="btn" href="/pages/admin/admin_panel.php">العودة للوحة الإدارة</a>
             <a class="btn" href="/pages/admin/add_product.php">إضافة منتج جديد</a>
+            <form method="post" style="display:inline; margin:0;">
+                <button class="btn btn-sync" type="submit" name="sync_product_images" value="1" onclick="return confirm('سيتم إضافة كل الصور المفقودة فقط إلى قاعدة البيانات بدون تعديل القيم الموجودة. هل تريد المتابعة؟');">
+                    مزامنة صور المنتجات إلى قاعدة البيانات
+                </button>
+            </form>
         </div>
         <p class="small" style="margin-top: 8px;">وقت التوليد: <?php echo htmlspecialchars($generated_at, ENT_QUOTES, 'UTF-8'); ?></p>
+
+        <?php if ($sync_result !== null): ?>
+            <div class="alert <?php echo !empty($sync_result['ok']) ? 'alert-success' : 'alert-error'; ?>">
+                <strong><?php echo htmlspecialchars((string)$sync_result['message'], ENT_QUOTES, 'UTF-8'); ?></strong><br>
+                تم فحص المنتجات: <?php echo (int)($sync_result['products_scanned'] ?? 0); ?> |
+                منتجات لها مجلد صور: <?php echo (int)($sync_result['products_with_folder'] ?? 0); ?> |
+                صور جاليري تمت إضافتها: <?php echo (int)($sync_result['gallery_rows_inserted'] ?? 0); ?> |
+                image_link تم تعبئته: <?php echo (int)($sync_result['image_link_updated'] ?? 0); ?>
+                <?php if (!empty($sync_result['errors'])): ?>
+                    <br>ملاحظات: <?php echo htmlspecialchars(implode(' | ', (array)$sync_result['errors']), ENT_QUOTES, 'UTF-8'); ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <div class="metrics">
