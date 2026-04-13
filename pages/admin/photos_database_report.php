@@ -26,8 +26,8 @@ function table_exists(mysqli $conn, string $table): bool
         return false;
     }
 
-    $pattern = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table);
-    $sql = "SHOW TABLES LIKE '" . $conn->real_escape_string($pattern) . "' ESCAPE '\\\\'";
+    // Safe because identifier is restricted to [A-Za-z0-9_]
+    $sql = "SHOW TABLES LIKE '" . $table . "'";
     $res = $conn->query($sql);
     if (!$res) {
         return false;
@@ -46,8 +46,8 @@ function column_exists(mysqli $conn, string $table, string $column): bool
         return false;
     }
 
-    $pattern = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $column);
-    $sql = "SHOW COLUMNS FROM `$table` LIKE '" . $conn->real_escape_string($pattern) . "' ESCAPE '\\\\'";
+    // Safe because identifier is restricted to [A-Za-z0-9_]
+    $sql = "SHOW COLUMNS FROM `$table` LIKE '" . $column . "'";
     $res = $conn->query($sql);
     if (!$res) {
         return false;
