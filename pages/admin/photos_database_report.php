@@ -26,18 +26,14 @@ function table_exists(mysqli $conn, string $table): bool
         return false;
     }
 
-    $stmt = $conn->prepare("SHOW TABLES LIKE ?");
-    if (!$stmt) {
+    $pattern = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $table);
+    $sql = "SHOW TABLES LIKE '" . $conn->real_escape_string($pattern) . "' ESCAPE '\\\\'";
+    $res = $conn->query($sql);
+    if (!$res) {
         return false;
     }
 
-    $stmt->bind_param('s', $table);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $ok = ($res && $res->num_rows > 0);
-    $stmt->close();
-
-    return $ok;
+    return $res->num_rows > 0;
 }
 
 function column_exists(mysqli $conn, string $table, string $column): bool
@@ -50,19 +46,14 @@ function column_exists(mysqli $conn, string $table, string $column): bool
         return false;
     }
 
-    $sql = "SHOW COLUMNS FROM `$table` LIKE ?";
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
+    $pattern = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $column);
+    $sql = "SHOW COLUMNS FROM `$table` LIKE '" . $conn->real_escape_string($pattern) . "' ESCAPE '\\\\'";
+    $res = $conn->query($sql);
+    if (!$res) {
         return false;
     }
 
-    $stmt->bind_param('s', $column);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $ok = ($res && $res->num_rows > 0);
-    $stmt->close();
-
-    return $ok;
+    return $res->num_rows > 0;
 }
 
 function scalar_int(mysqli $conn, string $sql): int
