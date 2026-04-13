@@ -39,16 +39,12 @@ function table_exists_local(mysqli $conn, string $table): bool
     if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) {
         return false;
     }
-    $stmt = $conn->prepare('SHOW TABLES LIKE ?');
-    if (!$stmt) {
+    $escaped = $conn->real_escape_string($table);
+    $res = $conn->query("SHOW TABLES LIKE '" . $escaped . "'");
+    if (!$res) {
         return false;
     }
-    $stmt->bind_param('s', $table);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $ok = $res && $res->num_rows > 0;
-    $stmt->close();
-    return $ok;
+    return $res->num_rows > 0;
 }
 
 function normalize_rel(string $path): string
