@@ -50,6 +50,18 @@ function isSafeDbName($name) {
 }
 
 /**
+ * Read currently selected database name from server session.
+ */
+function getCurrentDbName(mysqli $conn) {
+    $res = $conn->query("SELECT DATABASE() AS db_name");
+    if (!$res) {
+        return '';
+    }
+    $row = $res->fetch_assoc();
+    return isset($row['db_name']) ? (string)$row['db_name'] : '';
+}
+
+/**
  * Returns true if a table exists inside the provided database.
  */
 function dbHasTable(mysqli $conn, $database, $table) {
@@ -57,17 +69,29 @@ function dbHasTable(mysqli $conn, $database, $table) {
         return false;
     }
 
-    $sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1";
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
+    $originalDb = getCurrentDbName($conn);
+    if (!$conn->select_db($database)) {
         return false;
     }
 
-    $stmt->bind_param('ss', $database, $table);
+    $stmt = $conn->prepare("SHOW TABLES LIKE ?");
+    if (!$stmt) {
+        if ($originalDb !== '' && $originalDb !== $database) {
+            @$conn->select_db($originalDb);
+        }
+        return false;
+    }
+
+    $stmt->bind_param('s', $table);
     $stmt->execute();
     $res = $stmt->get_result();
     $ok = ($res && $res->num_rows > 0);
     $stmt->close();
+
+    if ($originalDb !== '' && $originalDb !== $database) {
+        @$conn->select_db($originalDb);
+    }
+
     return $ok;
 }
 
@@ -79,14 +103,41 @@ function dbProductsCount(mysqli $conn, $database) {
         return 0;
     }
 
-    $sql = "SELECT COUNT(*) AS c FROM `" . $database . "`.`products`";
+    $originalDb = getCurrentDbName($conn);
+    if (!$conn->select_db($database)) {
+        return 0;
+    }
+
+    $sql = "SELECT COUNT(*) AS c FROM `products`";
     $res = $conn->query($sql);
+    if ($originalDb !== '' && $originalDb !== $database) {
+        @$conn->select_db($originalDb);
+    }
+
     if (!$res) {
         return 0;
     }
 
     $row = $res->fetch_assoc();
     return isset($row['c']) ? (int)$row['c'] : 0;
+}
+
+/**
+ * Score how much a candidate database looks like the app database.
+ */
+function dbCoreTableScore(mysqli $conn, $database) {
+    if (!isSafeDbName($database)) {
+        return 0;
+    }
+
+    $core = ['products', 'categories', 'subcategories', 'orders', 'users'];
+    $score = 0;
+    foreach ($core as $table) {
+        if (dbHasTable($conn, $database, $table)) {
+            $score++;
+        }
+    }
+    return $score;
 }
 
 /**
@@ -117,6 +168,22 @@ function selectBestApplicationDatabase(mysqli $conn, $configuredDb) {
         }
     }
 
+    // Discover DBs dynamically when account is allowed to list them.
+    $showDbs = $conn->query('SHOW DATABASES');
+    if ($showDbs) {
+        while ($row = $showDbs->fetch_row()) {
+            $dbName = isset($row[0]) ? (string)$row[0] : '';
+            if ($dbName === '') {
+                continue;
+            }
+            // Ignore mysql internal schemas.
+            if (in_array(strtolower($dbName), ['information_schema', 'mysql', 'performance_schema', 'sys'], true)) {
+                continue;
+            }
+            $candidates[] = $dbName;
+        }
+    }
+
     // Keep first occurrence only
     $seen = [];
     $ordered = [];
@@ -134,18 +201,19 @@ function selectBestApplicationDatabase(mysqli $conn, $configuredDb) {
 
     $currentHasProductsTable = ($configuredDb !== '') ? dbHasTable($conn, $configuredDb, 'products') : false;
     $currentProductsCount = ($configuredDb !== '') ? dbProductsCount($conn, $configuredDb) : 0;
+    $currentCoreScore = ($configuredDb !== '') ? dbCoreTableScore($conn, $configuredDb) : 0;
 
     $bestDb = $configuredDb;
     $bestCount = $currentProductsCount;
+    $bestCoreScore = $currentCoreScore;
 
     foreach ($ordered as $dbName) {
-        if (!dbHasTable($conn, $dbName, 'products')) {
-            continue;
-        }
+        $coreScore = dbCoreTableScore($conn, $dbName);
         $count = dbProductsCount($conn, $dbName);
-        if ($count > $bestCount || $bestDb === '') {
+        if ($coreScore > $bestCoreScore || ($coreScore === $bestCoreScore && ($count > $bestCount || $bestDb === ''))) {
             $bestDb = $dbName;
             $bestCount = $count;
+            $bestCoreScore = $coreScore;
         }
     }
 
@@ -153,9 +221,11 @@ function selectBestApplicationDatabase(mysqli $conn, $configuredDb) {
     // 1) configured DB missing products table, or
     // 2) configured has 0 products while another candidate has >0.
     $shouldSwitch = false;
-    if (!$currentHasProductsTable && $bestDb !== '' && $bestDb !== $configuredDb) {
+    if (!$currentHasProductsTable && $bestDb !== '' && $bestDb !== $configuredDb && $bestCoreScore > 0) {
         $shouldSwitch = true;
     } elseif ($currentHasProductsTable && $currentProductsCount === 0 && $bestDb !== '' && $bestDb !== $configuredDb && $bestCount > 0) {
+        $shouldSwitch = true;
+    } elseif ($bestDb !== '' && $bestDb !== $configuredDb && $bestCoreScore > $currentCoreScore) {
         $shouldSwitch = true;
     }
 
@@ -170,6 +240,9 @@ function selectBestApplicationDatabase(mysqli $conn, $configuredDb) {
 }
 
 $activeDatabase = selectBestApplicationDatabase($conn, $db_config['database']);
+if (!defined('POSHY_ACTIVE_DB')) {
+    define('POSHY_ACTIVE_DB', $activeDatabase ?: getCurrentDbName($conn));
+}
 
 // Set charset to UTF-8 for Arabic support
 $conn->set_charset($db_config['charset']);

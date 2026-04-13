@@ -120,7 +120,12 @@ function sync_product_photos_to_database(mysqli $conn, string $images_dir): arra
 
     if (!table_exists($conn, 'products')) {
         $stats['ok'] = false;
-        $stats['message'] = 'جدول products غير موجود.';
+        $dbName = '';
+        $dbRes = $conn->query('SELECT DATABASE() AS db_name');
+        if ($dbRes && ($dbRow = $dbRes->fetch_assoc())) {
+            $dbName = (string)($dbRow['db_name'] ?? '');
+        }
+        $stats['message'] = 'جدول products غير موجود' . ($dbName !== '' ? (' في قاعدة البيانات: ' . $dbName) : '.');
         return $stats;
     }
 
@@ -269,15 +274,43 @@ function sync_product_photos_to_database(mysqli $conn, string $images_dir): arra
 
 require_once __DIR__ . '/../../includes/product_image_helper.php';
 
-$sync_result = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_product_images'])) {
-    $sync_result = sync_product_photos_to_database($conn, __DIR__ . '/../../images');
+$available_databases = [];
+$show_dbs = $conn->query('SHOW DATABASES');
+if ($show_dbs) {
+    while ($row = $show_dbs->fetch_row()) {
+        $dbName = isset($row[0]) ? (string)$row[0] : '';
+        if ($dbName === '') {
+            continue;
+        }
+        $dbLower = strtolower($dbName);
+        if (in_array($dbLower, ['information_schema', 'mysql', 'performance_schema', 'sys'], true)) {
+            continue;
+        }
+        if (safe_identifier($dbName)) {
+            $available_databases[] = $dbName;
+        }
+    }
+}
+
+$db_switch_message = '';
+$requested_db = trim((string)($_REQUEST['db'] ?? ''));
+if ($requested_db !== '' && safe_identifier($requested_db)) {
+    if ($conn->select_db($requested_db)) {
+        $db_switch_message = 'تم التبديل يدويًا إلى قاعدة البيانات: ' . $requested_db;
+    } else {
+        $db_switch_message = 'تعذر التبديل إلى قاعدة البيانات: ' . $requested_db;
+    }
 }
 
 $active_database = '';
 $db_name_res = $conn->query('SELECT DATABASE() AS db_name');
 if ($db_name_res && ($db_row = $db_name_res->fetch_assoc())) {
     $active_database = (string)($db_row['db_name'] ?? '');
+}
+
+$sync_result = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_product_images'])) {
+    $sync_result = sync_product_photos_to_database($conn, __DIR__ . '/../../images');
 }
 
 $schema_map = [
@@ -637,10 +670,25 @@ $generated_at = date('Y-m-d H:i:s');
         <h1>تقرير شامل لصور قاعدة البيانات</h1>
         <p>هذا التقرير يعرض حالة جميع حقول الصور والجداول المرتبطة بها بشكل مباشر من قاعدة البيانات.</p>
         <p class="small" style="margin-top:6px;">قاعدة البيانات الحالية: <strong><?php echo htmlspecialchars($active_database !== '' ? $active_database : '(unknown)', ENT_QUOTES, 'UTF-8'); ?></strong></p>
+        <?php if ($db_switch_message !== ''): ?>
+            <p class="small" style="margin-top:6px; color:#0f766e;"><?php echo htmlspecialchars($db_switch_message, ENT_QUOTES, 'UTF-8'); ?></p>
+        <?php endif; ?>
+
+        <?php if (!empty($available_databases)): ?>
+            <p class="small" style="margin-top:6px;">
+                قواعد متاحة للتبديل:
+                <?php foreach ($available_databases as $i => $dbName): ?>
+                    <?php if ($i > 0): ?> | <?php endif; ?>
+                    <a href="?db=<?php echo urlencode($dbName); ?>" style="color:#1e40af;text-decoration:none;font-weight:700;"><?php echo htmlspecialchars($dbName, ENT_QUOTES, 'UTF-8'); ?></a>
+                <?php endforeach; ?>
+            </p>
+        <?php endif; ?>
+
         <div class="actions">
             <a class="btn" href="/pages/admin/admin_panel.php">العودة للوحة الإدارة</a>
             <a class="btn" href="/pages/admin/add_product.php">إضافة منتج جديد</a>
             <form method="post" style="display:inline; margin:0;">
+                <input type="hidden" name="db" value="<?php echo htmlspecialchars($active_database, ENT_QUOTES, 'UTF-8'); ?>">
                 <button class="btn btn-sync" type="submit" name="sync_product_images" value="1" onclick="return confirm('سيتم إضافة كل الصور المفقودة فقط إلى قاعدة البيانات بدون تعديل القيم الموجودة. هل تريد المتابعة؟');">
                     مزامنة صور المنتجات إلى قاعدة البيانات
                 </button>
