@@ -130,6 +130,15 @@ if ($is_ajax_request) {
     $folder_path = $images_base . $folder_name . '/';
 
     $uploaded_image_paths = [];
+    $requested_image_count = 0;
+    if (isset($_FILES['product_images']['name']) && is_array($_FILES['product_images']['name'])) {
+        foreach ($_FILES['product_images']['name'] as $name) {
+            if (trim((string)$name) !== '') {
+                $requested_image_count++;
+            }
+        }
+    }
+
     if (!empty($_FILES['product_images']['name'][0])) {
         if (!is_dir($folder_path)) mkdir($folder_path, 0755, true);
 
@@ -166,6 +175,15 @@ if ($is_ajax_request) {
                 $image_link = $relative_path;
             }
         }
+    }
+
+    if ($requested_image_count > 0 && count($uploaded_image_paths) === 0) {
+        while (ob_get_level() > 0) ob_end_clean();
+        echo json_encode([
+            'success' => false,
+            'error' => 'Image upload failed. Please use JPG/PNG/WEBP images and try again.'
+        ]);
+        exit();
     }
 
     // Insert product
@@ -656,10 +674,11 @@ function removeFileAt(idx) {
 // Each time user picks files, ADD them to the accumulated list (not replace)
 document.getElementById('imageInput').addEventListener('change', function() {
     Array.from(this.files).forEach(f => accumulatedFiles.items.add(f));
-    syncInputFiles();
-    renderImagePreviews();
     // Clear input value so picking the same file twice still triggers 'change'
     this.value = '';
+    // Re-assign accumulated files after clearing the native input value.
+    syncInputFiles();
+    renderImagePreviews();
 });
 
 document.getElementById('videoFileInput').addEventListener('change', function() {
@@ -682,6 +701,8 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
     if (!nameEn) { showToast('English name is required', 'error'); return; }
     if (price <= 0) { showToast('Price must be greater than 0', 'error'); return; }
 
+    // Ensure accumulated image files are attached to the input at submit time.
+    syncInputFiles();
     const fd = new FormData(this);
     fd.append('ajax', '1');
 
@@ -715,7 +736,10 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
                 setTimeout(() => {
                     if (confirm('Product added! Add another product?')) {
                         this.reset();
-                        document.getElementById('imagePreview').innerHTML = '';
+                        accumulatedFiles = new DataTransfer();
+                        syncInputFiles();
+                        renderImagePreviews();
+                        document.getElementById('imageCountBadge').style.display = 'none';
                     } else {
                         window.location.href = 'admin_panel.php';
                     }
