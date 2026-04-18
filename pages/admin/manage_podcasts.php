@@ -239,12 +239,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     if ($action === 'delete_gallery_image') {
         $img_id = intval($_POST['image_id'] ?? 0);
-        $img = $conn->query("SELECT image_path FROM podcast_images WHERE id=$img_id")->fetch_assoc();
+        if ($img_id <= 0) {
+            echo json_encode(['success'=>false,'error'=>'Invalid image ID']);
+            exit();
+        }
+
+        $img_stmt = $conn->prepare("SELECT image_path FROM podcast_images WHERE id = ?");
+        if (!$img_stmt) {
+            echo json_encode(['success'=>false,'error'=>'Failed to prepare image lookup']);
+            exit();
+        }
+        $img_stmt->bind_param('i', $img_id);
+        $img_stmt->execute();
+        $img = $img_stmt->get_result()->fetch_assoc();
+        $img_stmt->close();
+
         if ($img) {
             $path = __DIR__ . '/../../' . $img['image_path'];
             if (file_exists($path)) unlink($path);
-            $conn->query("DELETE FROM podcast_images WHERE id=$img_id");
-            echo json_encode(['success'=>true]);
+
+            $delete_stmt = $conn->prepare("DELETE FROM podcast_images WHERE id = ?");
+            if (!$delete_stmt) {
+                echo json_encode(['success'=>false,'error'=>'Failed to prepare image deletion']);
+                exit();
+            }
+            $delete_stmt->bind_param('i', $img_id);
+            if ($delete_stmt->execute() && $delete_stmt->affected_rows > 0) {
+                echo json_encode(['success'=>true]);
+            } else {
+                echo json_encode(['success'=>false,'error'=>'Failed to delete image record']);
+            }
+            $delete_stmt->close();
         } else {
             echo json_encode(['success'=>false,'error'=>'Image not found']);
         }
@@ -253,8 +278,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     if ($action === 'toggle_status') {
         $id = intval($_POST['podcast_id'] ?? 0);
-        $conn->query("UPDATE podcasts SET status = IF(status='published','draft','published') WHERE id=$id");
-        echo json_encode(['success'=>true]);
+        if ($id <= 0) {
+            echo json_encode(['success'=>false,'error'=>'Invalid podcast ID']);
+            exit();
+        }
+
+        $toggle_stmt = $conn->prepare("UPDATE podcasts SET status = IF(status='published','draft','published') WHERE id = ?");
+        if (!$toggle_stmt) {
+            echo json_encode(['success'=>false,'error'=>'Failed to prepare status update']);
+            exit();
+        }
+        $toggle_stmt->bind_param('i', $id);
+        if ($toggle_stmt->execute() && $toggle_stmt->affected_rows > 0) {
+            echo json_encode(['success'=>true]);
+        } else {
+            echo json_encode(['success'=>false,'error'=>'Podcast not found or status update failed']);
+        }
+        $toggle_stmt->close();
         exit();
     }
 

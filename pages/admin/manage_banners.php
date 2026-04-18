@@ -106,8 +106,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'toggle_banner') {
         $id = intval($_POST['id'] ?? 0);
         if ($id > 0) {
-            $conn->query("UPDATE homepage_banners SET is_active = NOT is_active WHERE id = $id");
-            $row = $conn->query("SELECT is_active FROM homepage_banners WHERE id = $id")->fetch_assoc();
+            $toggle_stmt = $conn->prepare("UPDATE homepage_banners SET is_active = NOT is_active WHERE id = ?");
+            if (!$toggle_stmt) {
+                echo json_encode(['success' => false, 'error' => 'Failed to prepare update query']);
+                exit();
+            }
+            $toggle_stmt->bind_param('i', $id);
+            if (!$toggle_stmt->execute() || $toggle_stmt->affected_rows <= 0) {
+                $toggle_stmt->close();
+                echo json_encode(['success' => false, 'error' => 'Banner not found or update failed']);
+                exit();
+            }
+            $toggle_stmt->close();
+
+            $status_stmt = $conn->prepare("SELECT is_active FROM homepage_banners WHERE id = ?");
+            if (!$status_stmt) {
+                echo json_encode(['success' => false, 'error' => 'Failed to verify banner status']);
+                exit();
+            }
+            $status_stmt->bind_param('i', $id);
+            $status_stmt->execute();
+            $row = $status_stmt->get_result()->fetch_assoc();
+            $status_stmt->close();
+            if (!$row) {
+                echo json_encode(['success' => false, 'error' => 'Banner not found after update']);
+                exit();
+            }
             echo json_encode(['success' => true, 'is_active' => (bool)$row['is_active']]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid ID']);

@@ -141,12 +141,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'Invalid ID']);
             exit();
         }
-        $row = $conn->query("SELECT image_path FROM homepage_banners WHERE id = $id")->fetch_assoc();
+
+        $lookup = $conn->prepare("SELECT image_path FROM homepage_banners WHERE id = ?");
+        if (!$lookup) {
+            echo json_encode(['success' => false, 'error' => 'Failed to prepare banner lookup']);
+            exit();
+        }
+        $lookup->bind_param('i', $id);
+        $lookup->execute();
+        $row = $lookup->get_result()->fetch_assoc();
+        $lookup->close();
+
         if ($row) {
             $full = __DIR__ . '/../../' . $row['image_path'];
             if (file_exists($full)) @unlink($full);
-            $conn->query("DELETE FROM homepage_banners WHERE id = $id");
-            echo json_encode(['success' => true]);
+
+            $delete = $conn->prepare("DELETE FROM homepage_banners WHERE id = ?");
+            if (!$delete) {
+                echo json_encode(['success' => false, 'error' => 'Failed to prepare banner deletion']);
+                exit();
+            }
+            $delete->bind_param('i', $id);
+            if ($delete->execute() && $delete->affected_rows > 0) {
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Failed to delete banner record']);
+            }
+            $delete->close();
         } else {
             echo json_encode(['success' => false, 'error' => 'Not found']);
         }

@@ -85,10 +85,16 @@ function addOption($product_id) {
     if ($stmt->execute()) {
         $oid = $stmt->insert_id;
         $stmt->close();
-        $conn->query("UPDATE products SET has_options = 1 WHERE id = $product_id");
+        $mark = $conn->prepare("UPDATE products SET has_options = 1 WHERE id = ?");
+        if ($mark) {
+            $mark->bind_param('i', $product_id);
+            $mark->execute();
+            $mark->close();
+        }
         echo json_encode(['success'=>true,'option_id'=>$oid,'message'=>'Option added']);
     } else {
         echo json_encode(['success'=>false,'error'=>'Failed: '.$stmt->error]);
+        $stmt->close();
     }
 }
 
@@ -98,36 +104,103 @@ function deleteOption() {
     $option_id = intval($_POST['option_id'] ?? 0);
     if (!$option_id) { echo json_encode(['success'=>false,'error'=>'Option ID required']); return; }
 
-    $stmt = $conn->prepare("SELECT product_id FROM product_options WHERE id = ?");
-    $stmt->bind_param('i', $option_id);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    $pid = $row['product_id'] ?? 0;
+    $image_paths = [];
 
-    // Delete images on disk
-    $imgs = $conn->prepare("SELECT image FROM product_option_values WHERE option_id = ? AND image IS NOT NULL");
-    $imgs->bind_param('i', $option_id);
-    $imgs->execute();
-    $ir = $imgs->get_result();
-    while ($img = $ir->fetch_assoc()) {
-        $path = __DIR__ . '/..' . $img['image'];
-        if (file_exists($path)) @unlink($path);
+    try {
+        $conn->begin_transaction();
+
+        $stmt = $conn->prepare("SELECT product_id FROM product_options WHERE id = ?");
+        if (!$stmt) {
+            throw new Exception('Failed to prepare option lookup');
+        }
+        $stmt->bind_param('i', $option_id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            throw new Exception('Option not found');
+        }
+        $pid = (int)($row['product_id'] ?? 0);
+
+        // Collect old images so we can remove them from disk after DB commit.
+        $imgs = $conn->prepare("SELECT image FROM product_option_values WHERE option_id = ? AND image IS NOT NULL");
+        if (!$imgs) {
+            throw new Exception('Failed to prepare option images lookup');
+        }
+        $imgs->bind_param('i', $option_id);
+        $imgs->execute();
+        $ir = $imgs->get_result();
+        while ($img = $ir->fetch_assoc()) {
+            if (!empty($img['image'])) {
+                $image_paths[] = $img['image'];
+            }
+        }
+        $imgs->close();
+
+        $del_values = $conn->prepare("DELETE FROM product_option_values WHERE option_id = ?");
+        if (!$del_values) {
+            throw new Exception('Failed to prepare option-values deletion');
+        }
+        $del_values->bind_param('i', $option_id);
+        if (!$del_values->execute()) {
+            $err = $del_values->error;
+            $del_values->close();
+            throw new Exception('Failed to delete option values: ' . $err);
+        }
+        $del_values->close();
+
+        $del = $conn->prepare("DELETE FROM product_options WHERE id = ?");
+        if (!$del) {
+            throw new Exception('Failed to prepare option deletion');
+        }
+        $del->bind_param('i', $option_id);
+        if (!$del->execute() || $del->affected_rows <= 0) {
+            $err = $del->error;
+            $del->close();
+            throw new Exception('Failed to delete option' . ($err ? ': ' . $err : ''));
+        }
+        $del->close();
+
+        if ($pid > 0) {
+            $chk = $conn->prepare("SELECT COUNT(*) as cnt FROM product_options WHERE product_id = ?");
+            if (!$chk) {
+                throw new Exception('Failed to prepare remaining-options check');
+            }
+            $chk->bind_param('i', $pid);
+            $chk->execute();
+            $remaining = (int)($chk->get_result()->fetch_assoc()['cnt'] ?? 0);
+            $chk->close();
+
+            if ($remaining === 0) {
+                $mark = $conn->prepare("UPDATE products SET has_options = 0 WHERE id = ?");
+                if (!$mark) {
+                    throw new Exception('Failed to prepare has_options update');
+                }
+                $mark->bind_param('i', $pid);
+                if (!$mark->execute()) {
+                    $err = $mark->error;
+                    $mark->close();
+                    throw new Exception('Failed to update product option flag: ' . $err);
+                }
+                $mark->close();
+            }
+        }
+
+        $conn->commit();
+    } catch (Throwable $e) {
+        @$conn->rollback();
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        return;
     }
-    $imgs->close();
 
-    $conn->prepare("DELETE FROM product_option_values WHERE option_id = ?")->execute() || true;
-    $del = $conn->prepare("DELETE FROM product_options WHERE id = ?");
-    $del->bind_param('i', $option_id);
-    $del->execute();
-    $del->close();
-
-    if ($pid) {
-        $chk = $conn->query("SELECT COUNT(*) as cnt FROM product_options WHERE product_id = $pid");
-        if ($chk->fetch_assoc()['cnt'] == 0) {
-            $conn->query("UPDATE products SET has_options = 0 WHERE id = $pid");
+    foreach ($image_paths as $image_path) {
+        $path = __DIR__ . '/..' . $image_path;
+        if (file_exists($path)) {
+            @unlink($path);
         }
     }
+
     echo json_encode(['success'=>true,'message'=>'Option deleted']);
 }
 

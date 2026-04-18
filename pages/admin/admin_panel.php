@@ -185,12 +185,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->query("DELETE FROM product_reviews WHERE product_id = $product_id");
             $stmt = $conn->prepare('DELETE FROM products WHERE id = ?');
             $stmt->bind_param('i', $product_id);
-            if ($stmt->execute()) {
+            if ($stmt->execute() && $stmt->affected_rows > 0) {
                 $stmt->close();
                 echo json_encode(['success' => true]);
             } else {
                 $stmt->close();
-                echo json_encode(['success' => false, 'error' => $conn->error]);
+                echo json_encode(['success' => false, 'error' => 'Product was not deleted']);
             }
         } catch (mysqli_sql_exception $e) {
             echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
@@ -232,28 +232,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         try {
-            // Get order info
-            $order_check = $conn->prepare("SELECT status, user_id, total_amount FROM orders WHERE id = ?");
+            $conn->begin_transaction();
+
+            // Get order info and lock row while we reverse related balances.
+            $order_check = $conn->prepare("SELECT status FROM orders WHERE id = ? FOR UPDATE");
+            if (!$order_check) {
+                throw new Exception('Failed to prepare order lookup');
+            }
             $order_check->bind_param('i', $order_id);
             $order_check->execute();
             $order_row = $order_check->get_result()->fetch_assoc();
             $order_check->close();
 
             if (!$order_row) {
-                echo json_encode(['success' => false, 'error' => 'Order not found']);
-                exit();
+                throw new Exception('Order not found');
             }
 
             // If order was not already cancelled, restore stock
             if ($order_row['status'] !== 'cancelled') {
                 $items_stmt = $conn->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+                if (!$items_stmt) {
+                    throw new Exception('Failed to prepare order items lookup');
+                }
                 $items_stmt->bind_param('i', $order_id);
                 $items_stmt->execute();
                 $items_result = $items_stmt->get_result();
                 while ($item = $items_result->fetch_assoc()) {
                     $restock = $conn->prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?");
+                    if (!$restock) {
+                        throw new Exception('Failed to prepare stock restore query');
+                    }
                     $restock->bind_param('ii', $item['quantity'], $item['product_id']);
-                    $restock->execute();
+                    if (!$restock->execute()) {
+                        $restock->close();
+                        throw new Exception('Failed to restore stock');
+                    }
                     $restock->close();
                 }
                 $items_stmt->close();
@@ -266,7 +279,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pts_result = $pts_stmt->get_result();
                     while ($pt = $pts_result->fetch_assoc()) {
                         if ($pt['points_change'] > 0) {
-                            $conn->query("UPDATE users SET points = GREATEST(0, points - {$pt['points_change']}) WHERE id = {$pt['user_id']}");
+                            $reverse_points = $conn->prepare("UPDATE users SET points = GREATEST(0, points - ?) WHERE id = ?");
+                            if (!$reverse_points) {
+                                $pts_stmt->close();
+                                throw new Exception('Failed to prepare points reversal query');
+                            }
+                            $reverse_points->bind_param('ii', $pt['points_change'], $pt['user_id']);
+                            if (!$reverse_points->execute()) {
+                                $reverse_points->close();
+                                $pts_stmt->close();
+                                throw new Exception('Failed to reverse points');
+                            }
+                            $reverse_points->close();
                         }
                     }
                     $pts_stmt->close();
@@ -279,25 +303,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $wt_stmt->execute();
                     $wt_result = $wt_stmt->get_result();
                     while ($wt = $wt_result->fetch_assoc()) {
-                        $conn->query("UPDATE users SET wallet_balance = wallet_balance + {$wt['amount']} WHERE id = {$wt['user_id']}");
+                        $restore_wallet = $conn->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
+                        if (!$restore_wallet) {
+                            $wt_stmt->close();
+                            throw new Exception('Failed to prepare wallet restore query');
+                        }
+                        $restore_wallet->bind_param('di', $wt['amount'], $wt['user_id']);
+                        if (!$restore_wallet->execute()) {
+                            $restore_wallet->close();
+                            $wt_stmt->close();
+                            throw new Exception('Failed to restore wallet balance');
+                        }
+                        $restore_wallet->close();
                     }
                     $wt_stmt->close();
                 }
             }
 
             // Delete related records then order
-            $conn->query("DELETE FROM order_items WHERE order_id = $order_id");
-            $conn->query("DELETE FROM points_transactions WHERE reference_id = $order_id");
-            $del_stmt = $conn->prepare("DELETE FROM orders WHERE id = ?");
-            $del_stmt->bind_param('i', $order_id);
-            if ($del_stmt->execute()) {
-                $del_stmt->close();
-                echo json_encode(['success' => true, 'message' => 'Order #' . $order_id . ' deleted. Stock restored.']);
-            } else {
-                $del_stmt->close();
-                echo json_encode(['success' => false, 'error' => 'Failed to delete order']);
+            $delete_items = $conn->prepare("DELETE FROM order_items WHERE order_id = ?");
+            if (!$delete_items) {
+                throw new Exception('Failed to prepare order-items deletion');
             }
-        } catch (Exception $e) {
+            $delete_items->bind_param('i', $order_id);
+            if (!$delete_items->execute()) {
+                $delete_items->close();
+                throw new Exception('Failed to delete order items');
+            }
+            $delete_items->close();
+
+            $delete_points_tx = $conn->prepare("DELETE FROM points_transactions WHERE reference_id = ?");
+            if (!$delete_points_tx) {
+                throw new Exception('Failed to prepare points-transactions deletion');
+            }
+            $delete_points_tx->bind_param('i', $order_id);
+            if (!$delete_points_tx->execute()) {
+                $delete_points_tx->close();
+                throw new Exception('Failed to delete points transactions');
+            }
+            $delete_points_tx->close();
+
+            $del_stmt = $conn->prepare("DELETE FROM orders WHERE id = ?");
+            if (!$del_stmt) {
+                throw new Exception('Failed to prepare order deletion');
+            }
+            $del_stmt->bind_param('i', $order_id);
+            if (!$del_stmt->execute() || $del_stmt->affected_rows <= 0) {
+                $del_stmt->close();
+                throw new Exception('Failed to delete order');
+            }
+            $del_stmt->close();
+
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Order #' . $order_id . ' deleted. Stock restored.']);
+        } catch (Throwable $e) {
+            @$conn->rollback();
             echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
         }
         exit();
@@ -307,8 +367,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'toggle_recommended') {
         $product_id = intval($_POST['product_id'] ?? 0);
         if ($product_id > 0) {
-            $conn->query("UPDATE products SET is_recommended = NOT is_recommended WHERE id = $product_id");
-            $row = $conn->query("SELECT is_recommended FROM products WHERE id = $product_id")->fetch_assoc();
+            $toggle_stmt = $conn->prepare("UPDATE products SET is_recommended = NOT is_recommended WHERE id = ?");
+            if (!$toggle_stmt) {
+                echo json_encode(['success' => false, 'error' => 'Failed to prepare update']);
+                exit();
+            }
+            $toggle_stmt->bind_param('i', $product_id);
+            if (!$toggle_stmt->execute() || $toggle_stmt->affected_rows <= 0) {
+                $toggle_stmt->close();
+                echo json_encode(['success' => false, 'error' => 'Product not found or update failed']);
+                exit();
+            }
+            $toggle_stmt->close();
+
+            $status_stmt = $conn->prepare("SELECT is_recommended FROM products WHERE id = ?");
+            if (!$status_stmt) {
+                echo json_encode(['success' => false, 'error' => 'Failed to verify update']);
+                exit();
+            }
+            $status_stmt->bind_param('i', $product_id);
+            $status_stmt->execute();
+            $row = $status_stmt->get_result()->fetch_assoc();
+            $status_stmt->close();
+            if (!$row) {
+                echo json_encode(['success' => false, 'error' => 'Product not found after update']);
+                exit();
+            }
             echo json_encode(['success' => true, 'is_recommended' => (bool)$row['is_recommended']]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid product ID']);
@@ -320,8 +404,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'toggle_best_seller') {
         $product_id = intval($_POST['product_id'] ?? 0);
         if ($product_id > 0) {
-            $conn->query("UPDATE products SET is_best_seller = NOT is_best_seller WHERE id = $product_id");
-            $row = $conn->query("SELECT is_best_seller FROM products WHERE id = $product_id")->fetch_assoc();
+            $toggle_stmt = $conn->prepare("UPDATE products SET is_best_seller = NOT is_best_seller WHERE id = ?");
+            if (!$toggle_stmt) {
+                echo json_encode(['success' => false, 'error' => 'Failed to prepare update']);
+                exit();
+            }
+            $toggle_stmt->bind_param('i', $product_id);
+            if (!$toggle_stmt->execute() || $toggle_stmt->affected_rows <= 0) {
+                $toggle_stmt->close();
+                echo json_encode(['success' => false, 'error' => 'Product not found or update failed']);
+                exit();
+            }
+            $toggle_stmt->close();
+
+            $status_stmt = $conn->prepare("SELECT is_best_seller FROM products WHERE id = ?");
+            if (!$status_stmt) {
+                echo json_encode(['success' => false, 'error' => 'Failed to verify update']);
+                exit();
+            }
+            $status_stmt->bind_param('i', $product_id);
+            $status_stmt->execute();
+            $row = $status_stmt->get_result()->fetch_assoc();
+            $status_stmt->close();
+            if (!$row) {
+                echo json_encode(['success' => false, 'error' => 'Product not found after update']);
+                exit();
+            }
             echo json_encode(['success' => true, 'is_best_seller' => (bool)$row['is_best_seller']]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid product ID']);
