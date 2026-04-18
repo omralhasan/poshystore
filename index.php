@@ -319,6 +319,47 @@ try {
     error_log("Homepage banners: " . $e->getMessage());
 }
 
+if (!function_exists('normalize_banner_link')) {
+    function normalize_banner_link(string $link): string
+    {
+        $link = trim($link);
+
+        if ($link === '') {
+            return '#products';
+        }
+
+        // Never allow script protocols in banner links.
+        if (preg_match('/^(?:javascript|data|vbscript):/i', $link)) {
+            return '#products';
+        }
+
+        if ($link[0] === '#' || $link[0] === '/' || $link[0] === '?') {
+            return $link;
+        }
+
+        if (str_starts_with($link, './') || str_starts_with($link, '../')) {
+            return $link;
+        }
+
+        if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $link) || str_starts_with($link, '//')) {
+            return $link;
+        }
+
+        if (str_starts_with(strtolower($link), 'www.')) {
+            return 'https://' . $link;
+        }
+
+        return $link;
+    }
+}
+
+if (!function_exists('is_external_banner_link')) {
+    function is_external_banner_link(string $link): bool
+    {
+        return (bool)preg_match('/^(https?:)?\/\//i', $link);
+    }
+}
+
 // Build slides array: from DB hero banners, or fallback defaults
     $slides = [];
     if (!empty($hero_banners)) {
@@ -425,8 +466,16 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <!-- ======== HERO BANNER SLIDER ======== -->
     <section class="hero-banner" id="heroBanner">
         <div class="hero-banner-track" id="heroBannerTrack">
-            <?php foreach ($slides as $i => $slide): ?>
-            <div class="hero-banner-slide">
+              <?php foreach ($slides as $i => $slide): ?>
+              <?php
+                 $slide_link = normalize_banner_link((string)($slide['link'] ?? ''));
+                 $slide_is_external = is_external_banner_link($slide_link);
+              ?>
+              <div class="hero-banner-slide"
+                  data-banner-link="<?= htmlspecialchars($slide_link) ?>"
+                  tabindex="0"
+                  role="link"
+                  style="cursor:pointer;">
                 <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($slide['image'] ?? ''), ROOT_DIR)) ?>"
                      alt="<?= htmlspecialchars($slide['title'] ?: 'Poshy Store Banner') ?>"
                      <?= $i === 0 ? 'loading="eager" fetchpriority="high" decoding="async"' : 'loading="lazy" fetchpriority="low" decoding="async"' ?>>
@@ -438,7 +487,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <?php endif; ?>
                         <h2><?= htmlspecialchars($slide['title']) ?></h2>
                         <?php if (!empty($slide['cta_text'])): ?>
-                        <a href="<?= htmlspecialchars($slide['link'] ?: '#products') ?>" class="hero-banner-cta">
+                        <a href="<?= htmlspecialchars($slide_link) ?>"
+                           class="hero-banner-cta"
+                           <?= $slide_is_external ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
                             <i class="fas fa-shopping-bag"></i> <?= htmlspecialchars($slide['cta_text']) ?>
                         </a>
                         <?php endif; ?>
@@ -722,8 +773,12 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         if (isset($homepage_banners[$before_key]) && !empty($homepage_banners[$before_key])): ?>
             <div class="section-banners fade-in">
                 <?php foreach ($homepage_banners[$before_key] as $banner): ?>
+                <?php
+                    $banner_link = normalize_banner_link((string)($banner['link_url'] ?? ''));
+                    $banner_is_external = is_external_banner_link($banner_link);
+                ?>
                 <?php if (!empty($banner['link_url'])): ?>
-                    <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
+                    <a href="<?= htmlspecialchars($banner_link) ?>" class="section-banner-card" <?= $banner_is_external ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
                         <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($banner['image_path'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </a>
                 <?php else: ?>
@@ -806,8 +861,12 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         if (isset($homepage_banners[$sec_idx])): ?>
             <div class="section-banners fade-in">
                 <?php foreach ($homepage_banners[$sec_idx] as $banner): ?>
+                <?php
+                    $banner_link = normalize_banner_link((string)($banner['link_url'] ?? ''));
+                    $banner_is_external = is_external_banner_link($banner_link);
+                ?>
                 <?php if (!empty($banner['link_url'])): ?>
-                    <a href="<?= htmlspecialchars($banner['link_url']) ?>" class="section-banner-card">
+                    <a href="<?= htmlspecialchars($banner_link) ?>" class="section-banner-card" <?= $banner_is_external ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
                         <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($banner['image_path'] ?? ''), ROOT_DIR)) ?>" alt="<?= htmlspecialchars($banner['title'] ?? '') ?>" loading="lazy" decoding="async" fetchpriority="low">
                     </a>
                 <?php else: ?>

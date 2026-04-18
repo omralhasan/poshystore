@@ -397,23 +397,41 @@
     // Smooth scroll
     // ==========================================
     runWhenIdle(function() {
+        const currentUrl = new URL(window.location.href);
         document.querySelectorAll('a[href*="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 const href = this.getAttribute('href');
-                const hash = href.split('#')[1];
-                if (hash) {
-                    const target = document.getElementById(hash);
-                    if (target) {
-                        e.preventDefault();
-                        const offset = 20;
-                        const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
-                        window.scrollTo({ top: y, behavior: 'smooth' });
+                if (!href || href === '#') return;
 
-                        // Update URL without page jump
-                        if (history.pushState) {
-                            history.pushState(null, null, href);
-                        }
-                    }
+                let targetUrl;
+                try {
+                    targetUrl = new URL(href, window.location.href);
+                } catch (err) {
+                    return;
+                }
+
+                if (!targetUrl.hash) return;
+
+                const samePage =
+                    targetUrl.origin === currentUrl.origin &&
+                    targetUrl.pathname === currentUrl.pathname &&
+                    targetUrl.search === currentUrl.search;
+
+                if (!samePage) return;
+
+                const hash = decodeURIComponent(targetUrl.hash.slice(1));
+                if (!hash) return;
+
+                const target = document.getElementById(hash);
+                if (!target) return;
+
+                e.preventDefault();
+                const offset = 20;
+                const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+
+                if (history.pushState) {
+                    history.pushState(null, '', targetUrl.hash);
                 }
             });
         });
@@ -434,7 +452,7 @@
             let autoInterval = null;
             let isPaused = false;
 
-            if (!track || slideCount <= 1) return;
+            if (!track || slideCount === 0) return;
 
             function updateDots(nextIndex) {
                 if (dots[prevDot]) dots[prevDot].classList.remove('active');
@@ -477,6 +495,7 @@
             }
 
             let touchStartX = 0;
+            let suppressClickUntil = 0;
             const banner = document.getElementById('heroBanner');
             if (banner) {
                 banner.addEventListener('touchstart', e => {
@@ -488,6 +507,7 @@
                     const diff = touchStartX - e.changedTouches[0].screenX;
                     const isRtl = document.documentElement.dir === 'rtl';
                     if (Math.abs(diff) > 50) {
+                        suppressClickUntil = Date.now() + 350;
                         if ((diff > 0 && !isRtl) || (diff < 0 && isRtl)) {
                             next();
                         } else {
@@ -497,6 +517,24 @@
                     if (!isPaused) startAuto();
                 }, { passive: true });
             }
+
+            slides.forEach(slide => {
+                const link = slide.dataset.bannerLink || '';
+                if (!link) return;
+
+                slide.addEventListener('click', function(e) {
+                    if (Date.now() < suppressClickUntil) return;
+                    if (e.target.closest('a, button')) return;
+                    window.location.href = link;
+                });
+
+                slide.addEventListener('keydown', function(e) {
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    if (e.target.closest('a, button')) return;
+                    e.preventDefault();
+                    window.location.href = link;
+                });
+            });
 
             window.heroGoTo = function(i) { goTo(i); if (!isPaused) startAuto(); };
             window.heroNext = function() { next(); if (!isPaused) startAuto(); };
