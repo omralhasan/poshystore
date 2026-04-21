@@ -35,6 +35,7 @@ if (!CLI_RUN && isset($_GET['serve'])) {
 $META_CURRENCY = getenv('META_FEED_CURRENCY') ?: 'JOD';
 $OUTPUT_DIR = $root . '/feeds';
 $OUTPUT_FILE = $OUTPUT_DIR . '/meta_products.csv';
+$OUTPUT_TMP_FILE = $OUTPUT_DIR . '/meta_products.tmp.' . getmypid() . '.' . time() . '.csv';
 $LOG_FILE = $root . '/logs/meta_feed.log';
 $FEED_DOMAIN = rtrim(SITE_URL ?: 'https://poshystore.com', '/');
 $FORCE_IN_STOCK = meta_bool_env('META_FEED_FORCE_IN_STOCK', false);
@@ -80,9 +81,10 @@ if ($fallback_relative === '') {
     meta_log($LOG_FILE, 'Warn: No fallback image found. Products with missing images may be skipped.');
 }
 
-$fh = fopen($OUTPUT_FILE, 'w');
+$fh = fopen($OUTPUT_TMP_FILE, 'w');
 if (!$fh) {
-    meta_log($LOG_FILE, 'Error: Cannot open file for writing: ' . $OUTPUT_FILE);
+    meta_log($LOG_FILE, 'Error: Cannot open temp file for writing: ' . $OUTPUT_TMP_FILE);
+    meta_log($LOG_FILE, 'Error: Dir writable=' . (is_writable($OUTPUT_DIR) ? 'yes' : 'no') . ', target writable=' . (is_writable($OUTPUT_FILE) ? 'yes' : 'no'));
     http_response_code(500);
     exit('Cannot write CSV file.');
 }
@@ -171,6 +173,19 @@ while ($p = $result->fetch_assoc()) {
 }
 
 fclose($fh);
+
+// Replace final feed atomically. This avoids failures when an old file exists with restrictive permissions.
+if (!@rename($OUTPUT_TMP_FILE, $OUTPUT_FILE)) {
+    // Fallback path for filesystems where rename-overwrite is restricted.
+    if (!@copy($OUTPUT_TMP_FILE, $OUTPUT_FILE)) {
+        @unlink($OUTPUT_TMP_FILE);
+        meta_log($LOG_FILE, 'Error: Failed to move temp feed into place: ' . $OUTPUT_TMP_FILE . ' -> ' . $OUTPUT_FILE);
+        http_response_code(500);
+        exit('Cannot finalize CSV file.');
+    }
+    @unlink($OUTPUT_TMP_FILE);
+}
+
 $conn->close();
 
 @chmod($OUTPUT_FILE, 0664);
