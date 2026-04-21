@@ -55,8 +55,12 @@ if ($is_ajax_request) {
 }
 
 $cat_upload_dir = __DIR__ . '/../../uploads/categories/';
-if (!is_dir($cat_upload_dir)) {
-    mkdir($cat_upload_dir, 0755, true);
+$cat_upload_dir_error = null;
+
+if (!is_dir($cat_upload_dir) && !@mkdir($cat_upload_dir, 0775, true) && !is_dir($cat_upload_dir)) {
+    $cat_upload_dir_error = 'Upload directory is missing and could not be created.';
+} else {
+    @chmod($cat_upload_dir, 0775);
 }
 
 // Check if image_url column exists
@@ -226,6 +230,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cat_id = intval($_POST['category_id'] ?? 0);
         if (!$cat_id) { echo json_encode(['success' => false, 'error' => 'Invalid category ID']); exit(); }
         if (!$has_image_col) { echo json_encode(['success' => false, 'error' => 'Please run the migration first: /run_category_image_migration.php']); exit(); }
+        if ($cat_upload_dir_error) {
+            echo json_encode([
+                'success' => false,
+                'error' => $cat_upload_dir_error . ' Please grant web server write access to: ' . $cat_upload_dir,
+            ]);
+            exit();
+        }
+        if (!is_writable($cat_upload_dir)) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Upload directory is not writable. Please grant web server write access to: ' . $cat_upload_dir,
+            ]);
+            exit();
+        }
         
         if (empty($_FILES['category_image']) || $_FILES['category_image']['error'] !== UPLOAD_ERR_OK) {
             echo json_encode(['success' => false, 'error' => 'Please select a valid image']);
@@ -248,8 +266,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $filename = 'cat_' . $cat_id . '_' . time() . '.' . $ext;
         $dest = $cat_upload_dir . $filename;
         
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            echo json_encode(['success' => false, 'error' => 'Upload failed']);
+        if (!@move_uploaded_file($file['tmp_name'], $dest)) {
+            $last_error = error_get_last();
+            $details = !empty($last_error['message']) ? $last_error['message'] : 'Server write failed.';
+            echo json_encode(['success' => false, 'error' => 'Upload failed: ' . $details]);
             exit();
         }
         
@@ -269,6 +289,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'upload_subcategory_image') {
         $sub_id = intval($_POST['subcategory_id'] ?? 0);
         if (!$sub_id) { echo json_encode(['success' => false, 'error' => 'Invalid subcategory ID']); exit(); }
+        if ($cat_upload_dir_error) {
+            echo json_encode([
+                'success' => false,
+                'error' => $cat_upload_dir_error . ' Please grant web server write access to: ' . $cat_upload_dir,
+            ]);
+            exit();
+        }
+        if (!is_writable($cat_upload_dir)) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Upload directory is not writable. Please grant web server write access to: ' . $cat_upload_dir,
+            ]);
+            exit();
+        }
         
         // Check if image_url column exists
         $sub_img_check = $conn->query("SHOW COLUMNS FROM subcategories LIKE 'image_url'");
@@ -296,8 +330,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $filename = 'subcat_' . $sub_id . '_' . time() . '.' . $ext;
         $dest = $cat_upload_dir . $filename;
         
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            echo json_encode(['success' => false, 'error' => 'Upload failed']);
+        if (!@move_uploaded_file($file['tmp_name'], $dest)) {
+            $last_error = error_get_last();
+            $details = !empty($last_error['message']) ? $last_error['message'] : 'Server write failed.';
+            echo json_encode(['success' => false, 'error' => 'Upload failed: ' . $details]);
             exit();
         }
         
