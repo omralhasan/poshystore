@@ -172,6 +172,18 @@ foreach ($feed_commands as $feed_cmd) {
     }
 }
 
+// Extra diagnostics for meta_feed 500: run directly via PHP CLI and capture stderr.
+$meta_feed_cli = [
+    'cmd' => 'php -d display_errors=1 -d log_errors=0 /var/www/html/meta_feed.php 2>&1',
+    'exit_code' => null,
+    'output' => 'skipped',
+];
+$meta_cmd_output = [];
+$meta_cmd_code = 0;
+exec($meta_feed_cli['cmd'], $meta_cmd_output, $meta_cmd_code);
+$meta_feed_cli['exit_code'] = $meta_cmd_code;
+$meta_feed_cli['output'] = trim(implode("\n", $meta_cmd_output));
+
 // Get current git HEAD info
 $head = trim(shell_exec("git log --oneline -1 2>&1"));
 
@@ -182,5 +194,6 @@ echo json_encode([
     'db_migration'   => $db_migration_output,
     'uploads_permissions' => $uploads_permissions,
     'feed_refresh'   => $feed_refresh,
+    'meta_feed_cli'  => $meta_feed_cli,
     'details'        => $all_output,
 ], JSON_PRETTY_PRINT);
