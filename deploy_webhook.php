@@ -95,12 +95,16 @@ if (is_dir($feeds_dir)) {
 // Keep uploads writable for admin file/image updates.
 $uploads_dir = $web_root . '/uploads';
 $categories_upload_dir = $uploads_dir . '/categories';
+$category_images_upload_dir = $uploads_dir . '/category_images';
 
 if (!is_dir($uploads_dir)) {
     @mkdir($uploads_dir, 0775, true);
 }
 if (!is_dir($categories_upload_dir)) {
     @mkdir($categories_upload_dir, 0775, true);
+}
+if (!is_dir($category_images_upload_dir)) {
+    @mkdir($category_images_upload_dir, 0775, true);
 }
 
 if (is_dir($uploads_dir)) {
@@ -116,8 +120,11 @@ $uploads_permissions = [
     'uploads_writable' => is_writable($uploads_dir),
     'categories_exists' => is_dir($categories_upload_dir),
     'categories_writable' => is_writable($categories_upload_dir),
+    'category_images_exists' => is_dir($category_images_upload_dir),
+    'category_images_writable' => is_writable($category_images_upload_dir),
     'uploads_path' => $uploads_dir,
     'categories_path' => $categories_upload_dir,
+    'category_images_path' => $category_images_upload_dir,
 ];
 
 // ─── Auto-run DB migrations ──────────────────────────────────────────────────
