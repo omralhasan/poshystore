@@ -111,6 +111,15 @@ if (is_dir($uploads_dir)) {
     shell_exec("chcon -R -t httpd_sys_rw_content_t $uploads_dir_escaped 2>/dev/null");
 }
 
+$uploads_permissions = [
+    'uploads_exists' => is_dir($uploads_dir),
+    'uploads_writable' => is_writable($uploads_dir),
+    'categories_exists' => is_dir($categories_upload_dir),
+    'categories_writable' => is_writable($categories_upload_dir),
+    'uploads_path' => $uploads_dir,
+    'categories_path' => $categories_upload_dir,
+];
+
 // ─── Auto-run DB migrations ──────────────────────────────────────────────────
 $db_migration_output = 'skipped';
 $migration_file = $web_root . '/sql/migrate_bilingual_columns.sql';
@@ -164,6 +173,7 @@ echo json_encode([
     'deployed'       => $head,
     'timestamp'      => date('Y-m-d H:i:s'),
     'db_migration'   => $db_migration_output,
+    'uploads_permissions' => $uploads_permissions,
     'feed_refresh'   => $feed_refresh,
     'details'        => $all_output,
 ], JSON_PRETTY_PRINT);
