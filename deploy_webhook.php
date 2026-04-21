@@ -92,6 +92,25 @@ if (is_dir($feeds_dir)) {
     shell_exec("chcon -R -t httpd_sys_rw_content_t $feeds_dir_escaped 2>/dev/null");
 }
 
+// Keep uploads writable for admin file/image updates.
+$uploads_dir = $web_root . '/uploads';
+$categories_upload_dir = $uploads_dir . '/categories';
+
+if (!is_dir($uploads_dir)) {
+    @mkdir($uploads_dir, 0775, true);
+}
+if (!is_dir($categories_upload_dir)) {
+    @mkdir($categories_upload_dir, 0775, true);
+}
+
+if (is_dir($uploads_dir)) {
+    $uploads_dir_escaped = escapeshellarg($uploads_dir);
+    shell_exec("find $uploads_dir_escaped -type d -exec chmod 775 {} \\\; 2>&1");
+    shell_exec("find $uploads_dir_escaped -type f -exec chmod 664 {} \\\; 2>&1");
+    // Ensure SELinux allows httpd/php-fpm writes under uploads.
+    shell_exec("chcon -R -t httpd_sys_rw_content_t $uploads_dir_escaped 2>/dev/null");
+}
+
 // ─── Auto-run DB migrations ──────────────────────────────────────────────────
 $db_migration_output = 'skipped';
 $migration_file = $web_root . '/sql/migrate_bilingual_columns.sql';
