@@ -349,6 +349,11 @@ if (!function_exists('normalize_banner_link')) {
             return 'https://' . $link;
         }
 
+        // Accept bare domains such as instagram.com/page and normalize them.
+        if (preg_match('/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?:[\/:?#].*)?$/i', $link)) {
+            return 'https://' . $link;
+        }
+
         return $link;
     }
 }
@@ -431,6 +436,24 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 background: transparent;
             }
         }
+
+        .hero-banner-slide-link {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            display: block;
+        }
+
+        .hero-banner-overlay {
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .hero-banner-cta {
+            pointer-events: auto;
+            position: relative;
+            z-index: 3;
+        }
     </style>
     <?php if (!empty($slides) && !empty($slides[0]['image'])): ?>
     <link rel="preload" as="image" href="<?= htmlspecialchars(prefer_webp_relative_path((string)($slides[0]['image'] ?? ''), ROOT_DIR)) ?>">
@@ -470,12 +493,18 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <?php
                  $slide_link = normalize_banner_link((string)($slide['link'] ?? ''));
                  $slide_is_external = is_external_banner_link($slide_link);
+                  $slide_label = trim((string)($slide['title'] ?? ''));
+                  if ($slide_label === '') {
+                     $slide_label = $lang === 'ar' ? 'فتح رابط البانر' : 'Open banner link';
+                  }
               ?>
               <div class="hero-banner-slide"
-                  data-banner-link="<?= htmlspecialchars($slide_link) ?>"
-                  tabindex="0"
-                  role="link"
+                   data-banner-link="<?= htmlspecialchars($slide_link) ?>"
                   style="cursor:pointer;">
+                 <a href="<?= htmlspecialchars($slide_link) ?>"
+                    class="hero-banner-slide-link"
+                    aria-label="<?= htmlspecialchars($slide_label) ?>"
+                    <?= $slide_is_external ? 'target="_blank" rel="noopener noreferrer"' : '' ?>></a>
                 <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($slide['image'] ?? ''), ROOT_DIR)) ?>"
                      alt="<?= htmlspecialchars($slide['title'] ?: 'Poshy Store Banner') ?>"
                      <?= $i === 0 ? 'loading="eager" fetchpriority="high" decoding="async"' : 'loading="lazy" fetchpriority="low" decoding="async"' ?>>
