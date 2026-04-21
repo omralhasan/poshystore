@@ -55,12 +55,25 @@ if ($is_ajax_request) {
 }
 
 $cat_upload_dir = __DIR__ . '/../../uploads/categories/';
+$cat_upload_web_path = 'uploads/categories/';
+$cat_upload_fallback_dir = __DIR__ . '/../../uploads/category_images/';
+$cat_upload_fallback_web_path = 'uploads/category_images/';
 $cat_upload_dir_error = null;
 
-if (!is_dir($cat_upload_dir) && !@mkdir($cat_upload_dir, 0775, true) && !is_dir($cat_upload_dir)) {
-    $cat_upload_dir_error = 'Upload directory is missing and could not be created.';
-} else {
-    @chmod($cat_upload_dir, 0775);
+$prepare_upload_dir = function (string $dir): bool {
+    if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+        return false;
+    }
+    @chmod($dir, 0775);
+    return is_writable($dir);
+};
+
+if (!$prepare_upload_dir($cat_upload_dir)) {
+    $cat_upload_dir = $cat_upload_fallback_dir;
+    $cat_upload_web_path = $cat_upload_fallback_web_path;
+    if (!$prepare_upload_dir($cat_upload_dir)) {
+        $cat_upload_dir_error = 'Upload directories are not writable.';
+    }
 }
 
 // Check if image_url column exists
@@ -273,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         
-        $image_path = 'uploads/categories/' . $filename;
+        $image_path = $cat_upload_web_path . $filename;
         $stmt = $conn->prepare("UPDATE categories SET image_url = ? WHERE id = ?");
         $stmt->bind_param('si', $image_path, $cat_id);
         if ($stmt->execute()) {
@@ -337,7 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         
-        $image_path = 'uploads/categories/' . $filename;
+        $image_path = $cat_upload_web_path . $filename;
         $stmt = $conn->prepare("UPDATE subcategories SET image_url = ? WHERE id = ?");
         $stmt->bind_param('si', $image_path, $sub_id);
         if ($stmt->execute()) {
