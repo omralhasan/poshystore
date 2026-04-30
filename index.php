@@ -437,6 +437,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             }
         }
 
+        .top-search-bar {
+            position: static !important;
+            top: auto !important;
+        }
+
         .hero-banner-slide-link {
             position: absolute;
             inset: 0;
