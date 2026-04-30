@@ -45,6 +45,17 @@ $cart_items = $cart['cart_items'] ?? [];
 $total_amount = $cart['total_amount_formatted'] ?? '0.000 JOD';
 $total_amount_raw = $cart['total_amount'] ?? 0;
 $total_items = $cart['total_items'] ?? 0;
+
+// Normalize local asset paths to respect BASE_PATH (when the site is not at /).
+$base_path = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '';
+$normalize_asset_path = function (string $path) use ($base_path): string {
+    $path = '/' . ltrim($path, '/');
+    if ($base_path === '' || $path === $base_path || str_starts_with($path, $base_path . '/')) {
+        return $path;
+    }
+    return $base_path . $path;
+};
+$placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
 ?>
 <!DOCTYPE html>
 <html lang="<?= $current_lang ?>" dir="<?= isRTL() ? 'rtl' : 'ltr' ?>">
@@ -620,14 +631,23 @@ $total_items = $cart['total_items'] ?? 0;
                                     <?php
                                         // Build a robust image URL for cart thumbnails.
                                         $cart_img = '';
-                                        $db_image = trim((string)($item['image_url'] ?? ''));
+                                        $db_image = trim((string)($item['image_url'] ?? $item['image_link'] ?? ''));
 
                                         // Prefer DB image_link when present, and URL-encode local paths safely.
                                         if ($db_image !== '' && strtoupper($db_image) !== 'NULL') {
                                             if (preg_match('#^https?://#i', $db_image)) {
                                                 $cart_img = $db_image;
                                             } else {
-                                                $cart_img = '/' . encode_image_path(ltrim($db_image, '/'));
+                                                $path_only = $db_image;
+                                                $query = '';
+                                                if (strpos($db_image, '?') !== false) {
+                                                    [$path_only, $query] = explode('?', $db_image, 2);
+                                                }
+                                                $encoded_path = encode_image_path(ltrim($path_only, '/'));
+                                                if ($query !== '') {
+                                                    $encoded_path .= '?' . $query;
+                                                }
+                                                $cart_img = $normalize_asset_path($encoded_path);
                                             }
                                         }
 
@@ -635,26 +655,26 @@ $total_items = $cart['total_items'] ?? 0;
                                         if (empty($cart_img)) {
                                             $cart_img = get_product_thumbnail(
                                                 $item['name_en'] ?? '',
-                                                $item['image_url'] ?? '',
+                                                $item['image_url'] ?? $item['image_link'] ?? '',
                                                 __DIR__ . '/../..'
                                             );
                                             if (!empty($cart_img) && !preg_match('#^https?://#i', $cart_img)) {
-                                                $cart_img = '/' . ltrim($cart_img, '/');
+                                                $cart_img = $normalize_asset_path($cart_img);
                                             }
                                         }
 
                                         if (empty($cart_img)) {
-                                            $cart_img = '/images/placeholder-cosmetics.svg';
+                                            $cart_img = $placeholder_img;
                                         }
                                     ?>
-                                    <?php if (!empty($cart_img) && $cart_img !== '/images/placeholder-cosmetics.svg'): ?>
+                                    <?php if (!empty($cart_img) && $cart_img !== $placeholder_img): ?>
                                         <img src="<?= htmlspecialchars($cart_img) ?>" 
                                              alt="<?= htmlspecialchars($item['name_en']) ?>"
                                              style="width:100%; height:100%; object-fit:contain; border-radius:12px; background:#faf8f5; padding:4px;"
                                              loading="lazy"
-                                             onerror="this.onerror=null; this.src='/images/placeholder-cosmetics.svg';">
+                                             onerror="this.onerror=null; this.src='<?= htmlspecialchars($placeholder_img) ?>';">
                                     <?php else: ?>
-                                        <img src="/images/placeholder-cosmetics.svg" 
+                                        <img src="<?= htmlspecialchars($placeholder_img) ?>" 
                                              alt="<?= htmlspecialchars($item['name_en']) ?>"
                                              style="width:100%; height:100%; object-fit:contain; border-radius:12px; background:#faf8f5; padding:4px;"
                                              loading="lazy">
