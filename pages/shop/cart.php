@@ -529,10 +529,11 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             gap: 0.25rem;
             padding: 0.4rem 0.75rem;
             background: linear-gradient(135deg, var(--purple-color), var(--purple-dark));
-            color: var(--gold-color);
+            color: #fff;
             border-radius: 8px;
             font-weight: 700;
             box-shadow: 0 3px 8px rgba(72, 54, 110, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
         
         @media (max-width: 991px) {
@@ -684,7 +685,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
                                         $cart_img = '';
                                         $db_image = trim((string)($item['image_url'] ?? $item['image_link'] ?? ''));
 
-                                        // Prefer DB image_link when present, and URL-encode local paths safely.
+                                        // Prefer DB image_link when present, but only if the local path exists.
                                         if ($db_image !== '' && strtoupper($db_image) !== 'NULL') {
                                             if (preg_match('#^https?://#i', $db_image)) {
                                                 $cart_img = $db_image;
@@ -694,11 +695,15 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
                                                 if (strpos($db_image, '?') !== false) {
                                                     [$path_only, $query] = explode('?', $db_image, 2);
                                                 }
-                                                $encoded_path = encode_image_path(ltrim($path_only, '/'));
-                                                if ($query !== '') {
-                                                    $encoded_path .= '?' . $query;
+                                                $path_only = rawurldecode($path_only);
+                                                $fs_path = rtrim(__DIR__ . '/../..', '/') . '/' . ltrim($path_only, '/');
+                                                if (file_exists($fs_path)) {
+                                                    $encoded_path = encode_image_path(ltrim($path_only, '/'));
+                                                    if ($query !== '') {
+                                                        $encoded_path .= '?' . $query;
+                                                    }
+                                                    $cart_img = $normalize_asset_path($encoded_path);
                                                 }
-                                                $cart_img = $normalize_asset_path($encoded_path);
                                             }
                                         }
 
