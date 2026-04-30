@@ -234,7 +234,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // DELETE SUBCATEGORY
     if ($action === 'delete_subcategory') {
-        echo json_encode(['success' => false, 'error' => 'Subcategory deletion is disabled.']);
+        $sub_id = intval($_POST['id'] ?? 0);
+        if (!$sub_id) { echo json_encode(['success' => false, 'error' => 'Invalid subcategory ID']); exit(); }
+
+        $check = $conn->prepare("SELECT COUNT(*) AS cnt FROM products WHERE subcategory_id = ?");
+        if (!$check) {
+            echo json_encode(['success' => false, 'error' => 'Failed to prepare product check']);
+            exit();
+        }
+        $check->bind_param('i', $sub_id);
+        $check->execute();
+        $row = $check->get_result()->fetch_assoc();
+        $check->close();
+
+        $linked_products = (int)($row['cnt'] ?? 0);
+        if ($linked_products > 0) {
+            echo json_encode([
+                'success' => false,
+                'error' => "This subcategory has {$linked_products} product(s). Move them first.",
+                'linked_products' => $linked_products
+            ]);
+            exit();
+        }
+
+        $stmt = $conn->prepare("DELETE FROM subcategories WHERE id = ?");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'error' => 'Failed to prepare delete query']);
+            exit();
+        }
+        $stmt->bind_param('i', $sub_id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Delete failed']);
+        }
+        $stmt->close();
         exit();
     }
 
@@ -610,6 +644,7 @@ if ($result) {
                         <div class="empty-sub" id="emptySub-<?= $cat['id'] ?>">No subcategories yet.</div>
                     <?php else: ?>
                         <?php foreach ($cat['subcategories'] as $sub): ?>
+                        <?php $sub_has_products = (int)($sub['product_count'] ?? 0) > 0; ?>
                         <div class="subcategory-item" id="subItem-<?= $sub['id'] ?>">
                             <div style="display:flex;align-items:center;gap:1rem;flex:1;">
                                 <!-- Subcategory Image Upload -->
@@ -640,9 +675,15 @@ if ($result) {
                                     <span class="prod-badge"><?= $sub['product_count'] ?> product<?= $sub['product_count'] != 1 ? 's' : '' ?></span>
                                 </div>
                             </div>
-                            <button class="btn btn-secondary btn-sm" onclick="deleteSubcategory(<?= $sub['id'] ?>, <?= $cat['id'] ?>, this)" title="Subcategory deletion disabled">
-                                <i class="fas fa-lock"></i>
-                            </button>
+                            <?php if ($sub_has_products): ?>
+                                <button class="btn btn-secondary btn-sm" disabled title="Cannot delete: subcategory has products">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                            <?php else: ?>
+                                <button class="btn btn-danger btn-sm" onclick="deleteSubcategory(<?= $sub['id'] ?>, <?= $cat['id'] ?>, this)" title="Delete subcategory">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            <?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -766,8 +807,29 @@ function deleteCategory(id, btn, forceDelete = false) {
 
 // ─── Delete Subcategory ───────────────────────────────────────────────────────
 function deleteSubcategory(subId, catId, btn, forceDelete = false) {
-    if (btn) btn.disabled = false;
-    showToast('Subcategory deletion is disabled.', 'error');
+    if (!confirm('Delete this subcategory?')) return;
+    if (btn) btn.disabled = true;
+
+    post({ action: 'delete_subcategory', id: subId }).then(data => {
+        if (data.success) {
+            document.getElementById('subItem-' + subId)?.remove();
+            const list = document.getElementById('subList-' + catId);
+            if (list && list.querySelectorAll('.subcategory-item').length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'empty-sub';
+                empty.id = 'emptySub-' + catId;
+                empty.textContent = 'No subcategories yet.';
+                list.appendChild(empty);
+            }
+            showToast('Subcategory deleted.');
+        } else {
+            showToast(data.error || 'Failed', 'error');
+            if (btn) btn.disabled = false;
+        }
+    }).catch(err => {
+        if (btn) btn.disabled = false;
+        showToast('Network error: ' + err.message, 'error');
+    });
 }
 
 // ─── DOM helpers ──────────────────────────────────────────────────────────────
