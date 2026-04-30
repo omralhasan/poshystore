@@ -116,6 +116,18 @@ if (strpos($current_path, '/pages/') !== false) {
 
 <link rel="stylesheet" href="<?= rtrim($base_path ?? '/', '/') . "/assets/css/footer.min.css" ?>">
 
+<style>
+@media (max-width: 768px) {
+    #chatbot-toggle {
+        bottom: calc(78px + env(safe-area-inset-bottom));
+    }
+
+    #chatbot-window {
+        bottom: calc(144px + env(safe-area-inset-bottom));
+    }
+}
+</style>
+
 <script>
 function toggleChatbot() {
     const win = document.getElementById('chatbot-window');
