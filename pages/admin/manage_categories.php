@@ -235,7 +235,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // DELETE SUBCATEGORY
     if ($action === 'delete_subcategory') {
         $sub_id = intval($_POST['id'] ?? 0);
+        $force_delete = intval($_POST['force'] ?? 0) === 1;
         if (!$sub_id) { echo json_encode(['success' => false, 'error' => 'Invalid subcategory ID']); exit(); }
+
+        $sub_stmt = $conn->prepare("SELECT category_id FROM subcategories WHERE id = ?");
+        if (!$sub_stmt) {
+            echo json_encode(['success' => false, 'error' => 'Failed to prepare subcategory lookup']);
+            exit();
+        }
+        $sub_stmt->bind_param('i', $sub_id);
+        $sub_stmt->execute();
+        $sub_row = $sub_stmt->get_result()->fetch_assoc();
+        $sub_stmt->close();
+
+        if (!$sub_row) {
+            echo json_encode(['success' => false, 'error' => 'Subcategory not found']);
+            exit();
+        }
+
+        $category_id = (int)($sub_row['category_id'] ?? 0);
+        if ($category_id <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Invalid parent category']);
+            exit();
+        }
 
         $check = $conn->prepare("SELECT COUNT(*) AS cnt FROM products WHERE subcategory_id = ?");
         if (!$check) {
@@ -248,13 +270,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $check->close();
 
         $linked_products = (int)($row['cnt'] ?? 0);
-        if ($linked_products > 0) {
+        if ($linked_products > 0 && !$force_delete) {
             echo json_encode([
                 'success' => false,
-                'error' => "This subcategory has {$linked_products} product(s). Move them first.",
-                'linked_products' => $linked_products
+                'requires_force' => true,
+                'linked_products' => $linked_products,
+                'error' => "This subcategory has {$linked_products} product(s)."
             ]);
             exit();
+        }
+
+        $moved_products = 0;
+        if ($linked_products > 0) {
+            $fallback_sub_id = 0;
+
+            $find_uncat = $conn->prepare("SELECT id FROM subcategories WHERE category_id = ? AND id != ? AND LOWER(TRIM(name_en)) = 'uncategorized' ORDER BY id ASC LIMIT 1");
+            if ($find_uncat) {
+                $find_uncat->bind_param('ii', $category_id, $sub_id);
+                $find_uncat->execute();
+                $uncat_row = $find_uncat->get_result()->fetch_assoc();
+                $find_uncat->close();
+                $fallback_sub_id = (int)($uncat_row['id'] ?? 0);
+            }
+
+            if ($fallback_sub_id <= 0) {
+                $insert_fallback = $conn->prepare("INSERT INTO subcategories (name_en, name_ar, icon, category_id) VALUES (?, ?, ?, ?)");
+                if (!$insert_fallback) {
+                    echo json_encode(['success' => false, 'error' => 'Failed to prepare fallback subcategory query']);
+                    exit();
+                }
+
+                $fallback_name_en = 'Uncategorized';
+                $fallback_name_ar = 'Uncategorized';
+                $fallback_icon = 'fas fa-tag';
+                $insert_fallback->bind_param('sssi', $fallback_name_en, $fallback_name_ar, $fallback_icon, $category_id);
+                $created = $insert_fallback->execute();
+
+                if (!$created) {
+                    $fallback_name_en = 'Uncategorized ' . date('YmdHis');
+                    $fallback_name_ar = $fallback_name_en;
+                    $insert_fallback->bind_param('sssi', $fallback_name_en, $fallback_name_ar, $fallback_icon, $category_id);
+                    $created = $insert_fallback->execute();
+                }
+
+                if ($created) {
+                    $fallback_sub_id = (int)$insert_fallback->insert_id;
+                }
+                $insert_fallback->close();
+
+                if ($fallback_sub_id <= 0) {
+                    echo json_encode(['success' => false, 'error' => 'Could not create fallback subcategory']);
+                    exit();
+                }
+            }
+
+            $move = $conn->prepare("UPDATE products SET subcategory_id = ? WHERE subcategory_id = ?");
+            if (!$move) {
+                echo json_encode(['success' => false, 'error' => 'Failed to prepare product move query']);
+                exit();
+            }
+            $move->bind_param('ii', $fallback_sub_id, $sub_id);
+            if (!$move->execute()) {
+                $err = $move->error;
+                $move->close();
+                echo json_encode(['success' => false, 'error' => 'Failed to move products: ' . $err]);
+                exit();
+            }
+            $moved_products = (int)$move->affected_rows;
+            $move->close();
         }
 
         $stmt = $conn->prepare("DELETE FROM subcategories WHERE id = ?");
@@ -264,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->bind_param('i', $sub_id);
         if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
+            echo json_encode(['success' => true, 'moved_products' => $moved_products]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Delete failed']);
         }
@@ -644,7 +727,7 @@ if ($result) {
                         <div class="empty-sub" id="emptySub-<?= $cat['id'] ?>">No subcategories yet.</div>
                     <?php else: ?>
                         <?php foreach ($cat['subcategories'] as $sub): ?>
-                        <?php $sub_has_products = (int)($sub['product_count'] ?? 0) > 0; ?>
+                        <?php $sub_product_count = (int)($sub['product_count'] ?? 0); ?>
                         <div class="subcategory-item" id="subItem-<?= $sub['id'] ?>">
                             <div style="display:flex;align-items:center;gap:1rem;flex:1;">
                                 <!-- Subcategory Image Upload -->
@@ -675,15 +758,9 @@ if ($result) {
                                     <span class="prod-badge"><?= $sub['product_count'] ?> product<?= $sub['product_count'] != 1 ? 's' : '' ?></span>
                                 </div>
                             </div>
-                            <?php if ($sub_has_products): ?>
-                                <button class="btn btn-secondary btn-sm" disabled title="Cannot delete: subcategory has products">
-                                    <i class="fas fa-lock"></i>
-                                </button>
-                            <?php else: ?>
-                                <button class="btn btn-danger btn-sm" onclick="deleteSubcategory(<?= $sub['id'] ?>, <?= $cat['id'] ?>, this)" title="Delete subcategory">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            <?php endif; ?>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSubcategory(<?= $sub['id'] ?>, <?= $cat['id'] ?>, this, <?= $sub_product_count ?>)" title="<?= $sub_product_count > 0 ? 'Force delete: move products to Uncategorized' : 'Delete subcategory' ?>">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -806,11 +883,22 @@ function deleteCategory(id, btn, forceDelete = false) {
 }
 
 // ─── Delete Subcategory ───────────────────────────────────────────────────────
-function deleteSubcategory(subId, catId, btn, forceDelete = false) {
-    if (!confirm('Delete this subcategory?')) return;
+function deleteSubcategory(subId, catId, btn, productCount = 0, forceDelete = false) {
+    const count = Number(productCount || 0);
+    if (!forceDelete) {
+        const message = count > 0
+            ? `This subcategory has ${count} product(s). Move them to "Uncategorized" and delete?`
+            : 'Delete this subcategory?';
+        if (!confirm(message)) return;
+    }
     if (btn) btn.disabled = true;
 
-    post({ action: 'delete_subcategory', id: subId }).then(data => {
+    const payload = { action: 'delete_subcategory', id: subId };
+    if (forceDelete || count > 0) {
+        payload.force = 1;
+    }
+
+    post(payload).then(data => {
         if (data.success) {
             document.getElementById('subItem-' + subId)?.remove();
             const list = document.getElementById('subList-' + catId);
@@ -821,7 +909,19 @@ function deleteSubcategory(subId, catId, btn, forceDelete = false) {
                 empty.textContent = 'No subcategories yet.';
                 list.appendChild(empty);
             }
-            showToast('Subcategory deleted.');
+            const moved = Number(data.moved_products || 0);
+            if (moved > 0) {
+                showToast('Subcategory deleted. ' + moved + ' product(s) moved to Uncategorized.');
+            } else {
+                showToast('Subcategory deleted.');
+            }
+        } else if (data.requires_force && !forceDelete) {
+            if (btn) btn.disabled = false;
+            const linked = Number(data.linked_products || 0);
+            const shouldForce = confirm('This subcategory has ' + linked + ' product(s). Move them to "Uncategorized" and delete?');
+            if (shouldForce) {
+                deleteSubcategory(subId, catId, btn, linked, true);
+            }
         } else {
             showToast(data.error || 'Failed', 'error');
             if (btn) btn.disabled = false;
@@ -881,8 +981,8 @@ function appendSubcategoryItem(subId, catId, name_en, name_ar, icon) {
             </div>
             <span class="prod-badge">0 products</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="deleteSubcategory(${subId}, ${catId}, this)">
-            <i class="fas fa-lock"></i>
+        <button class="btn btn-danger btn-sm" onclick="deleteSubcategory(${subId}, ${catId}, this, 0)" title="Delete subcategory">
+            <i class="fas fa-trash-alt"></i>
         </button>`;
     list.appendChild(item);
 }
