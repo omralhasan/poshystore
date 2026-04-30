@@ -1401,7 +1401,7 @@ if ($is_logged_in) {
         <!-- Product Details -->
         <div class="card-ramadan p-4">
             <div class="row">
-                <div class="col-md-6 mb-4">
+                <div class="col-6 col-md-6 mb-4">
                     <div class="product-image-large" id="productCarousel">
                         <?php 
                         require_once __DIR__ . '/../../includes/product_image_helper.php';
@@ -1479,7 +1479,7 @@ if ($is_logged_in) {
                     </div>
                 </div>
                 
-                <div class="col-md-6">
+                <div class="col-6 col-md-6">
                     <h1 style="color: var(--purple-color); font-family: <?= $current_lang === 'ar' ? "'Tajawal', sans-serif" : "'Playfair Display', serif" ?>; font-size: 2rem; margin-bottom: 0.5rem;">
                         <?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?>
                     </h1>
