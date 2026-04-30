@@ -301,9 +301,27 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
             box-shadow: 0 6px 20px rgba(72, 54, 110, 0.3);
             position: relative;
             z-index: 1;
+        }
+
+        .summary-total-label {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.3rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .summary-total-amount {
+            color: #fff;
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
         }
         
         .coupon-section {
@@ -320,6 +338,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             display: flex;
             gap: 0.5rem;
             margin-top: 0.75rem;
+            flex-wrap: wrap;
         }
         
         .coupon-input {
@@ -331,6 +350,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             font-weight: 600;
             text-transform: uppercase;
             transition: all 0.3s;
+            min-width: 0;
         }
         
         .coupon-input:focus {
@@ -539,6 +559,37 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             .cart-summary {
                 position: static;
                 margin-top: 2rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .cart-summary {
+                padding: 1.75rem;
+            }
+
+            .summary-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.35rem;
+            }
+
+            .summary-total {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .summary-total-amount {
+                font-size: 1.6rem;
+            }
+
+            .coupon-input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .apply-coupon-btn {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -777,10 +828,10 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
                             </div>
                             
                             <div class="summary-total">
-                                <span style="color: white; font-weight: 700; font-size: 1.3rem;">
+                                <span class="summary-total-label">
                                     <i class="fas fa-coins me-2" style="color: var(--gold-color);"></i><?= t('total') ?>:
                                 </span>
-                                <span style="color: var(--gold-color); font-size: 1.8rem; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.2);" 
+                                <span class="summary-total-amount" 
                                       id="cartTotalDisplay" 
                                       data-raw-total="<?= $total_amount_raw ?>"><?= $total_amount ?></span>
                             </div>
