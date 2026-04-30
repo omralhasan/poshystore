@@ -269,6 +269,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
             margin-bottom: 1rem;
             border-left: 4px solid #dc3545;
         }
+
+        .form-control-ramadan {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+        }
         
         /* Responsive Improvements */
         @media (max-width: 768px) {
