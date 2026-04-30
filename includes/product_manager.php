@@ -411,7 +411,7 @@ function getAllCategories()
                    (SELECT COUNT(*) FROM products p WHERE p.subcategory_id = s.id AND p.stock_quantity > 0) AS product_count
             FROM categories c
             LEFT JOIN subcategories s ON s.category_id = c.id
-            ORDER BY c.sort_order, s.sort_order";
+            ORDER BY c.sort_order, c.id, s.sort_order, s.id";
     $result = $conn->query($sql);
     if (!$result)
         return [];

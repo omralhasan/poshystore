@@ -92,12 +92,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name_en = trim($_POST['name_en'] ?? '');
         $name_ar = trim($_POST['name_ar'] ?? '');
         if (!$name_en) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
-        $stmt = $conn->prepare("INSERT INTO categories (name_en, name_ar) VALUES (?, ?)");
-        $stmt->bind_param('ss', $name_en, $name_ar);
+        $sort_order = 0;
+        $sort_res = $conn->query("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_sort FROM categories");
+        if ($sort_res) {
+            $sort_row = $sort_res->fetch_assoc();
+            $sort_order = (int)($sort_row['next_sort'] ?? 0);
+            $sort_res->free();
+        }
+        $stmt = $conn->prepare("INSERT INTO categories (name_en, name_ar, sort_order) VALUES (?, ?, ?)");
+        $stmt->bind_param('ssi', $name_en, $name_ar, $sort_order);
         if ($stmt->execute()) {
             $new_id = $stmt->insert_id;
             $stmt->close();
-            echo json_encode(['success' => true, 'id' => $new_id, 'name_en' => $name_en, 'name_ar' => $name_ar]);
+            echo json_encode(['success' => true, 'id' => $new_id, 'name_en' => $name_en, 'name_ar' => $name_ar, 'sort_order' => $sort_order]);
         } else {
             echo json_encode(['success' => false, 'error' => 'DB error: ' . $conn->error]);
             $stmt->close();
@@ -123,6 +130,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'DB error: ' . $conn->error]);
             $stmt->close();
         }
+        exit();
+    }
+
+    // UPDATE CATEGORY SORT ORDER
+    if ($action === 'update_category_sort') {
+        $id = intval($_POST['id'] ?? 0);
+        $sort_order = isset($_POST['sort_order']) ? intval($_POST['sort_order']) : 0;
+        if (!$id) { echo json_encode(['success' => false, 'error' => 'Invalid ID']); exit(); }
+        if ($sort_order < 0) { $sort_order = 0; }
+
+        $stmt = $conn->prepare("UPDATE categories SET sort_order = ? WHERE id = ?");
+        $stmt->bind_param('ii', $sort_order, $id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'sort_order' => $sort_order]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Update failed']);
+        }
+        $stmt->close();
         exit();
     }
 
@@ -492,17 +517,24 @@ $sub_img_check = $conn->query("SHOW COLUMNS FROM subcategories LIKE 'image_url'"
 $has_sub_image_col = ($sub_img_check && $sub_img_check->num_rows > 0);
 $sub_img_select = $has_sub_image_col ? ', s.image_url AS simg' : '';
 
-$result = $conn->query("SELECT c.id AS cid, c.name_en AS cen, c.name_ar AS car $img_select,
-    s.id AS sid, s.name_en AS sen, s.name_ar AS sar, s.icon AS sicon $sub_img_select,
+$result = $conn->query("SELECT c.id AS cid, c.name_en AS cen, c.name_ar AS car, c.sort_order AS csort $img_select,
+    s.id AS sid, s.name_en AS sen, s.name_ar AS sar, s.icon AS sicon, s.sort_order AS ssort $sub_img_select,
     (SELECT COUNT(*) FROM products WHERE subcategory_id = s.id) AS product_count
     FROM categories c
     LEFT JOIN subcategories s ON s.category_id = c.id
-    ORDER BY c.id ASC, s.id ASC");
+    ORDER BY c.sort_order ASC, c.id ASC, s.sort_order ASC, s.id ASC");
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $cid = $row['cid'];
         if (!isset($categories[$cid])) {
-            $categories[$cid] = ['id' => $cid, 'name_en' => $row['cen'], 'name_ar' => $row['car'], 'image_url' => $row['cimg'] ?? '', 'subcategories' => []];
+            $categories[$cid] = [
+                'id' => $cid,
+                'name_en' => $row['cen'],
+                'name_ar' => $row['car'],
+                'sort_order' => (int)($row['csort'] ?? 0),
+                'image_url' => $row['cimg'] ?? '',
+                'subcategories' => []
+            ];
         }
         if ($row['sid']) {
             $categories[$cid]['subcategories'][] = [
@@ -510,6 +542,7 @@ if ($result) {
                 'name_en'       => $row['sen'],
                 'name_ar'       => $row['sar'],
                 'icon'          => $row['sicon'] ?? '',
+                'sort_order'    => (int)($row['ssort'] ?? 0),
                 'image_url'     => $row['simg'] ?? '',
                 'product_count' => intval($row['product_count']),
             ];
@@ -582,6 +615,9 @@ if ($result) {
         .subcategory-item .sub-name { font-weight: 600; font-size: .9rem; }
         .subcategory-item .sub-ar { color: var(--text-gray); font-size: .8rem; }
         .subcategory-item .prod-badge { background: rgba(79,158,255,.12); color: var(--accent-blue); font-size: .72rem; padding: .2rem .55rem; border-radius: 20px; font-weight: 600; }
+        .sort-control { display: flex; flex-direction: column; gap: .25rem; align-items: flex-start; }
+        .sort-control label { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-gray); }
+        .sort-input { width: 90px; padding: .35rem .5rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: .85rem; background: #fff; }
         .empty-sub { color: var(--text-gray); font-style: italic; font-size: .88rem; padding: .5rem 0; text-align: center; }
 
         .toast { position: fixed; top: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; color: #fff; font-weight: 600; z-index: 9999; transform: translateX(120%); transition: transform .4s; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
@@ -718,9 +754,15 @@ if ($result) {
                             <?php endif; ?>
                         </div>
                     </div>
-                    <button class="btn btn-danger btn-sm" onclick="deleteCategory(<?= $cat['id'] ?>, this)" title="Delete category (subcategories will be preserved)">
-                        <i class="fas fa-trash-alt"></i> Delete
-                    </button>
+                    <div style="display:flex; align-items:center; gap:.75rem;">
+                        <div class="sort-control">
+                            <label>Home order</label>
+                            <input type="number" min="0" step="1" class="sort-input" value="<?= (int)($cat['sort_order'] ?? 0) ?>" data-prev="<?= (int)($cat['sort_order'] ?? 0) ?>" onchange="updateCategorySort(<?= $cat['id'] ?>, this)">
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCategory(<?= $cat['id'] ?>, this)" title="Delete category (subcategories will be preserved)">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </div>
                 </div>
                 <div class="subcategory-list" id="subList-<?= $cat['id'] ?>">
                     <?php if (empty($cat['subcategories'])): ?>
@@ -848,6 +890,33 @@ document.getElementById('addSubcategoryForm').addEventListener('submit', functio
     });
 });
 
+// ─── Update Category Sort ───────────────────────────────────────────────────
+function updateCategorySort(catId, input) {
+    const prev = input.dataset.prev ?? input.value;
+    const value = parseInt(input.value, 10);
+    if (Number.isNaN(value) || value < 0) {
+        showToast('Invalid sort order', 'error');
+        input.value = prev;
+        return;
+    }
+
+    input.disabled = true;
+    post({ action: 'update_category_sort', id: catId, sort_order: value }).then(data => {
+        if (data.success) {
+            input.dataset.prev = String(data.sort_order ?? value);
+            showToast('Category order updated');
+        } else {
+            input.value = prev;
+            showToast(data.error || 'Failed', 'error');
+        }
+    }).catch(err => {
+        input.value = prev;
+        showToast('Network error: ' + err.message, 'error');
+    }).finally(() => {
+        input.disabled = false;
+    });
+}
+
 // ─── Delete Category ──────────────────────────────────────────────────────────
 function deleteCategory(id, btn, forceDelete = false) {
     if (!forceDelete && !confirm('Delete this category? Subcategories will be kept and moved to another category.')) return;
@@ -951,9 +1020,15 @@ function appendCategoryBlock(id, name_en, name_ar) {
                 </div>
                 ${name_ar ? '<span class="cat-ar">' + escHtml(name_ar) + '</span>' : ''}
             </div>
-            <button class="btn btn-danger btn-sm" onclick="deleteCategory(${id}, this)" title="Delete category">
-                <i class="fas fa-trash-alt"></i> Delete
-            </button>
+            <div style="display:flex; align-items:center; gap:.75rem;">
+                <div class="sort-control">
+                    <label>Home order</label>
+                    <input type="number" min="0" step="1" class="sort-input" value="0" data-prev="0" onchange="updateCategorySort(${id}, this)">
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="deleteCategory(${id}, this)" title="Delete category">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
         </div>
         <div class="subcategory-list" id="subList-${id}">
             <div class="empty-sub" id="emptySub-${id}">No subcategories yet.</div>
