@@ -592,6 +592,7 @@ header('X-Frame-Options: SAMEORIGIN');
             .btn-view { width: 100%; height: 36px; }
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
 

@@ -206,6 +206,7 @@ tr:hover{background:rgba(79,158,255,.03);}
 @media(max-width:768px){.sidebar{display:none;}.main-content{margin-left:0;padding:1rem;}.page-header{flex-direction:column;text-align:center;}}
 </style>
 <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
 <div class="sidebar">

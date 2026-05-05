@@ -463,6 +463,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <?php if (!empty($slides) && !empty($slides[0]['image'])): ?>
     <link rel="preload" as="image" href="<?= htmlspecialchars(prefer_webp_relative_path((string)($slides[0]['image'] ?? ''), ROOT_DIR)) ?>">
     <?php endif; ?>
+    <?php require_once __DIR__ . '/includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>

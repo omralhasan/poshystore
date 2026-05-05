@@ -401,6 +401,7 @@ $company = [
             }
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <div class="action-buttons">

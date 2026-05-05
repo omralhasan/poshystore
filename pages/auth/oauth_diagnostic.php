@@ -25,6 +25,7 @@ require_once __DIR__ . '/../../includes/oauth_functions.php';
         code { color: #ce9178; }
     </style>
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <h1>🔍 OAuth Configuration Diagnostic</h1>

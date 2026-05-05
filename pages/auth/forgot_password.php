@@ -198,6 +198,7 @@ $current_lang = $_SESSION['language'] ?? ($_SESSION['lang'] ?? 'en');
         .back-link a { color: var(--purple-color); text-decoration: none; font-weight: 500; font-size: 0.9rem; }
         .back-link a:hover { text-decoration: underline; }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <div class="card">

@@ -141,6 +141,7 @@ $current_lang = $_SESSION['language'] ?? ($_SESSION['lang'] ?? 'en');
         .back-link a:hover { text-decoration: underline; }
         .password-strength { height: 4px; border-radius: 2px; margin-top: 6px; transition: all 0.3s; }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <div class="card">

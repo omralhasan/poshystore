@@ -594,6 +594,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             }
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>

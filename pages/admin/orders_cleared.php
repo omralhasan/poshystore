@@ -131,6 +131,7 @@ if (!isAdmin()) {
         }
         .checkmark { color: #10b981; font-weight: bold; }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
 

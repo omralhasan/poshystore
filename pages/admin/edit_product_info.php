@@ -124,6 +124,7 @@ if ($selected_product_id) {
             box-shadow: 0 5px 15px rgba(201, 168, 106, 0.4);
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <div class="editor-container">

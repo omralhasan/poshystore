@@ -215,6 +215,7 @@ $is_logged_in = isset($_SESSION['user_id']);
             }
         }
     </style>
+    <?php require_once __DIR__ . '/includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>

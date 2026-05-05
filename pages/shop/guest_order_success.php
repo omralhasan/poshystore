@@ -31,6 +31,7 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
         .register-cta { margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #fff7ed, #fef3c7); border-radius: 12px; border: 1px solid #fcd34d; }
         .register-cta a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>

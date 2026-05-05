@@ -7,6 +7,7 @@ ini_set('display_errors', 1);
 
 echo "<!DOCTYPE html><html><head><title>Admin Panel Test</title>";
 require_once __DIR__ . '/../../includes/home_theme_header.php';
+require_once __DIR__ . '/../../includes/meta_pixel.php';
 echo "</head><body>";
 echo "<h1>Admin Panel Access Test</h1>";
 

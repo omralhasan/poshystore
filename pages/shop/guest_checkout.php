@@ -240,6 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
         .or-login a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
         .required { color: #dc3545; }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>

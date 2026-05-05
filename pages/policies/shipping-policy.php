@@ -116,6 +116,7 @@ $is_logged_in = isset($_SESSION['user_id']);
             box-shadow: 0 6px 20px rgba(201, 168, 106, 0.5);
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>

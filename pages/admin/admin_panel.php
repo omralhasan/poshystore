@@ -1223,6 +1223,7 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
         }
     </style>
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <!-- Sidebar -->

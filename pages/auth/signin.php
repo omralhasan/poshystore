@@ -284,6 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
             opacity: 1;
         }
     </style>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>

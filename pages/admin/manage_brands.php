@@ -159,6 +159,7 @@ th{background:var(--bg-light);font-weight:700;font-size:.85rem;text-transform:up
 @media(max-width:768px){.sidebar{display:none;}.main-content{margin-left:0;}.form-row{flex-direction:column;}}
 </style>
 <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
 <div class="sidebar">

@@ -416,6 +416,7 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
         }
     </style>
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
+    <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
 

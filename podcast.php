@@ -204,6 +204,7 @@ $page_desc  = $podcast['meta_description'] ?: mb_substr(strip_tags($podcast['des
             .gallery-item img { height: 160px; }
         }
     </style>
+    <?php require_once __DIR__ . '/includes/meta_pixel.php'; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
