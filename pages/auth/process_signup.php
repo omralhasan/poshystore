@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../includes/language.php';
 
 // Check if form was submitted
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: signup.php');
+    header('Location: ' . BASE_PATH . '/pages/auth/signup.php');
     exit();
 }
 
@@ -60,13 +60,13 @@ if ($password !== $confirm_password) {
 // If there are validation errors, redirect back
 if (!empty($errors)) {
     $error_message = implode(', ', $errors);
-    header('Location: signup.php?error=' . urlencode($error_message));
+    header('Location: ' . BASE_PATH . '/pages/auth/signup.php?error=' . urlencode($error_message));
     exit();
 }
 
 // Check database connection
 if (!$conn || $conn->connect_error) {
-    header('Location: signup.php?error=' . urlencode(t('database_connection_failed')));
+    header('Location: ' . BASE_PATH . '/pages/auth/signup.php?error=' . urlencode(t('database_connection_failed')));
     exit();
 }
 
@@ -79,7 +79,7 @@ $check_stmt->store_result();
 if ($check_stmt->num_rows > 0) {
     $check_stmt->close();
     $conn->close();
-    header('Location: signup.php?error=' . urlencode(t('email_already_registered')));
+    header('Location: ' . BASE_PATH . '/pages/auth/signup.php?error=' . urlencode(t('email_already_registered')));
     exit();
 }
 $check_stmt->close();
@@ -92,7 +92,7 @@ $stmt = $conn->prepare('INSERT INTO users (firstname, lastname, phonenumber, ema
 
 if (!$stmt) {
     $conn->close();
-    header('Location: signup.php?error=' . urlencode(t('database_error') . ': ' . $conn->error));
+    header('Location: ' . BASE_PATH . '/pages/auth/signup.php?error=' . urlencode(t('database_error') . ': ' . $conn->error));
     exit();
 }
 
@@ -117,14 +117,16 @@ if ($stmt->execute()) {
     $_SESSION['login_time'] = time();
     
     // Redirect based on user role
-    $redirect = ($role === 'admin') ? '../admin/admin_panel.php' : '../../index.php?welcome=1';
+    $redirect = ($role === 'admin')
+        ? BASE_PATH . '/pages/admin/admin_panel.php'
+        : BASE_PATH . '/index.php?welcome=1';
     header('Location: ' . $redirect);
     exit();
 } else {
     $error = $stmt->error;
     $stmt->close();
     $conn->close();
-    header('Location: signup.php?error=' . urlencode(t('registration_failed') . ': ' . $error));
+    header('Location: ' . BASE_PATH . '/pages/auth/signup.php?error=' . urlencode(t('registration_failed') . ': ' . $error));
     exit();
 }
 ?>

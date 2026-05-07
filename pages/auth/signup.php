@@ -105,7 +105,7 @@ if (isset($_SESSION['user_id'])) {
     // Display success or error messages in fixed position
     if (isset($_GET['success'])) {
         echo '<div class="alert-message-container">';
-        echo '<div class="alert-ramadan alert-success"><i class="fas fa-check-circle me-2"></i>✅ ' . t('registration_successful') . ' <a href="/pages/auth/signin.php" style="color: #155724; font-weight: bold; text-decoration: underline;">' . t('sign_in_now') . '</a> ' . t('to_start_shopping') . '.</div>';
+        echo '<div class="alert-ramadan alert-success"><i class="fas fa-check-circle me-2"></i>✅ ' . t('registration_successful') . ' <a href="' . BASE_PATH . '/pages/auth/signin.php" style="color: #155724; font-weight: bold; text-decoration: underline;">' . t('sign_in_now') . '</a> ' . t('to_start_shopping') . '.</div>';
         echo '</div>';
         echo '<script>setTimeout(function(){ document.querySelector(".alert-message-container").style.display="none"; }, 7000);</script>';
     }
@@ -127,7 +127,7 @@ if (isset($_SESSION['user_id'])) {
                             <i class="fas fa-user-plus me-2"></i><?= t('sign_up') ?>
                         </h2>
                         
-                        <form action="process_signup.php" method="POST">
+                        <form action="<?= BASE_PATH ?>/pages/auth/process_signup.php" method="POST">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="firstname" class="form-label" style="color: var(--gold-color); font-weight: 500;"><?= t('first_name') ?></label>
@@ -171,10 +171,10 @@ if (isset($_SESSION['user_id'])) {
                         
                         <div class="text-center mt-4">
                             <p class="mb-0">
-                                <?= t('already_have_account') ?> <a href="/pages/auth/signin.php" class="auth-link"><?= t('sign_in') ?></a>
+                                <?= t('already_have_account') ?> <a href="<?= BASE_PATH ?>/pages/auth/signin.php" class="auth-link"><?= t('sign_in') ?></a>
                             </p>
                             <p class="mb-0 mt-2">
-                                <a href="/index.php" class="auth-link">
+                                <a href="<?= BASE_PATH ?>/index.php" class="auth-link">
                                     <i class="fas fa-arrow-left me-1"></i><?= t('back_to_store') ?>
                                 </a>
                             </p>
