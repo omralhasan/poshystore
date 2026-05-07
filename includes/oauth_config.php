@@ -24,14 +24,24 @@ if (strpos($oauth_domain, '://') === false) {
     $oauth_domain = (stripos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false ? 'http://' : 'https://') . $oauth_domain;
 }
 
-$site = $oauth_domain;
-$bp   = defined('BASE_PATH') ? BASE_PATH : '';
+$base_path = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '';
+$domain_path = parse_url($oauth_domain, PHP_URL_PATH);
+
+// If SITE_URL already contains a path, do not append BASE_PATH again.
+if (!empty($domain_path) && $domain_path !== '/') {
+    $callback_base = $oauth_domain;
+} else {
+    $callback_base = $oauth_domain . $base_path;
+}
+
+$callback_base = rtrim($callback_base, '/');
+$oauth_redirect_uri = $callback_base . '/oauth_callback.php';
 
 return [
     'google' => [
         'client_id' => '110749343273-9q2uvdsf6v86uqsuuodsmf6q0kccddr0.apps.googleusercontent.com',
         'client_secret' => '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',
-        'redirect_uri' => $oauth_domain . '/oauth_callback.php',  // must match Google Cloud Console
+        'redirect_uri' => $oauth_redirect_uri,  // must match Google Cloud Console
         'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
         'token_url' => 'https://oauth2.googleapis.com/token',
         'user_info_url' => 'https://www.googleapis.com/oauth2/v2/userinfo',
@@ -41,7 +51,7 @@ return [
     'facebook' => [
         'app_id' => '1257016736289462',
         'app_secret' => '9754bc68520be46d248623117a3bb854',
-        'redirect_uri' => $oauth_domain . '/oauth_callback.php',  // must match Facebook App Dashboard
+        'redirect_uri' => $oauth_redirect_uri,  // must match Facebook App Dashboard
         'auth_url' => 'https://www.facebook.com/v22.0/dialog/oauth',
         'token_url' => 'https://graph.facebook.com/v22.0/oauth/access_token',
         'user_info_url' => 'https://graph.facebook.com/v22.0/me',
@@ -53,7 +63,7 @@ return [
         'team_id' => 'YOUR_APPLE_TEAM_ID',
         'key_id' => 'YOUR_APPLE_KEY_ID',
         'private_key_path' => __DIR__ . '/apple_private_key.p8',
-        'redirect_uri' => $oauth_domain . '/oauth_callback.php',
+        'redirect_uri' => $oauth_redirect_uri,
         'auth_url' => 'https://appleid.apple.com/auth/authorize',
         'token_url' => 'https://appleid.apple.com/auth/token',
         'scope' => 'name email'

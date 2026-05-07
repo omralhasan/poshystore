@@ -3,6 +3,17 @@
  * Redirect helper for OAuth callback
  * Redirects OAuth providers to the correct callback location
  */
-header('Location: pages/auth/oauth_callback.php' . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
+
+require_once __DIR__ . '/config.php';
+
+$base_path = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '';
+$target = $base_path . '/pages/auth/oauth_callback.php';
+$query = $_SERVER['QUERY_STRING'] ?? '';
+
+if ($query !== '') {
+	$target .= '?' . $query;
+}
+
+header('Location: ' . $target);
 exit;
 ?>
