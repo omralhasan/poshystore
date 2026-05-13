@@ -799,6 +799,9 @@ header('X-Frame-Options: SAMEORIGIN');
                 if (badge) {
                     badge.textContent = data.cart_count || (parseInt(badge.textContent || '0') + 1);
                 }
+                if (window.metaTrackCatalogEvent) {
+                    window.metaTrackCatalogEvent('AddToCart', [productId]);
+                }
                 btn.innerHTML = '<i class="fas fa-check"></i> <span><?= $lang === "ar" ? "تمت الإضافة" : "Added!" ?></span>';
                 btn.style.background = '#059669';
                 showToast('success', '<?= $lang === "ar" ? "تمت الإضافة للسلة" : "Added to cart!" ?>');

@@ -246,6 +246,10 @@
                         cartBtn.appendChild(b);
                     }
                 }
+
+                if (window.metaTrackCatalogEvent) {
+                    window.metaTrackCatalogEvent('AddToCart', [productId]);
+                }
                 
                 btn.innerHTML = '<i class="fas fa-check"></i> <span>Added!</span>';
                 btn.style.background = '#059669';

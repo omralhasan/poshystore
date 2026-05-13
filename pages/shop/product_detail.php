@@ -28,6 +28,15 @@ if (!$product_result['success']) {
 
 $product = $product_result['product'];
 
+$detail_display_price = $product['price_jod'];
+$detail_display_formatted = $product['price_formatted'];
+if (isSupplier() && !empty($product['supplier_cost']) && $product['supplier_cost'] > 0) {
+    $detail_display_price = $product['supplier_cost'];
+    $detail_display_formatted = formatJOD($product['supplier_cost']);
+}
+
+$meta_product_currency = 'USD';
+
 // Use already stored Arabic fields when available.
 // Avoid runtime translation during page renders because it adds a blocking
 // network dependency and can make Arabic page navigation appear to hang.
@@ -1365,6 +1374,20 @@ if ($is_logged_in) {
         }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
+    <script>
+        window.metaProductContext = {
+            id: '<?= (int)$product['id'] ?>',
+            price: <?php echo json_encode((float)$detail_display_price); ?>,
+            currency: <?php echo json_encode($meta_product_currency); ?>
+        };
+
+        if (window.metaTrackCatalogEvent) {
+            window.metaTrackCatalogEvent('ViewContent', [window.metaProductContext.id], {
+                value: window.metaProductContext.price,
+                currency: window.metaProductContext.currency
+            });
+        }
+    </script>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
@@ -1509,15 +1532,6 @@ if ($is_logged_in) {
                     <?php endif; ?>
                     
                     <div class="mb-4">
-                        <?php
-                            // Show supplier price if user is supplier and supplier_cost is set
-                            $detail_display_price = $product['price_jod'];
-                            $detail_display_formatted = $product['price_formatted'];
-                            if (isSupplier() && !empty($product['supplier_cost']) && $product['supplier_cost'] > 0) {
-                                $detail_display_price = $product['supplier_cost'];
-                                $detail_display_formatted = formatJOD($product['supplier_cost']);
-                            }
-                        ?>
                         <?php if ($product['has_discount'] && $product['original_price'] > 0 && !isSupplier()): ?>
                             <div class="mb-2">
                                 <span class="badge" style="background: var(--gold-color); color: var(--purple-dark); padding: 0.5rem 1rem; font-size: 1rem;">
@@ -1999,6 +2013,17 @@ if ($is_logged_in) {
         // Base URL for API calls (works from both direct and clean URL access)
         const BASE_URL = '<?= $base_url ?>';
         const IS_LOGGED_IN = <?= $is_logged_in ? 'true' : 'false' ?>;
+
+        function trackAddToCart(productId) {
+            if (!window.metaTrackCatalogEvent) return;
+            var metaContext = window.metaProductContext || {};
+            var price = typeof metaContext.price === 'number' ? metaContext.price : 0;
+            var currency = metaContext.currency || 'USD';
+            window.metaTrackCatalogEvent('AddToCart', [String(productId)], {
+                value: price,
+                currency: currency
+            });
+        }
         
         // Guest Add to Cart
         function guestAddToCart(productId) {
@@ -2025,6 +2050,8 @@ if ($is_logged_in) {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i><?= t("add_to_cart") ?>';
                     }
+
+                    trackAddToCart(productId);
 
                     // Use the same popup flow as logged-in users.
                     showCartModal(productId);
@@ -2072,6 +2099,8 @@ if ($is_logged_in) {
                 if (data.success) {
                     // Replace Add to Cart button with quantity controls
                     replaceButtonWithQuantityControls(productId, 1);
+
+                    trackAddToCart(productId);
                     
                     // Show cart modal
                     showCartModal(productId);

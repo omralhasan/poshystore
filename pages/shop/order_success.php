@@ -19,6 +19,22 @@ if (!$order_details['success']) {
 
 $order = $order_details['order'];
 
+$order_item_ids = [];
+if ($order_id) {
+    $items_stmt = $conn->prepare("SELECT product_id FROM order_items WHERE order_id = ?");
+    $items_stmt->bind_param('i', $order_id);
+    $items_stmt->execute();
+    $items_result = $items_stmt->get_result();
+    while ($item_row = $items_result->fetch_assoc()) {
+        $order_item_ids[] = (string)($item_row['product_id'] ?? '');
+    }
+    $items_stmt->close();
+}
+
+$order_item_ids = array_values(array_filter(array_unique($order_item_ids)));
+$purchase_value = (float)($order['total_amount'] ?? 0);
+$purchase_currency = 'USD';
+
 // Calculate points earned
 $settings = getPointsSettings();
 $points_per_jod = (float)$settings['points_per_jod'];
@@ -372,5 +388,16 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
             }
         }
     </script>
+    <?php if (!empty($order_item_ids)): ?>
+    <script>
+        (function() {
+            if (typeof window.metaTrackCatalogEvent !== 'function') return;
+            var contentIds = <?php echo json_encode($order_item_ids); ?>;
+            var value = <?php echo json_encode($purchase_value); ?>;
+            var currency = <?php echo json_encode($purchase_currency); ?>;
+            window.metaTrackCatalogEvent('Purchase', contentIds, { value: value, currency: currency });
+        })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>

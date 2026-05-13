@@ -3,9 +3,39 @@
  * Guest Order Success Page
  */
 require_once __DIR__ . '/../../includes/language.php';
+require_once __DIR__ . '/../../includes/db_connect.php';
 
 $order_id = intval($_GET['order_id'] ?? $_SESSION['guest_order_id'] ?? 0);
 $guest_name = $_SESSION['guest_order_name'] ?? '';
+
+$order_item_ids = [];
+$order_total = 0;
+$order_currency = 'USD';
+if ($order_id > 0 && isset($conn)) {
+    $order_stmt = $conn->prepare("SELECT total_amount FROM orders WHERE id = ?");
+    if ($order_stmt) {
+        $order_stmt->bind_param('i', $order_id);
+        $order_stmt->execute();
+        $order_result = $order_stmt->get_result();
+        if ($order_row = $order_result->fetch_assoc()) {
+            $order_total = (float)($order_row['total_amount'] ?? 0);
+        }
+        $order_stmt->close();
+    }
+
+    $items_stmt = $conn->prepare("SELECT product_id FROM order_items WHERE order_id = ?");
+    if ($items_stmt) {
+        $items_stmt->bind_param('i', $order_id);
+        $items_stmt->execute();
+        $items_result = $items_stmt->get_result();
+        while ($item_row = $items_result->fetch_assoc()) {
+            $order_item_ids[] = (string)($item_row['product_id'] ?? '');
+        }
+        $items_stmt->close();
+    }
+}
+
+$order_item_ids = array_values(array_filter(array_unique($order_item_ids)));
 
 // Clean up session
 unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
@@ -78,6 +108,18 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
     </div>
     </div>
     
+    <?php if (!empty($order_item_ids)): ?>
+    <script>
+        (function() {
+            if (typeof window.metaTrackCatalogEvent !== 'function') return;
+            var contentIds = <?php echo json_encode($order_item_ids); ?>;
+            var value = <?php echo json_encode($order_total); ?>;
+            var currency = <?php echo json_encode($order_currency); ?>;
+            window.metaTrackCatalogEvent('Purchase', contentIds, { value: value, currency: currency });
+        })();
+    </script>
+    <?php endif; ?>
+
     <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>
