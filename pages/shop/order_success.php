@@ -33,7 +33,7 @@ if ($order_id) {
 
 $order_item_ids = array_values(array_filter(array_unique($order_item_ids)));
 $purchase_value = (float)($order['total_amount'] ?? 0);
-$purchase_currency = 'USD';
+$purchase_currency = 'JOD';
 
 // Calculate points earned
 $settings = getPointsSettings();
@@ -143,6 +143,54 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
         }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
+    <?php
+    if (!empty($order_item_ids) && isset($order_id)) {
+        if (!isset($_SESSION['pixel_tracked_orders']) || !is_array($_SESSION['pixel_tracked_orders'])) {
+            $_SESSION['pixel_tracked_orders'] = [];
+        }
+
+        $now = time();
+        $max_age_seconds = 15 * 60;
+        foreach ($_SESSION['pixel_tracked_orders'] as $key => $timestamp) {
+            if (!is_int($timestamp)) {
+                $timestamp = $now;
+            }
+            if (($now - $timestamp) > $max_age_seconds) {
+                unset($_SESSION['pixel_tracked_orders'][$key]);
+            } else {
+                $_SESSION['pixel_tracked_orders'][$key] = $timestamp;
+            }
+        }
+
+        arsort($_SESSION['pixel_tracked_orders']);
+        if (count($_SESSION['pixel_tracked_orders']) > 10) {
+            $_SESSION['pixel_tracked_orders'] = array_slice($_SESSION['pixel_tracked_orders'], 0, 10, true);
+        }
+
+        $tracked_key = (string)$order_id;
+        if (!isset($_SESSION['pixel_tracked_orders'][$tracked_key])) {
+            $_SESSION['pixel_tracked_orders'][$tracked_key] = $now;
+    ?>
+    <script>
+        (function() {
+            if (typeof fbq !== 'function') return;
+            var contentIds = <?php echo json_encode($order_item_ids); ?>;
+            var value = <?php echo json_encode($purchase_value); ?>;
+            var currency = <?php echo json_encode($purchase_currency); ?>;
+            fbq('track', 'Purchase', {
+                content_ids: contentIds,
+                content_type: 'product',
+                value: value,
+                currency: currency
+            }, {
+                eventID: <?php echo json_encode($tracked_key); ?>
+            });
+        })();
+    </script>
+    <?php
+        }
+    }
+    ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
@@ -388,53 +436,5 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
             }
         }
     </script>
-    <?php
-    if (!empty($order_item_ids) && isset($order_id)) {
-        if (!isset($_SESSION['pixel_tracked_orders']) || !is_array($_SESSION['pixel_tracked_orders'])) {
-            $_SESSION['pixel_tracked_orders'] = [];
-        }
-
-        $now = time();
-        $max_age_seconds = 15 * 60;
-        foreach ($_SESSION['pixel_tracked_orders'] as $key => $timestamp) {
-            if (!is_int($timestamp)) {
-                $timestamp = $now;
-            }
-            if (($now - $timestamp) > $max_age_seconds) {
-                unset($_SESSION['pixel_tracked_orders'][$key]);
-            } else {
-                $_SESSION['pixel_tracked_orders'][$key] = $timestamp;
-            }
-        }
-
-        arsort($_SESSION['pixel_tracked_orders']);
-        if (count($_SESSION['pixel_tracked_orders']) > 10) {
-            $_SESSION['pixel_tracked_orders'] = array_slice($_SESSION['pixel_tracked_orders'], 0, 10, true);
-        }
-
-        $tracked_key = (string)$order_id;
-        if (!isset($_SESSION['pixel_tracked_orders'][$tracked_key])) {
-            $_SESSION['pixel_tracked_orders'][$tracked_key] = $now;
-    ?>
-    <script>
-        (function() {
-            if (typeof fbq !== 'function') return;
-            var contentIds = <?php echo json_encode($order_item_ids); ?>;
-            var value = <?php echo json_encode($purchase_value); ?>;
-            var currency = <?php echo json_encode($purchase_currency); ?>;
-            fbq('track', 'Purchase', {
-                content_ids: contentIds,
-                content_type: 'product',
-                value: value,
-                currency: currency
-            }, {
-                eventID: <?php echo json_encode($tracked_key); ?>
-            });
-        })();
-    </script>
-    <?php
-        }
-    }
-    ?>
 </body>
 </html>

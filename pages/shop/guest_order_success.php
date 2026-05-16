@@ -10,7 +10,7 @@ $guest_name = $_SESSION['guest_order_name'] ?? '';
 
 $order_item_ids = [];
 $order_total = 0;
-$order_currency = 'USD';
+$order_currency = 'JOD';
 if ($order_id > 0 && isset($conn)) {
     $order_stmt = $conn->prepare("SELECT total_amount FROM orders WHERE id = ?");
     if ($order_stmt) {
@@ -62,52 +62,6 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
         .register-cta a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
-</head>
-<body>
-    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
-    
-    <div class="page-container">
-    <div class="success-container">
-        <div class="success-card">
-            <div class="success-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <h1 class="success-title">
-                <?= $current_lang === 'ar' ? 'تم تأكيد طلبك!' : 'Order Confirmed!' ?>
-            </h1>
-            <p class="success-msg">
-                <?php if (!empty($guest_name)): ?>
-                    <?= $current_lang === 'ar' ? "شكراً $guest_name! " : "Thank you $guest_name! " ?>
-                <?php endif; ?>
-                <?= $current_lang === 'ar' ? 'سنتواصل معك قريباً عبر الهاتف لتأكيد الطلب والتوصيل.' : 'We will contact you soon by phone to confirm your order and delivery.' ?>
-            </p>
-            
-            <?php if ($order_id): ?>
-            <div class="order-number">
-                <div style="color: #666; font-size: 0.85rem; margin-bottom: 0.3rem;">
-                    <?= $current_lang === 'ar' ? 'رقم الطلب' : 'Order Number' ?>
-                </div>
-                <strong>#<?= $order_id ?></strong>
-            </div>
-            <?php endif; ?>
-            
-            <a href="<?= BASE_PATH ?>/" class="btn-home">
-                <i class="fas fa-shopping-bag me-2"></i>
-                <?= $current_lang === 'ar' ? 'متابعة التسوق' : 'Continue Shopping' ?>
-            </a>
-            
-            <div class="register-cta">
-                <i class="fas fa-gift" style="font-size: 1.5rem; color: #f59e0b;"></i>
-                <p style="margin: 0.5rem 0 0; font-size: 0.95rem;">
-                    <?= $current_lang === 'ar' ? 'أنشئ حساباً لتحصل على نقاط ومكافآت وتتبع طلباتك!' : 'Create an account to earn points, rewards, and track your orders!' ?>
-                    <br>
-                    <a href="/pages/auth/signin.php"><?= $current_lang === 'ar' ? 'إنشاء حساب الآن' : 'Create Account Now' ?></a>
-                </p>
-            </div>
-        </div>
-    </div>
-    </div>
-    
     <?php
     if (!empty($order_item_ids) && isset($order_id)) {
         if (!isset($_SESSION['pixel_tracked_orders']) || !is_array($_SESSION['pixel_tracked_orders'])) {
@@ -156,7 +110,52 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
         }
     }
     ?>
-
+</head>
+<body>
+    <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
+    
+    <div class="page-container">
+    <div class="success-container">
+        <div class="success-card">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1 class="success-title">
+                <?= $current_lang === 'ar' ? 'تم تأكيد طلبك!' : 'Order Confirmed!' ?>
+            </h1>
+            <p class="success-msg">
+                <?php if (!empty($guest_name)): ?>
+                    <?= $current_lang === 'ar' ? "شكراً $guest_name! " : "Thank you $guest_name! " ?>
+                <?php endif; ?>
+                <?= $current_lang === 'ar' ? 'سنتواصل معك قريباً عبر الهاتف لتأكيد الطلب والتوصيل.' : 'We will contact you soon by phone to confirm your order and delivery.' ?>
+            </p>
+            
+            <?php if ($order_id): ?>
+            <div class="order-number">
+                <div style="color: #666; font-size: 0.85rem; margin-bottom: 0.3rem;">
+                    <?= $current_lang === 'ar' ? 'رقم الطلب' : 'Order Number' ?>
+                </div>
+                <strong>#<?= $order_id ?></strong>
+            </div>
+            <?php endif; ?>
+            
+            <a href="<?= BASE_PATH ?>/" class="btn-home">
+                <i class="fas fa-shopping-bag me-2"></i>
+                <?= $current_lang === 'ar' ? 'متابعة التسوق' : 'Continue Shopping' ?>
+            </a>
+            
+            <div class="register-cta">
+                <i class="fas fa-gift" style="font-size: 1.5rem; color: #f59e0b;"></i>
+                <p style="margin: 0.5rem 0 0; font-size: 0.95rem;">
+                    <?= $current_lang === 'ar' ? 'أنشئ حساباً لتحصل على نقاط ومكافآت وتتبع طلباتك!' : 'Create an account to earn points, rewards, and track your orders!' ?>
+                    <br>
+                    <a href="/pages/auth/signin.php"><?= $current_lang === 'ar' ? 'إنشاء حساب الآن' : 'Create Account Now' ?></a>
+                </p>
+            </div>
+        </div>
+    </div>
+    </div>
+    
     <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>
