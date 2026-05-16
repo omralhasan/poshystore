@@ -25,6 +25,38 @@ function trigger_feed_csv_regeneration(): void {
     @exec($cmd);
 }
 
+function describe_fs_path(string $path): string {
+    $owner = @fileowner($path);
+    $group = @filegroup($path);
+    $ownerName = $owner !== false && function_exists('posix_getpwuid') ? (@posix_getpwuid($owner)['name'] ?? (string)$owner) : (string)$owner;
+    $groupName = $group !== false && function_exists('posix_getgrgid') ? (@posix_getgrgid($group)['name'] ?? (string)$group) : (string)$group;
+    $perms = @fileperms($path);
+    $permsText = $perms !== false ? substr(sprintf('%o', $perms), -4) : 'unknown';
+    return 'path=' . $path . ' perms=' . $permsText . ' owner=' . $ownerName . ':' . $groupName . ' writable=' . (is_writable($path) ? 'yes' : 'no');
+}
+
+function ensure_dir_writable(string $dir, ?string &$error = null): bool {
+    if (!is_dir($dir)) {
+        if (!mkdir($dir, 0775, true)) {
+            $error = 'Could not create image folder. ' . describe_fs_path(dirname($dir));
+            return false;
+        }
+    }
+
+    @chmod($dir, 0775);
+    if (!is_writable($dir)) {
+        @chmod($dir, 0777);
+    }
+    clearstatcache(true, $dir);
+
+    if (!is_writable($dir)) {
+        $error = 'Image folder is not writable. ' . describe_fs_path($dir);
+        return false;
+    }
+
+    return true;
+}
+
 $is_ajax_request =
     $_SERVER['REQUEST_METHOD'] === 'POST' &&
     (
@@ -141,9 +173,18 @@ if ($is_ajax_request) {
     }
 
     if (!empty($_FILES['product_images']['name'][0])) {
-        if (!is_dir($folder_path)) mkdir($folder_path, 0755, true);
+        $dir_error = null;
+        if (!ensure_dir_writable($folder_path, $dir_error)) {
+            while (ob_get_level() > 0) ob_end_clean();
+            echo json_encode([
+                'success' => false,
+                'error' => $dir_error ?: 'Image folder is not writable'
+            ]);
+            exit();
+        }
 
         $files = $_FILES['product_images'];
+        $upload_errors = [];
         for ($i = 0; $i < count($files['name']); $i++) {
             if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
             $allowed_mime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -166,6 +207,8 @@ if ($is_ajax_request) {
             $num = $i + 1;
             $dest = $folder_path . $num . '.' . $orig_ext;
             if (!move_uploaded_file($files['tmp_name'][$i], $dest)) {
+                $last_error = error_get_last();
+                $upload_errors[] = 'Failed to save image ' . (string)$files['name'][$i] . ' to ' . $dest . ($last_error ? ' (' . $last_error['message'] . ')' : '');
                 continue;
             }
 
@@ -182,7 +225,9 @@ if ($is_ajax_request) {
         while (ob_get_level() > 0) ob_end_clean();
         echo json_encode([
             'success' => false,
-            'error' => 'Image upload failed. Please use JPG/PNG/WEBP images and try again.'
+            'error' => !empty($upload_errors)
+                ? $upload_errors[0]
+                : 'Image upload failed. Please use JPG/PNG/WEBP images and try again.'
         ]);
         exit();
     }

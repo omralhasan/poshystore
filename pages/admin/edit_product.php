@@ -394,9 +394,12 @@ if ($is_ajax_request) {
             }
         }
         $new_path = $dir . $old_base . '.' . strtolower($new_ext);
-        @chmod($dir, 0775);
+        try_prepare_path_writable($dir);
         if (!move_uploaded_file($_FILES['new_image']['tmp_name'], $new_path)) {
-            echo json_encode(['success' => false, 'error' => 'Could not save uploaded image. Check folder write permissions.']);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Could not save uploaded image. ' . build_path_diagnostics($new_path)
+            ]);
             exit();
         }
         @chmod($new_path, 0664);
@@ -445,7 +448,11 @@ if ($is_ajax_request) {
             echo json_encode(['success' => false, 'error' => 'Could not create image folder. Check write permissions.']);
             exit();
         }
-        @chmod($img_base, 0775);
+        try_prepare_path_writable($img_base);
+        if (!is_writable($img_base)) {
+            echo json_encode(['success' => false, 'error' => 'Image folder is not writable. ' . build_path_diagnostics($img_base)]);
+            exit();
+        }
 
         // Find highest existing number
         $existing = glob($img_base . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
