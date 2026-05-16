@@ -394,7 +394,7 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
                 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <a href="my_orders.php" class="btn-ramadan w-100">
+                        <a href="<?= BASE_PATH ?>/pages/shop/my_orders.php" class="btn-ramadan w-100">
                             <i class="fas fa-box me-2"></i>View My Orders
                         </a>
                     </div>
