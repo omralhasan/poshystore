@@ -86,7 +86,7 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
             $_SESSION['pixel_tracked_orders'] = array_slice($_SESSION['pixel_tracked_orders'], 0, 10, true);
         }
 
-        $tracked_key = (string)$order_id;
+        $tracked_key = 'order_' . (string)$order_id;
         if (!isset($_SESSION['pixel_tracked_orders'][$tracked_key])) {
             $_SESSION['pixel_tracked_orders'][$tracked_key] = $now;
     ?>
@@ -96,13 +96,14 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
             var contentIds = <?php echo json_encode($order_item_ids); ?>;
             var value = <?php echo json_encode($order_total); ?>;
             var currency = <?php echo json_encode($order_currency); ?>;
+            var eventId = <?php echo json_encode($tracked_key); ?>;
             fbq('track', 'Purchase', {
                 content_ids: contentIds,
                 content_type: 'product',
                 value: value,
                 currency: currency
             }, {
-                eventID: <?php echo json_encode($tracked_key); ?>
+                eventID: eventId
             });
         })();
     </script>
