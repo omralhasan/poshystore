@@ -221,12 +221,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
         }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
-        .order-item { display: flex; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+        .order-item { display: flex; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; align-items: center; flex-wrap: wrap; }
         .order-item img { width: 50px; height: 50px; object-fit: contain; border-radius: 8px; background: #f5f5f5; }
         .order-item-info { flex: 1; }
         .order-item-name { font-weight: 600; font-size: 0.9rem; }
         .order-item-qty { color: #666; font-size: 0.85rem; }
         .order-item-price { font-weight: 700; color: var(--purple-color, #6b2fa0); }
+        .order-item-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.4rem; }
+        .guest-qty-control { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.5rem; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; }
+        .guest-qty-control button { width: 30px; height: 30px; border: 1px solid #d1d1d1; background: #fff; color: #444; border-radius: 6px; font-weight: 700; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .guest-qty-control button:hover:not(:disabled) { background: var(--purple-color, #6b2fa0); color: #fff; }
+        .guest-qty-control button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .guest-qty-control input { width: 48px; text-align: center; border: none; background: transparent; font-weight: 700; color: var(--purple-color, #6b2fa0); }
+        .guest-remove-btn { padding: 0.4rem 0.7rem; border-radius: 8px; border: 1px solid #fecaca; background: #fee2e2; color: #b91c1c; font-weight: 600; cursor: pointer; }
+        .guest-remove-btn:hover { background: #fecaca; }
+        .cart-empty-msg, .cart-update-msg { margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; }
+        .cart-empty-msg { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .cart-update-msg { background: #fff7ed; color: #92400e; border: 1px solid #fed7aa; }
         .order-summary-row { display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.95rem; }
         .order-summary-total { font-size: 1.2rem; font-weight: 700; color: var(--purple-color, #6b2fa0); border-top: 2px solid #e0e0e0; padding-top: 0.75rem; margin-top: 0.5rem; }
         .btn-checkout {
@@ -235,10 +246,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .btn-checkout:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(107,47,160,0.3); }
+        .btn-checkout:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: none; }
         .error-msg { background: #fef2f2; color: #dc2626; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid #fecaca; }
         .or-login { text-align: center; padding: 1rem; background: linear-gradient(135deg, #f0e6f6, #e8d5f5); border-radius: 10px; margin-bottom: 1.5rem; }
         .or-login a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
         .required { color: #dc3545; }
+        @media (max-width: 600px) {
+            .order-item-actions { width: 100%; justify-content: space-between; }
+            .order-item-price { width: 100%; text-align: left; }
+        }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
@@ -321,8 +337,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
             <div class="checkout-card">
                 <h2><i class="fas fa-receipt"></i> <?= $current_lang === 'ar' ? 'ملخص الطلب' : 'Order Summary' ?></h2>
                 
+                <div id="guestCartItems">
                 <?php foreach ($cart['cart_items'] as $item): ?>
-                <div class="order-item">
+                <div class="order-item" data-guest-product-id="<?= (int)$item['product_id'] ?>">
                     <?php
                     $images_dir = __DIR__ . '/../../images';
                     $item_images = get_product_gallery_images($item['name_en'], $item['image_link'] ?? '', $images_dir, BASE_PATH . '/');
@@ -331,34 +348,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
                     <img src="<?= htmlspecialchars($thumb) ?>" alt="<?= htmlspecialchars($item['name_en']) ?>" onerror="this.src='<?= BASE_PATH ?>/images/placeholder-cosmetics.svg';">
                     <div class="order-item-info">
                         <div class="order-item-name"><?= htmlspecialchars($current_lang === 'ar' ? ($item['name_ar'] ?: $item['name_en']) : $item['name_en']) ?></div>
-                        <div class="order-item-qty"><?= $current_lang === 'ar' ? 'الكمية' : 'Qty' ?>: <?= $item['quantity'] ?></div>
+                        <div class="order-item-qty">
+                            <?= $current_lang === 'ar' ? 'الكمية' : 'Qty' ?>:
+                            <span class="guest-qty-value"><?= (int)$item['quantity'] ?></span>
+                        </div>
+                        <div class="order-item-actions">
+                            <div class="guest-qty-control">
+                                <button type="button" class="guest-qty-minus" onclick="guestUpdateQuantity(<?= (int)$item['product_id'] ?>, 'decrease')">−</button>
+                                <input type="number" class="guest-qty-input" data-product-id="<?= (int)$item['product_id'] ?>" data-stock="<?= (int)$item['stock'] ?>" value="<?= (int)$item['quantity'] ?>" min="1" max="<?= (int)$item['stock'] ?>" readonly>
+                                <button type="button" class="guest-qty-plus" onclick="guestUpdateQuantity(<?= (int)$item['product_id'] ?>, 'increase')" <?= $item['quantity'] >= $item['stock'] ? 'disabled' : '' ?>>+</button>
+                            </div>
+                            <button type="button" class="guest-remove-btn" onclick="guestRemoveItem(<?= (int)$item['product_id'] ?>)">
+                                <?= $current_lang === 'ar' ? 'حذف' : 'Remove' ?>
+                            </button>
+                        </div>
                     </div>
                     <div class="order-item-price"><?= $item['subtotal_formatted'] ?></div>
                 </div>
                 <?php endforeach; ?>
+                </div>
+                <div id="guestCartEmptyNotice" class="cart-empty-msg" style="display: none;">
+                    <?= $current_lang === 'ar' ? 'السلة فارغة الآن. الرجاء العودة للتسوق.' : 'Your cart is empty now. Please continue shopping.' ?>
+                </div>
+                <div id="guestCartUpdateMsg" class="cart-update-msg" style="display: none;"></div>
                 
                 <div style="margin-top: 1rem;">
                     <div class="order-summary-row">
                         <span><?= $current_lang === 'ar' ? 'المجموع الفرعي' : 'Subtotal' ?></span>
-                        <span><?= $cart['total_formatted'] ?></span>
+                        <span id="guestSubtotal"><?= $cart['total_formatted'] ?></span>
                     </div>
                     <div class="order-summary-row">
                         <span><?= $current_lang === 'ar' ? 'التوصيل' : 'Delivery' ?></span>
-                        <span><?= $delivery_fee > 0 ? formatJOD($delivery_fee) : ($current_lang === 'ar' ? 'مجاني ✨' : 'Free ✨') ?></span>
+                        <span id="guestDelivery"><?= $delivery_fee > 0 ? formatJOD($delivery_fee) : ($current_lang === 'ar' ? 'مجاني ✨' : 'Free ✨') ?></span>
                     </div>
-                    <?php if ($delivery_fee > 0): ?>
-                    <div style="font-size: 0.8rem; color: var(--gold-color, #d4a853); margin-bottom: 0.5rem;">
+                    <div id="guestDeliveryNote" style="font-size: 0.8rem; color: var(--gold-color, #d4a853); margin-bottom: 0.5rem; display: <?= $delivery_fee > 0 ? 'block' : 'none' ?>;">
                         <i class="fas fa-info-circle"></i> <?= $current_lang === 'ar' ? 'توصيل مجاني للطلبات فوق 35 دينار' : 'Free delivery on orders above 35 JOD' ?>
                     </div>
-                    <?php endif; ?>
                     <div class="order-summary-row order-summary-total">
                         <span><?= $current_lang === 'ar' ? 'الإجمالي' : 'Total' ?></span>
-                        <span><?= formatJOD($cart_total_with_delivery) ?></span>
+                        <span id="guestTotal"><?= formatJOD($cart_total_with_delivery) ?></span>
                     </div>
                 </div>
             </div>
             
-            <button type="submit" name="confirm_guest_order" class="btn-checkout">
+            <button type="submit" name="confirm_guest_order" class="btn-checkout" id="guestConfirmButton">
                 <i class="fas fa-lock me-2"></i>
                 <?= $current_lang === 'ar' ? 'تأكيد الطلب' : 'Confirm Order' ?>
             </button>
@@ -371,6 +404,200 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
     </div>
     </div>
     
+    <script>
+        const guestCartConfig = {
+            apiUrl: '<?= rtrim(BASE_PATH, '/') ?>/api/guest_cart_api.php',
+            freeDeliveryThreshold: 35,
+            deliveryFee: 2
+        };
+
+        const guestCartStrings = <?php echo json_encode([
+            'freeDelivery' => $current_lang === 'ar' ? 'مجاني ✨' : 'Free ✨',
+            'updateFailed' => $current_lang === 'ar' ? 'تعذر تحديث الكمية' : 'Failed to update quantity',
+            'removeFailed' => $current_lang === 'ar' ? 'تعذر حذف المنتج' : 'Failed to remove item',
+            'loadFailed' => $current_lang === 'ar' ? 'تعذر تحديث السلة' : 'Failed to refresh cart',
+            'networkError' => $current_lang === 'ar' ? 'خطأ في الشبكة، حاول مرة أخرى' : 'Network error, please try again'
+        ], JSON_UNESCAPED_UNICODE); ?>;
+
+        let guestCartBusy = false;
+
+        function formatGuestJOD(value) {
+            const amount = Number(value || 0);
+            return amount.toFixed(3) + ' JOD';
+        }
+
+        function setGuestCartMessage(message, isError) {
+            const msgEl = document.getElementById('guestCartUpdateMsg');
+            if (!msgEl) return;
+            if (!message) {
+                msgEl.style.display = 'none';
+                msgEl.textContent = '';
+                return;
+            }
+            msgEl.textContent = message;
+            msgEl.style.display = 'block';
+            if (isError) {
+                msgEl.style.background = '#fef2f2';
+                msgEl.style.borderColor = '#fecaca';
+                msgEl.style.color = '#b91c1c';
+            } else {
+                msgEl.style.background = '#ecfdf3';
+                msgEl.style.borderColor = '#bbf7d0';
+                msgEl.style.color = '#166534';
+            }
+        }
+
+        function guestCartRequest(payload) {
+            return fetch(guestCartConfig.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams(payload).toString()
+            }).then(response => response.json());
+        }
+
+        function updateGuestTotals(cart) {
+            const subtotalValue = Number(cart.total_amount || 0);
+            let deliveryFee = 0;
+            if (subtotalValue > 0 && subtotalValue < guestCartConfig.freeDeliveryThreshold) {
+                deliveryFee = guestCartConfig.deliveryFee;
+            }
+
+            const subtotalEl = document.getElementById('guestSubtotal');
+            if (subtotalEl) {
+                subtotalEl.textContent = cart.total_formatted || formatGuestJOD(subtotalValue);
+            }
+
+            const deliveryEl = document.getElementById('guestDelivery');
+            if (deliveryEl) {
+                deliveryEl.textContent = deliveryFee > 0 ? formatGuestJOD(deliveryFee) : guestCartStrings.freeDelivery;
+            }
+
+            const deliveryNote = document.getElementById('guestDeliveryNote');
+            if (deliveryNote) {
+                deliveryNote.style.display = deliveryFee > 0 ? 'block' : 'none';
+            }
+
+            const totalEl = document.getElementById('guestTotal');
+            if (totalEl) {
+                totalEl.textContent = formatGuestJOD(subtotalValue + deliveryFee);
+            }
+        }
+
+        function updateGuestCartUI(cart) {
+            const items = Array.isArray(cart.cart_items) ? cart.cart_items : [];
+            const itemMap = new Map();
+            items.forEach(item => {
+                itemMap.set(String(item.product_id), item);
+            });
+
+            const container = document.getElementById('guestCartItems');
+            if (!container) return;
+
+            const rows = Array.from(container.querySelectorAll('.order-item[data-guest-product-id]'));
+            rows.forEach(row => {
+                const productId = row.getAttribute('data-guest-product-id');
+                const item = itemMap.get(productId);
+                if (!item) {
+                    row.remove();
+                    return;
+                }
+
+                const qtyValue = row.querySelector('.guest-qty-value');
+                if (qtyValue) {
+                    qtyValue.textContent = item.quantity;
+                }
+
+                const qtyInput = row.querySelector('.guest-qty-input');
+                if (qtyInput) {
+                    qtyInput.value = item.quantity;
+                    qtyInput.max = item.stock;
+                }
+
+                const priceEl = row.querySelector('.order-item-price');
+                if (priceEl) {
+                    priceEl.textContent = item.subtotal_formatted || formatGuestJOD(item.subtotal);
+                }
+
+                const plusBtn = row.querySelector('.guest-qty-plus');
+                if (plusBtn) {
+                    plusBtn.disabled = Number(item.quantity) >= Number(item.stock);
+                }
+            });
+
+            const emptyNotice = document.getElementById('guestCartEmptyNotice');
+            const confirmBtn = document.getElementById('guestConfirmButton');
+            if (emptyNotice) {
+                emptyNotice.style.display = items.length === 0 ? 'block' : 'none';
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = items.length === 0;
+            }
+
+            updateGuestTotals(cart);
+        }
+
+        function refreshGuestCart() {
+            return guestCartRequest({ action: 'view' })
+                .then(cart => {
+                    if (!cart || !cart.success) {
+                        setGuestCartMessage(guestCartStrings.loadFailed, true);
+                        return;
+                    }
+                    updateGuestCartUI(cart);
+                })
+                .catch(() => {
+                    setGuestCartMessage(guestCartStrings.networkError, true);
+                });
+        }
+
+        function guestUpdateQuantity(productId, action) {
+            if (guestCartBusy) return;
+            guestCartBusy = true;
+            setGuestCartMessage('', false);
+            guestCartRequest({
+                action: 'update',
+                product_id: productId,
+                cart_action: action
+            })
+                .then(result => {
+                    if (!result || !result.success) {
+                        throw new Error(result && result.error ? result.error : guestCartStrings.updateFailed);
+                    }
+                    return refreshGuestCart();
+                })
+                .catch(error => {
+                    setGuestCartMessage(error.message || guestCartStrings.updateFailed, true);
+                })
+                .finally(() => {
+                    guestCartBusy = false;
+                });
+        }
+
+        function guestRemoveItem(productId) {
+            if (guestCartBusy) return;
+            guestCartBusy = true;
+            setGuestCartMessage('', false);
+            guestCartRequest({
+                action: 'remove',
+                product_id: productId
+            })
+                .then(result => {
+                    if (!result || !result.success) {
+                        throw new Error(result && result.error ? result.error : guestCartStrings.removeFailed);
+                    }
+                    return refreshGuestCart();
+                })
+                .catch(error => {
+                    setGuestCartMessage(error.message || guestCartStrings.removeFailed, true);
+                })
+                .finally(() => {
+                    guestCartBusy = false;
+                });
+        }
+    </script>
+
     <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
 </body>
 </html>
