@@ -13,6 +13,25 @@ require_once __DIR__ . '/config.php';
 $request_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 $request_path = rtrim($request_path, '/');
 
+// Normalize base path when the site is hosted in a subdirectory.
+$base_path = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '';
+if ($base_path !== '' && str_starts_with($request_path, $base_path)) {
+    $request_path = substr($request_path, strlen($base_path));
+    if ($request_path === '') {
+        $request_path = '/';
+    }
+}
+
+$decoded_path = urldecode($request_path);
+
+// Arabic product URLs: /منتج/product-slug
+if (preg_match('#^/منتج/([\p{L}0-9]+(?:[-\p{L}0-9]+)*)$#u', $decoded_path, $m)) {
+    $_GET['slug'] = $m[1];
+    $_GET['lang'] = 'ar';
+    require __DIR__ . '/product.php';
+    exit;
+}
+
 // The redesigned index.php now serves as the main landing page
 // No separate landing page needed - the Beauty Box design is built into index.php
 // if ($request_path === '' || $request_path === '/') {
