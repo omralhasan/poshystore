@@ -17,6 +17,7 @@
 // ─── Bootstrap ─────────────────────────────────────────────────────────
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/db_connect.php';
+require_once __DIR__ . '/includes/meta_catalog.php';
 
 // ─── Parameters ────────────────────────────────────────────────────────
 $lang     = (isset($_GET['lang']) && $_GET['lang'] === 'ar') ? 'ar' : 'en';
@@ -202,9 +203,11 @@ https://poshystore.com/feeds/products.csv
             }
         }
     }
+
+        $catalog_id = get_meta_catalog_id($p, (string)$p['id']);
 ?>
     <item>
-      <g:id><?= (int)$p['id'] ?></g:id>
+            <g:id><?= htmlspecialchars($catalog_id) ?></g:id>
       <title><![CDATA[<?= $title ?>]]></title>
       <description><![CDATA[<?= $description ?>]]></description>
       <link><?= htmlspecialchars($link) ?></link>

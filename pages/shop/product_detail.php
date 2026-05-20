@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
+require_once __DIR__ . '/../../includes/meta_catalog.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/../../includes/product_options_display.php';
 require_once __DIR__ . '/../../includes/text_formatter.php';
@@ -27,6 +28,7 @@ if (!$product_result['success']) {
 }
 
 $product = $product_result['product'];
+$meta_catalog_id = get_meta_catalog_id($product);
 
 $detail_display_price = $product['price_jod'];
 $detail_display_formatted = $product['price_formatted'];
@@ -1377,12 +1379,14 @@ if ($is_logged_in) {
     <script>
         window.metaProductContext = {
             id: '<?= (int)$product['id'] ?>',
+            catalogId: <?php echo json_encode($meta_catalog_id); ?>,
             price: <?php echo json_encode((float)$detail_display_price); ?>,
             currency: <?php echo json_encode($meta_product_currency); ?>
         };
 
         if (window.metaTrackCatalogEvent) {
-            window.metaTrackCatalogEvent('ViewContent', [window.metaProductContext.id], {
+            var catalogId = window.metaProductContext.catalogId || window.metaProductContext.id;
+            window.metaTrackCatalogEvent('ViewContent', [catalogId], {
                 value: window.metaProductContext.price,
                 currency: window.metaProductContext.currency
             });
@@ -2017,9 +2021,10 @@ if ($is_logged_in) {
         function trackAddToCart(productId) {
             if (!window.metaTrackCatalogEvent) return;
             var metaContext = window.metaProductContext || {};
+            var catalogId = metaContext.catalogId || productId;
             var price = typeof metaContext.price === 'number' ? metaContext.price : 0;
             var currency = metaContext.currency || 'USD';
-            window.metaTrackCatalogEvent('AddToCart', [String(productId)], {
+            window.metaTrackCatalogEvent('AddToCart', [String(catalogId)], {
                 value: price,
                 currency: currency
             });
@@ -2141,6 +2146,7 @@ if ($is_logged_in) {
                     <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1;">
                         <span class="quantity-label"><?= t('in_cart_label') ?></span>
                         <span class="quantity-value" id="cartQuantity">${quantity}</span>
+                                    data-meta-id="<?= htmlspecialchars($meta_catalog_id) ?>"
                     </div>
                     <button class="quantity-btn increase" onclick="updateQuantity(${productId}, 'increase')" title="<?= t('increase_quantity') ?>">
                         <i class="fas fa-plus"></i>
@@ -2148,6 +2154,7 @@ if ($is_logged_in) {
                 `;
                 addToCartBtn.parentNode.replaceChild(quantityControls, addToCartBtn);
             }
+                                data-meta-id="<?= htmlspecialchars($meta_catalog_id) ?>"
         }
         
         // Replace Quantity Controls with Add to Cart button

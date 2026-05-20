@@ -24,6 +24,7 @@ $root = rtrim(realpath(__DIR__), '/');
 require_once $root . '/config.php';
 require_once $root . '/includes/db_connect.php';
 require_once $root . '/includes/product_image_helper.php';
+require_once $root . '/includes/meta_catalog.php';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 $CURRENCY       = 'JOD';        // Jordanian Dinar
@@ -275,8 +276,10 @@ while ($p = $result->fetch_assoc()) {
         $gpc = 'Health & Beauty';
     }
 
+    $catalog_id = get_meta_catalog_id($p, (string)$p['id']);
+
     fputcsv($fh, [
-        (int)$p['id'],  // Real DB product ID (must match Meta Pixel content_ids)
+        $catalog_id,
         $title,
         $desc,
         $link,

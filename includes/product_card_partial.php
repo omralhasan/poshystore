@@ -28,6 +28,8 @@ if (!isset($card_base_path)) {
 
 // Site root for file-system image lookups
 $_card_site_root = realpath(__DIR__ . '/..') . '/';
+require_once __DIR__ . '/meta_catalog.php';
+$meta_catalog_id = get_meta_catalog_id($product);
 ?>
 <div class="p-card fade-in<?= ($product['stock_quantity'] <= 0) ? ' out-of-stock-card' : '' ?>" style="animation-delay: <?= $idx * 0.05 ?>s;">
     <div class="p-card-img">
@@ -108,7 +110,7 @@ $_card_site_root = realpath(__DIR__ . '/..') . '/';
                     <span><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
                 </button>
             <?php else: ?>
-                <button class="btn-cart" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
+                <button class="btn-cart" data-meta-id="<?= htmlspecialchars($meta_catalog_id) ?>" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
                     <i class="fas fa-cart-plus"></i>
                     <span><?= t('add_to_cart') ?></span>
                 </button>

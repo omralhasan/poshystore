@@ -23,6 +23,7 @@ $root = rtrim(realpath(__DIR__), '/');
 require_once $root . '/config.php';
 require_once $root . '/includes/db_connect.php';
 require_once $root . '/includes/product_image_helper.php';
+require_once $root . '/includes/meta_catalog.php';
 
 $LANG = (isset($_GET['lang']) && $_GET['lang'] === 'ar') ? 'ar' : 'en';
 
@@ -157,8 +158,10 @@ while ($p = $result->fetch_assoc()) {
         ? (string)$p['brand_ar']
         : (string)$p['brand_en'];
 
+    $catalog_id = get_meta_catalog_id($p, (string)$p['id']);
+
     fputcsv($fh, [
-        (int)$p['id'],
+        $catalog_id,
         $title,
         $description,
         $availability,

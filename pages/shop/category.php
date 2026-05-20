@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
+require_once __DIR__ . '/../../includes/meta_catalog.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/../../includes/guest_cart_handler.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
@@ -755,7 +756,7 @@ header('X-Frame-Options: SAMEORIGIN');
                                     <span><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
                                 </button>
                             <?php else: ?>
-                                <button class="btn-cart" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
+                                <button class="btn-cart" data-meta-id="<?= htmlspecialchars(get_meta_catalog_id($product)) ?>" onclick="addToCart(<?= (int)$product['id'] ?>, this)">
                                     <i class="fas fa-cart-plus"></i>
                                     <span><?= t('add_to_cart') ?></span>
                                 </button>
@@ -800,7 +801,11 @@ header('X-Frame-Options: SAMEORIGIN');
                     badge.textContent = data.cart_count || (parseInt(badge.textContent || '0') + 1);
                 }
                 if (window.metaTrackCatalogEvent) {
-                    window.metaTrackCatalogEvent('AddToCart', [productId]);
+                    var catalogId = productId;
+                    if (btn && btn.dataset && btn.dataset.metaId) {
+                        catalogId = btn.dataset.metaId;
+                    }
+                    window.metaTrackCatalogEvent('AddToCart', [String(catalogId)]);
                 }
                 btn.innerHTML = '<i class="fas fa-check"></i> <span><?= $lang === "ar" ? "تمت الإضافة" : "Added!" ?></span>';
                 btn.style.background = '#059669';

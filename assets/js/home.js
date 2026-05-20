@@ -156,7 +156,9 @@
                     actionsHtml = '<button class="btn-cart" disabled style="opacity:0.6;cursor:not-allowed;background:#999;">' +
                         '<i class="fas fa-ban"></i><span>' + (CURRENT_LANG === 'ar' ? 'نفذت الكمية' : 'Out of Stock') + '</span></button>';
                 } else {
-                    actionsHtml = '<button class="btn-cart" onclick="addToCart(' + product.id + ', this)">' +
+                    const catalogId = product.meta_catalog_id || product.id;
+                    const safeCatalogId = String(catalogId).replace(/"/g, '&quot;');
+                    actionsHtml = '<button class="btn-cart" data-meta-id="' + safeCatalogId + '" onclick="addToCart(' + product.id + ', this)">' +
                         '<i class="fas fa-cart-plus"></i><span>' + ADD_TO_CART_TEXT + '</span></button>';
                 }
                 actionsHtml += '<a href="' + productUrl + '" class="btn-view" title="' + DETAILS_TEXT + '">' +
@@ -209,6 +211,13 @@
     // ==========================================
     // Add to Cart (AJAX)
     // ==========================================
+    function getMetaCatalogId(btn, fallbackId) {
+        if (btn && btn.dataset && btn.dataset.metaId) {
+            return btn.dataset.metaId;
+        }
+        return fallbackId;
+    }
+
     function addToCart(productId, btn) {
         if (!btn) return;
         const originalHTML = btn.innerHTML;
@@ -248,7 +257,8 @@
                 }
 
                 if (window.metaTrackCatalogEvent) {
-                    window.metaTrackCatalogEvent('AddToCart', [productId]);
+                    const catalogId = getMetaCatalogId(btn, productId);
+                    window.metaTrackCatalogEvent('AddToCart', [String(catalogId)]);
                 }
                 
                 btn.innerHTML = '<i class="fas fa-check"></i> <span>Added!</span>';

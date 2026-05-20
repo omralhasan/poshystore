@@ -17,6 +17,7 @@ header('Cache-Control: no-store');
 require_once __DIR__ . '/../includes/db_connect.php';
 require_once __DIR__ . '/../includes/product_manager.php';
 require_once __DIR__ . '/../includes/product_image_helper.php';
+require_once __DIR__ . '/../includes/meta_catalog.php';
 require_once __DIR__ . '/../includes/language.php';
 
 // Determine current language
@@ -85,6 +86,7 @@ foreach ($raw_products as $p) {
 
     $products[] = [
         'id'                  => (int)$p['id'],
+        'meta_catalog_id'     => get_meta_catalog_id($p),
         'name_en'             => $p['name_en'],
         'name_ar'             => $p['name_ar'] ?? '',
         'slug'                => $slug ?: '#',

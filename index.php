@@ -957,6 +957,6 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         searchFooter: '<?= $lang === "ar" ? "اضغط Enter للبحث الكامل" : "Press Enter for full results" ?>'
     };
     </script>
-    <script src="assets/js/home.min.js" defer></script>
+    <script src="assets/js/home.js" defer></script>
 </body>
 </html>
