@@ -66,7 +66,6 @@ $sql = "SELECT
             COALESCE(b.name_ar, 'بوشي لايف ستايل')  AS brand_ar
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE p.stock_quantity >= 0
         ORDER BY p.id ASC";
 
 $result = $conn->query($sql);

@@ -81,7 +81,6 @@ $sql = "SELECT
         LEFT JOIN brands        b ON p.brand_id      = b.id
         LEFT JOIN subcategories s ON p.subcategory_id = s.id
         LEFT JOIN categories    c ON s.category_id    = c.id
-        WHERE p.stock_quantity >= 0
         ORDER BY p.id ASC";
 
 $result = $conn->query($sql);
