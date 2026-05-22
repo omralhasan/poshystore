@@ -445,6 +445,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $status_filter = $_GET['status'] ?? null;
 $orders_result = getAllOrders(50, 0, $status_filter);
 $orders = $orders_result['orders'] ?? [];
+$filtered_orders_count = count($orders);
 
 // Get all products
 $products_result = getAllProducts(['in_stock' => false], 100);
@@ -456,9 +457,24 @@ $all_users = [];
 while ($u = $users_result->fetch_assoc()) { $all_users[] = $u; }
 
 // Calculate statistics
-$total_orders = count($orders);
-$pending_orders = count(array_filter($orders, fn($o) => $o['status'] === 'pending'));
-$total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
+$stats_row = [
+    'total_orders' => 0,
+    'pending_orders' => 0,
+    'total_revenue' => 0,
+];
+$stats_result = $conn->query(
+    "SELECT COUNT(*) AS total_orders,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_orders,
+            COALESCE(SUM(total_amount), 0) AS total_revenue
+     FROM orders"
+);
+if ($stats_result) {
+    $stats_row = $stats_result->fetch_assoc() ?: $stats_row;
+}
+
+$total_orders = (int)($stats_row['total_orders'] ?? 0);
+$pending_orders = (int)($stats_row['pending_orders'] ?? 0);
+$total_revenue = (float)($stats_row['total_revenue'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1315,6 +1331,11 @@ $total_revenue = array_sum(array_map(fn($o) => $o['total_amount'], $orders));
                 <i class="fas fa-shopping-cart icon"></i>
                 <h3>Total Orders</h3>
                 <div class="value"><?= $total_orders ?></div>
+                <?php if (!empty($status_filter)): ?>
+                    <div style="font-size: 0.85rem; color: var(--text-gray); margin-top: 0.25rem;">
+                        Filtered: <?= $filtered_orders_count ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="stat-card">
                 <i class="fas fa-clock icon"></i>
