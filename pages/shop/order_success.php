@@ -3,6 +3,18 @@ require_once __DIR__ . '/../../includes/language.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/checkout.php';
 require_once __DIR__ . '/../../includes/points_wallet_handler.php';
+require_once __DIR__ . '/../../includes/meta_catalog.php';
+
+if (!function_exists('meta_column_exists')) {
+    function meta_column_exists(mysqli $conn, string $table, string $column): bool
+    {
+        $table_esc = $conn->real_escape_string($table);
+        $col_esc = $conn->real_escape_string($column);
+        $sql = "SHOW COLUMNS FROM `{$table_esc}` LIKE '{$col_esc}'";
+        $res = $conn->query($sql);
+        return $res instanceof mysqli_result && $res->num_rows > 0;
+    }
+}
 
 if (!isset($_SESSION['user_id']) || !isset($_GET['order_id'])) {
     header('Location: ../../index.php');
@@ -21,14 +33,41 @@ $order = $order_details['order'];
 
 $order_item_ids = [];
 if ($order_id) {
-    $items_stmt = $conn->prepare("SELECT product_id FROM order_items WHERE order_id = ?");
-    $items_stmt->bind_param('i', $order_id);
-    $items_stmt->execute();
-    $items_result = $items_stmt->get_result();
-    while ($item_row = $items_result->fetch_assoc()) {
-        $order_item_ids[] = (string)($item_row['product_id'] ?? '');
+    $select_fields = ['p.id'];
+    if (meta_column_exists($conn, 'products', 'gtin')) {
+        $select_fields[] = 'p.gtin';
     }
-    $items_stmt->close();
+    if (meta_column_exists($conn, 'products', 'mpn')) {
+        $select_fields[] = 'p.mpn';
+    }
+
+    $sql = 'SELECT ' . implode(', ', $select_fields) . ' '
+        . 'FROM order_items oi '
+        . 'INNER JOIN products p ON oi.product_id = p.id '
+        . 'WHERE oi.order_id = ?';
+    $items_stmt = $conn->prepare($sql);
+    if ($items_stmt) {
+        $items_stmt->bind_param('i', $order_id);
+        $items_stmt->execute();
+        $items_result = $items_stmt->get_result();
+        while ($item_row = $items_result->fetch_assoc()) {
+            $product = [
+                'id' => $item_row['id'] ?? '',
+            ];
+            if (array_key_exists('gtin', $item_row)) {
+                $product['gtin'] = $item_row['gtin'];
+            }
+            if (array_key_exists('mpn', $item_row)) {
+                $product['mpn'] = $item_row['mpn'];
+            }
+
+            $catalog_id = get_meta_catalog_id($product, (string)($item_row['id'] ?? ''));
+            if ($catalog_id !== '') {
+                $order_item_ids[] = $catalog_id;
+            }
+        }
+        $items_stmt->close();
+    }
 }
 
 $order_item_ids = array_values(array_filter(array_unique($order_item_ids)));
@@ -174,17 +213,19 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
     <script>
         (function() {
             if (typeof fbq !== 'function') return;
-            var contentIds = <?php echo json_encode($order_item_ids); ?>;
-            var value = <?php echo json_encode($purchase_value); ?>;
-            var currency = <?php echo json_encode($purchase_currency); ?>;
-            fbq('track', 'Purchase', {
-                content_ids: contentIds,
-                content_type: 'product',
-                value: value,
-                currency: currency
-            }, {
-                eventID: <?php echo json_encode($tracked_key); ?>
-            });
+            var contentIds = <?php echo json_encode(array_values(array_filter(array_unique($order_item_ids ?? [])))); ?>;
+            var value = <?php echo json_encode((float)($purchase_value ?? 0)); ?>;
+            var currency = <?php echo json_encode($purchase_currency ?? 'JOD'); ?>;
+            var eventId = <?php echo json_encode($tracked_key ?? ''); ?>;
+
+            if (contentIds.length > 0) {
+                fbq('track', 'Purchase', {
+                    content_ids: contentIds,
+                    content_type: 'product',
+                    value: value,
+                    currency: currency
+                }, eventId ? { eventID: eventId } : {});
+            }
         })();
     </script>
     <?php

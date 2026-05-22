@@ -5,6 +5,18 @@ require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/checkout.php';
 require_once __DIR__ . '/../../includes/points_wallet_handler.php';
 require_once __DIR__ . '/../../includes/product_image_helper.php';
+require_once __DIR__ . '/../../includes/meta_catalog.php';
+
+if (!function_exists('meta_column_exists')) {
+    function meta_column_exists(mysqli $conn, string $table, string $column): bool
+    {
+        $table_esc = $conn->real_escape_string($table);
+        $col_esc = $conn->real_escape_string($column);
+        $sql = "SHOW COLUMNS FROM `{$table_esc}` LIKE '{$col_esc}'";
+        $res = $conn->query($sql);
+        return $res instanceof mysqli_result && $res->num_rows > 0;
+    }
+}
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -42,6 +54,66 @@ $cart_total_after_coupon = max(0, $cart_total - $coupon_discount);
 // Delivery fee: 2 JOD, free for orders above 35 JOD
 $delivery_fee = ($cart_total_after_coupon >= 35) ? 0 : 2;
 $cart_total_with_delivery = $cart_total_after_coupon + $delivery_fee;
+
+$checkout_content_ids = [];
+$checkout_product_ids = [];
+if (!empty($cart['cart_items'])) {
+    foreach ($cart['cart_items'] as $item) {
+        if (isset($item['product_id'])) {
+            $checkout_product_ids[] = (int)$item['product_id'];
+        }
+    }
+}
+
+$checkout_product_ids = array_values(array_unique(array_filter($checkout_product_ids)));
+if (!empty($checkout_product_ids)) {
+    $select_fields = ['p.id'];
+    if (meta_column_exists($conn, 'products', 'gtin')) {
+        $select_fields[] = 'p.gtin';
+    }
+    if (meta_column_exists($conn, 'products', 'mpn')) {
+        $select_fields[] = 'p.mpn';
+    }
+
+    $placeholders = implode(',', array_fill(0, count($checkout_product_ids), '?'));
+    $sql = 'SELECT ' . implode(', ', $select_fields) . ' FROM products p WHERE p.id IN (' . $placeholders . ')';
+    $stmt = $conn->prepare($sql);
+    $catalog_by_id = [];
+
+    if ($stmt) {
+        $types = str_repeat('i', count($checkout_product_ids));
+        $stmt->bind_param($types, ...$checkout_product_ids);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+            $product = [
+                'id' => $row['id'] ?? '',
+            ];
+            if (array_key_exists('gtin', $row)) {
+                $product['gtin'] = $row['gtin'];
+            }
+            if (array_key_exists('mpn', $row)) {
+                $product['mpn'] = $row['mpn'];
+            }
+
+            $catalog_by_id[(int)$row['id']] = get_meta_catalog_id($product, (string)($row['id'] ?? ''));
+        }
+        $stmt->close();
+    }
+
+    foreach ($checkout_product_ids as $product_id) {
+        $catalog_id = $catalog_by_id[$product_id] ?? '';
+        if ($catalog_id === '') {
+            $catalog_id = get_meta_catalog_id(['id' => (string)$product_id], (string)$product_id);
+        }
+        if ($catalog_id !== '') {
+            $checkout_content_ids[] = $catalog_id;
+        }
+    }
+}
+
+$checkout_content_ids = array_values(array_filter(array_unique($checkout_content_ids)));
 
 // Process checkout
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
@@ -325,6 +397,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
         }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
+    <script>
+        (function() {
+            if (typeof fbq !== 'function') return;
+
+            var checkoutItems = <?php echo json_encode($checkout_content_ids); ?>;
+
+            if (checkoutItems.length > 0) {
+                fbq('track', 'InitiateCheckout', {
+                    content_ids: checkoutItems,
+                    content_type: 'product',
+                    value: <?php echo json_encode((float)($cart_total_with_delivery ?? 0)); ?>,
+                    currency: 'JOD'
+                });
+            }
+        })();
+    </script>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
