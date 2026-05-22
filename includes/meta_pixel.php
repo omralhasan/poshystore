@@ -32,30 +32,3 @@ fbq('track', 'PageView');
 src="https://www.facebook.com/tr?id=2465802043847377&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
-<script>
-if (!window.metaTrackCatalogEvent) {
-	window.metaTrackCatalogEvent = function(eventName, contentIds, extra) {
-		if (typeof fbq !== 'function') return;
-		var ids = Array.isArray(contentIds) ? contentIds : [contentIds];
-		var cleanIds = [];
-		for (var i = 0; i < ids.length; i++) {
-			if (ids[i] === null || typeof ids[i] === 'undefined') continue;
-			var id = String(ids[i]).trim();
-			if (id) cleanIds.push(id);
-		}
-		if (!cleanIds.length) return;
-		var payload = {
-			content_ids: cleanIds,
-			content_type: 'product'
-		};
-		if (extra && typeof extra === 'object') {
-			for (var key in extra) {
-				if (Object.prototype.hasOwnProperty.call(extra, key)) {
-					payload[key] = extra[key];
-				}
-			}
-		}
-		fbq('track', eventName, payload);
-	};
-}
-</script>
