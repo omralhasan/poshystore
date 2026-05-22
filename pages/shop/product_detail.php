@@ -2146,7 +2146,6 @@ if ($is_logged_in) {
                     <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1;">
                         <span class="quantity-label"><?= t('in_cart_label') ?></span>
                         <span class="quantity-value" id="cartQuantity">${quantity}</span>
-                                    data-meta-id="<?= htmlspecialchars($meta_catalog_id) ?>"
                     </div>
                     <button class="quantity-btn increase" onclick="updateQuantity(${productId}, 'increase')" title="<?= t('increase_quantity') ?>">
                         <i class="fas fa-plus"></i>
@@ -2154,7 +2153,6 @@ if ($is_logged_in) {
                 `;
                 addToCartBtn.parentNode.replaceChild(quantityControls, addToCartBtn);
             }
-                                data-meta-id="<?= htmlspecialchars($meta_catalog_id) ?>"
         }
         
         // Replace Quantity Controls with Add to Cart button
