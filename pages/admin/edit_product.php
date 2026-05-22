@@ -589,9 +589,47 @@ if ($is_ajax_request) {
     $tags_raw   = trim($_POST['tags'] ?? '');
     $sup_cost   = ($_POST['supplier_price'] ?? '') !== '' ? floatval($_POST['supplier_price']) : null;
     $product_cost = ($_POST['cost'] ?? '') !== '' ? floatval($_POST['cost']) : null;
-    $orig_price = ($_POST['original_price'] ?? '') !== '' ? floatval($_POST['original_price']) : $price;
+    $submitted_original = ($_POST['original_price'] ?? '') !== '' ? floatval($_POST['original_price']) : null;
     $discount   = floatval($_POST['discount_percentage'] ?? 0);
     $has_disc   = ($discount > 0) ? 1 : 0;
+
+    $existing_price = null;
+    $existing_original = null;
+    $existing_has_discount = 0;
+    if ($pid > 0) {
+        $price_stmt = $conn->prepare('SELECT price_jod, original_price, has_discount FROM products WHERE id = ?');
+        if ($price_stmt) {
+            $price_stmt->bind_param('i', $pid);
+            $price_stmt->execute();
+            $existing = $price_stmt->get_result()->fetch_assoc();
+            $price_stmt->close();
+            if ($existing) {
+                $existing_price = (float)($existing['price_jod'] ?? 0);
+                $existing_original = (float)($existing['original_price'] ?? 0);
+                $existing_has_discount = (int)($existing['has_discount'] ?? 0);
+            }
+        }
+    }
+
+    if ($has_disc) {
+        $base_price = $submitted_original;
+        if ($base_price === null) {
+            if ($existing_has_discount && $existing_original > 0) {
+                $base_price = $existing_original;
+            } else {
+                $base_price = $price;
+            }
+        }
+        $price = round($base_price * (100 - $discount) / 100, 3);
+        $orig_price = $base_price;
+    } else {
+        if ($existing_has_discount && $existing_original > 0 && $submitted_original === null) {
+            if ($existing_price !== null && abs($price - $existing_price) < 0.0001) {
+                $price = $existing_original;
+            }
+        }
+        $orig_price = $submitted_original ?? $price;
+    }
 
     if (empty($name_en)) { echo json_encode(['success' => false, 'error' => 'English name is required']); exit(); }
     if ($price <= 0)      { echo json_encode(['success' => false, 'error' => 'Price must be greater than 0']); exit(); }
