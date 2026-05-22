@@ -99,30 +99,6 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
         .register-cta a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
-    <?php 
-    // Ensure the order actually exists and was created before triggering any conversion
-    if (isset($order_id) && intval($order_id) > 0 && empty($error)):
-    ?>
-    <script>
-    (function() {
-        if (typeof fbq !== 'function') return;
-        
-        var contentIds = <?php echo json_encode(array_values(array_filter(array_unique($order_item_ids ?? [])))); ?>;
-        var value = <?php echo json_encode((float)($purchase_value ?? $order_total ?? 0)); ?>;
-        var currency = <?php echo json_encode($purchase_currency ?? $order_currency ?? 'JOD'); ?>;
-        var orderId = <?php echo json_encode((string)$order_id); ?>;
-        
-        if (contentIds.length > 0) {
-            fbq('track', 'Purchase', {
-                content_ids: contentIds,
-                content_type: 'product',
-                value: value,
-                currency: currency
-            }, { eventID: orderId });
-        }
-    })();
-    </script>
-    <?php endif; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
@@ -170,5 +146,18 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
     </div>
     
     <?php require_once __DIR__ . '/../../includes/home_footer.php'; ?>
+    <?php if (isset($_GET['order_id']) && intval($_GET['order_id']) > 0): ?>
+    <script>
+    (function() {
+        if (typeof fbq !== 'function') return;
+        fbq('track', 'Purchase', {
+            content_ids: <?php echo json_encode($order_item_ids ?? []); ?>,
+            content_type: 'product',
+            value: <?php echo json_encode((float)($purchase_value ?? $order_total ?? 0)); ?>,
+            currency: 'JOD'
+        }, { eventID: <?php echo json_encode((string)$_GET['order_id']); ?> });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>
