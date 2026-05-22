@@ -5,3 +5,23 @@
 [1m📝 Commit message:[0m Auto deploy 2026-05-22 23:59
 
 [1m📦 Staging all changes (4 files)...[0m
+M  deploy_log.txt
+M  includes/meta_pixel.php
+M  pages/shop/guest_order_success.php
+M  pages/shop/order_success.php
+
+[1m✍  Committing...[0m
+[main e7370e17] Auto deploy 2026-05-22 23:59
+ 4 files changed, 28 insertions(+), 87 deletions(-)
+
+[1m🚀 Pushing to GitHub...[0m
+[0;32m✓ Pushed to GitHub![0m
+
+[1m🌐 Deploying to production (159.223.180.154)...[0m
+[0;32m[1m✓ Deployed successfully![0m
+  Live commit: [0;36me7370e17 Auto deploy 2026-05-22 23:59[0m
+
+[0;36m[1m══════════════════════════════════════[0m
+[0;32m[1m  Done! Check: http://159.223.180.154[0m
+[0;36m[1m══════════════════════════════════════[0m
+
