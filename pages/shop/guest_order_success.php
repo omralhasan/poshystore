@@ -99,22 +99,27 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
         .register-cta a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
-    <?php if (!empty($order_item_ids) && !empty($order_id)): ?>
+    <?php 
+    // Ensure the order actually exists and was created before triggering any conversion
+    if (isset($order_id) && intval($order_id) > 0 && empty($error)):
+    ?>
     <script>
     (function() {
         if (typeof fbq !== 'function') return;
-
-        var contentIds = <?php echo json_encode(array_values(array_filter(array_unique($order_item_ids)))); ?>;
-        var value = <?php echo json_encode((float)$order_total); ?>;
-        var currency = <?php echo json_encode($order_currency); ?>;
+        
+        var contentIds = <?php echo json_encode(array_values(array_filter(array_unique($order_item_ids ?? [])))); ?>;
+        var value = <?php echo json_encode((float)($purchase_value ?? $order_total ?? 0)); ?>;
+        var currency = <?php echo json_encode($purchase_currency ?? $order_currency ?? 'JOD'); ?>;
         var orderId = <?php echo json_encode((string)$order_id); ?>;
-
-        fbq('track', 'Purchase', {
-            content_ids: contentIds,
-            content_type: 'product',
-            value: value,
-            currency: currency
-        }, { eventID: orderId });
+        
+        if (contentIds.length > 0) {
+            fbq('track', 'Purchase', {
+                content_ids: contentIds,
+                content_type: 'product',
+                value: value,
+                currency: currency
+            }, { eventID: orderId });
+        }
     })();
     </script>
     <?php endif; ?>
