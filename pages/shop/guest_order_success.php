@@ -99,56 +99,25 @@ unset($_SESSION['guest_order_id'], $_SESSION['guest_order_name']);
         .register-cta a { color: var(--purple-color, #6b2fa0); font-weight: 700; text-decoration: none; }
     </style>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
-    <?php
-    if (!empty($order_item_ids) && isset($order_id)) {
-        if (!isset($_SESSION['pixel_tracked_orders']) || !is_array($_SESSION['pixel_tracked_orders'])) {
-            $_SESSION['pixel_tracked_orders'] = [];
-        }
-
-        $now = time();
-        $max_age_seconds = 15 * 60;
-        foreach ($_SESSION['pixel_tracked_orders'] as $key => $timestamp) {
-            if (!is_int($timestamp)) {
-                $timestamp = $now;
-            }
-            if (($now - $timestamp) > $max_age_seconds) {
-                unset($_SESSION['pixel_tracked_orders'][$key]);
-            } else {
-                $_SESSION['pixel_tracked_orders'][$key] = $timestamp;
-            }
-        }
-
-        arsort($_SESSION['pixel_tracked_orders']);
-        if (count($_SESSION['pixel_tracked_orders']) > 10) {
-            $_SESSION['pixel_tracked_orders'] = array_slice($_SESSION['pixel_tracked_orders'], 0, 10, true);
-        }
-
-        $tracked_key = 'order_' . (string)$order_id;
-        if (!isset($_SESSION['pixel_tracked_orders'][$tracked_key])) {
-            $_SESSION['pixel_tracked_orders'][$tracked_key] = $now;
-    ?>
+    <?php if (!empty($order_item_ids) && !empty($order_id)): ?>
     <script>
-        (function() {
-            if (typeof fbq !== 'function') return;
-            var contentIds = <?php echo json_encode(array_values(array_filter(array_unique($order_item_ids ?? [])))); ?>;
-            var value = <?php echo json_encode((float)$order_total); ?>;
-            var currency = <?php echo json_encode($order_currency ?? 'JOD'); ?>;
-            var eventId = 'guest_' + <?php echo json_encode((string)$order_id); ?>;
+    (function() {
+        if (typeof fbq !== 'function') return;
 
-            if (contentIds.length > 0) {
-                fbq('track', 'Purchase', {
-                    content_ids: contentIds,
-                    content_type: 'product',
-                    value: value,
-                    currency: currency
-                }, { eventID: eventId });
-            }
-        })();
+        var contentIds = <?php echo json_encode(array_values(array_filter(array_unique($order_item_ids)))); ?>;
+        var value = <?php echo json_encode((float)$order_total); ?>;
+        var currency = <?php echo json_encode($order_currency); ?>;
+        var orderId = <?php echo json_encode((string)$order_id); ?>;
+
+        fbq('track', 'Purchase', {
+            content_ids: contentIds,
+            content_type: 'product',
+            value: value,
+            currency: currency
+        }, { eventID: orderId });
+    })();
     </script>
-    <?php
-        }
-    }
-    ?>
+    <?php endif; ?>
 </head>
 <body>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
