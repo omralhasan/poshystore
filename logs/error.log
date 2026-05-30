@@ -597,3 +597,33 @@ Stack trace:
 #1 /home/omar/poshystore/meta_feed.php(24): require_once('...')
 #2 {main}
   thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-May-2026 12:21:23 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /tmp/poshy_last_orders.php(2): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-May-2026 12:21:42 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /tmp/poshy_last_orders.php(2): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-May-2026 12:26:38 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /tmp/poshy_last_orders.php(2): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-May-2026 12:27:45 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 /tmp/poshy_last_orders.php(2): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
+[30-May-2026 12:28:50 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: No such file or directory in /home/omar/poshystore/includes/db_connect.php:19
+Stack trace:
+#0 /home/omar/poshystore/includes/db_connect.php(19): mysqli->__construct()
+#1 Command line code(1): require('...')
+#2 {main}
+  thrown in /home/omar/poshystore/includes/db_connect.php on line 19
