@@ -9,6 +9,34 @@
 require_once __DIR__ . '/db_connect.php';
 
 /**
+ * Validate product slugs to prevent injection and malformed inputs.
+ */
+function isSafeProductSlug(string $slug): bool
+{
+    $slug = trim($slug);
+    if ($slug === '') {
+        return false;
+    }
+
+    $length = function_exists('mb_strlen') ? mb_strlen($slug, 'UTF-8') : strlen($slug);
+    if ($length > 180) {
+        return false;
+    }
+
+    // Reject obvious SQLi tokens and comment markers.
+    if (preg_match('/(--|\/\*|\*\/|;|#|%00|%0a|%0d)/i', $slug)) {
+        return false;
+    }
+
+    if (preg_match('/\b(select|union|xor|sleep|benchmark|pg_sleep|waitfor|delay)\b/i', $slug)) {
+        return false;
+    }
+
+    // Allow Unicode letters, digits, and hyphens only.
+    return (bool)preg_match('/^[\p{L}0-9]+(?:[-\p{L}0-9]+)*$/u', $slug);
+}
+
+/**
  * Get all products with optional filtering
  * 
  * @param array $filters Optional filters (category_id, min_price, max_price, search, in_stock)
@@ -212,7 +240,7 @@ function getProductBySlug($slug)
 {
     global $conn;
 
-    if (empty($slug) || !preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $slug)) {
+    if (!isSafeProductSlug((string)$slug)) {
         return [
             'success' => false,
             'error' => 'Invalid product slug'

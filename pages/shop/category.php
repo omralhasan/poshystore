@@ -48,8 +48,13 @@ function findCategoryBySlug($categories, $slug) {
 
 // Get category ID or slug
 $category_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$category_slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
+$category_slug = isset($_GET['slug']) ? trim((string)$_GET['slug']) : '';
 $active_subcategory = isset($_GET['subcategory']) ? (int)$_GET['subcategory'] : 0;
+
+if ($category_slug !== '' && !isSafeProductSlug($category_slug)) {
+    header('Location: ../../index.php');
+    exit;
+}
 
 if ($category_id <= 0 && empty($category_slug)) {
     header('Location: ../../index.php');

@@ -39,7 +39,8 @@ if ($conn->connect_error) {
         exit();
     }
     
-    die("Connection failed: " . $conn->connect_error);
+    http_response_code(500);
+    die("Database connection failed.");
 }
 
 // Set charset to UTF-8 for Arabic support

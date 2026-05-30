@@ -21,11 +21,11 @@ if (isset($_GET['lang']) && in_array($_GET['lang'], ['ar', 'en'])) {
 }
 
 // Get slug from rewritten URL
-$slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
+$slug = isset($_GET['slug']) ? trim((string)$_GET['slug']) : '';
 
-// Validate slug: Allow English letters, numbers, hyphens, AND Arabic/Unicode letters
-// Regex: allows lowercase a-z, Arabic letters, numbers 0-9, and hyphens
-if (empty($slug) || !preg_match('/^[\p{L}0-9]+(?:[-\p{L}0-9]+)*$/u', $slug)) {
+// Validate slug and reject suspicious inputs early.
+if (!isSafeProductSlug($slug)) {
+    http_response_code(404);
     header('Location: index.php');
     exit;
 }
