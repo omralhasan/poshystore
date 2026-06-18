@@ -50,14 +50,13 @@ if ($user_id) {
     }
 }
 
-// Get cart count
+// Get cart count (getCartCount returns int; guestGetCartCount returns array with 'count')
 $cart_count = 0;
 if ($user_id) {
-    $cart_info = getCartCount($user_id);
-    $cart_count = $cart_info['count'] ?? 0;
+    $cart_count = getCartCount($user_id);
 } else {
     $cart_info = guestGetCartCount();
-    $cart_count = $cart_info['count'] ?? 0;
+    $cart_count = (int)($cart_info['count'] ?? 0);
 }
 
 // Get recommended products using smart logic

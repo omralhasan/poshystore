@@ -54,8 +54,7 @@ if ($is_logged_in) {
 $cart_count = 0;
 $product_in_cart_quantity = 0;
 if ($is_logged_in) {
-    $cart_info = getCartCount($_SESSION['user_id']);
-    $cart_count = $cart_info['count'] ?? 0;
+    $cart_count = getCartCount($_SESSION['user_id']);
     $cart_check_sql = "SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?";
     $stmt = $conn->prepare($cart_check_sql);
     $stmt->bind_param('ii', $_SESSION['user_id'], $product_id);
@@ -248,7 +247,7 @@ if (window.metaTrackCatalogEvent) {
 /* Cart Drawer — slide-in right on desktop, bottom sheet on mobile */
 .pd-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;opacity:0;transition:opacity .3s ease;backdrop-filter:blur(4px)}
 .pd-drawer-overlay.active{display:block;opacity:1}
-.pd-drawer{position:fixed;top:0;inset-inline-end:0;width:700px;max-width:94vw;height:100%;background:#faf7f2;z-index:10000;box-shadow:-8px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.pd-drawer{position:fixed;top:0;inset-inline-end:0;width:700px;max-width:94vw;height:100%;background:#faf7f2;z-index:10000;box-shadow:-8px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}
 [dir=rtl] .pd-drawer{transform:translateX(-100%)}
 .pd-drawer.active{transform:translateX(0)}
 .pd-drawer-hdr{flex-shrink:0;background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -285,18 +284,18 @@ if (window.metaTrackCatalogEvent) {
 .pd-drawer-rec-grid::-webkit-scrollbar{height:2px}
 .pd-drawer-rec-grid::-webkit-scrollbar-thumb{background:var(--gold-color);border-radius:2px}
 
-/* Rec product card — compact, image fills well, text tight */
-.pd-drec-card{flex:0 0 165px;background:#fff;border-radius:10px;padding:6px 6px 8px;box-shadow:0 1px 4px rgba(72,54,112,.06);transition:var(--pd-transition);text-align:center;display:flex;flex-direction:column}
+/* Rec product card — compact, robust flex column, no overflow leaks */
+.pd-drec-card{flex:0 0 170px;background:#fff;border-radius:10px;padding:6px 6px 8px;box-shadow:0 1px 4px rgba(72,54,112,.06);transition:var(--pd-transition);text-align:center;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}
 .pd-drec-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(72,54,112,.1)}
-.pd-drec-img{width:100%;height:110px;border-radius:6px;background:#f5edf8;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0}
-.pd-drec-img img{width:100%;height:100%;object-fit:contain;padding:4px}
-.pd-drec-name{font-size:.72rem;font-weight:600;color:var(--purple-color);margin:5px 2px 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pd-drec-price-line{display:flex;align-items:center;justify-content:center;gap:4px;margin:0 2px 4px}
-.pd-drec-price{font-size:.8rem;font-weight:700;color:var(--gold-color)}
-.pd-drec-orig{font-size:.62rem;color:#aaa;text-decoration:line-through}
+.pd-drec-img{width:100%;height:110px;border-radius:6px;background:#f5edf8;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.pd-drec-img img{width:100%;height:100%;object-fit:contain;padding:6px;display:block}
+.pd-drec-name{font-size:.72rem;font-weight:600;color:var(--purple-color);margin:5px 4px 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;box-sizing:border-box;max-width:100%}
+.pd-drec-price-line{display:flex;align-items:center;justify-content:center;gap:3px;margin:0 4px 3px;flex-shrink:0;box-sizing:border-box}
+.pd-drec-price{font-size:.78rem;font-weight:700;color:var(--gold-color)}
+.pd-drec-orig{font-size:.6rem;color:#aaa;text-decoration:line-through}
 
-/* Pink‑rose Add‑to‑Cart button — impossible to miss */
-.pd-drec-btn{width:100%;padding:5px 8px;border:none;border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .2s ease;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.3px;margin-top:auto}
+/* Pink‑rose Add‑to‑Cart button — impossible to miss, sits at bottom of card */
+.pd-drec-btn{width:calc(100% - 0px);padding:5px 6px;border:1px solid rgba(245,87,108,.3);border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .2s ease;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.3px;margin-top:auto;flex-shrink:0;box-sizing:border-box}
 .pd-drec-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(245,87,108,.4)}
 .pd-drec-btn:active{transform:scale(.97)}
 .pd-drec-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
@@ -950,6 +949,14 @@ function pdCloseDrawer() {
     document.getElementById('pdDrawer').classList.remove('active');
     document.body.style.overflow = '';
 }
+// Refresh all cart count badges in the UI
+function pdRefreshCartCount(count) {
+    const cartLink = document.getElementById('pdDrawerCartLink');
+    if (cartLink) cartLink.innerHTML = '<i class="fas fa-shopping-cart"></i> <?= t("go_to_cart") ?> (' + count + ')';
+    document.querySelectorAll('.cart-badge').forEach(el => { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; });
+    document.querySelectorAll('.bottom-nav-badge').forEach(el => { el.textContent = count > 9 ? '9+' : count; el.style.display = count > 0 ? '' : 'none'; });
+    document.querySelectorAll('.mobile-cart-count').forEach(el => { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; });
+}
 function pdPopulateDrawer(d) {
     const p = d.added_product;
     const imgEl = document.getElementById('pdDrawerImg');
@@ -960,12 +967,8 @@ function pdPopulateDrawer(d) {
     document.getElementById('pdDrawerQty').textContent = '<?= t("quantity") ?>: ' + p.quantity;
     document.getElementById('pdDrawerTitle').textContent = '✅ ' + p.name_en + ' — <?= t("added_to_cart_modal") ?>';
 
-    // Update cart link
-    const cartLink = document.getElementById('pdDrawerCartLink');
-    if (cartLink) {
-        const base = cartLink.getAttribute('href').split('?')[0];
-        cartLink.innerHTML = '<i class="fas fa-shopping-cart"></i> <?= t("go_to_cart") ?> (' + d.cart_count + ')';
-    }
+    // Update cart link & all nav badges
+    pdRefreshCartCount(d.cart_count);
 
     // Recommended products
     const recSection = document.getElementById('pdDrawerRecSection');
@@ -998,14 +1001,11 @@ function pdRecOneClick(id, btn, name) {
                 btn.innerHTML = '<i class="fas fa-check"></i>';
                 btn.style.background = '#4caf50';
                 setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> <?= t("add_button") ?>'; btn.style.background = ''; }, 1500);
-                // Refresh cart count in the drawer header link
-                const cartLink = document.getElementById('pdDrawerCartLink');
-                if (cartLink) {
-                    fetch(BASE_URL + '/api/get_cart_popup_data.php?product_id=' + id)
-                        .then(r => r.json()).then(cd => {
-                            if (cd.success) cartLink.innerHTML = '<i class="fas fa-shopping-cart"></i> <?= t("go_to_cart") ?> (' + cd.cart_count + ')';
-                        });
-                }
+                // Refresh cart count everywhere
+                fetch(BASE_URL + '/api/get_cart_popup_data.php?product_id=' + id)
+                    .then(r => r.json()).then(cd => {
+                        if (cd.success) pdRefreshCartCount(cd.cart_count);
+                    });
                 pdAlert('success', name + ' <?= t("added_to_cart_success") ?>');
             } else {
                 btn.disabled = false;

@@ -75,8 +75,7 @@ $user_wallet_balance = 0;
 
 if ($is_logged_in) {
     try {
-        $cart_info = getCartCount($_SESSION['user_id']);
-        $cart_count = $cart_info['count'] ?? 0;
+        $cart_count = getCartCount($_SESSION['user_id']);
         
         if (function_exists('getUserPointsAndWallet')) {
             $points_wallet_info = getUserPointsAndWallet($_SESSION['user_id']);

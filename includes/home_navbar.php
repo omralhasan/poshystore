@@ -18,8 +18,7 @@ if ($is_logged_in) {
     if (file_exists(__DIR__ . '/cart_handler.php')) {
         require_once __DIR__ . '/cart_handler.php';
         if (function_exists('getCartCount')) {
-            $cart_info = getCartCount($_SESSION['user_id']);
-            $cart_count = $cart_info['count'] ?? 0;
+            $cart_count = getCartCount($_SESSION['user_id']);
         }
     }
 } else {
