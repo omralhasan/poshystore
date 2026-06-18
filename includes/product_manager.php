@@ -951,3 +951,101 @@ function getProductsByTag($tag_slug, $limit = 50)
     $stmt->close();
     return $products;
 }
+
+/**
+ * Get recommended/upsell products for a given product
+ * Priority: same subcategory > same category > same brand > random
+ */
+function getRecommendedProducts($product_id, $conn, $limit = 3)
+{
+    $product = getProductById($product_id);
+    if (!$product['success']) return [];
+
+    $p = $product['product'];
+    $subcategory_id = $p['subcategory_id'] ?? 0;
+    $category_id = $p['category_id'] ?? 0;
+    $brand_id = $p['brand_id'] ?? 0;
+    $exclude = [$product_id];
+
+    $results = [];
+
+    // Helper to fetch and deduplicate
+    $fetch = function($sql, $params, $types, $needed) use ($conn, &$results, &$exclude) {
+        if ($needed <= 0) return 0;
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) return 0;
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $r = $stmt->get_result();
+        $count = 0;
+        while ($row = $r->fetch_assoc()) {
+            if (in_array($row['id'], $exclude)) continue;
+            $row['price_formatted'] = formatJOD($row['price_jod']);
+            $row['in_stock'] = $row['stock_quantity'] > 0;
+            if ($row['has_discount'] && $row['original_price'] > 0) {
+                $discounted = $row['original_price'] * (1 - $row['discount_percentage'] / 100);
+                $row['discounted_price_formatted'] = formatJOD($discounted);
+                $row['original_price_formatted'] = formatJOD($row['original_price']);
+                $row['final_price_formatted'] = $row['discounted_price_formatted'];
+            } else {
+                $row['final_price_formatted'] = $row['price_formatted'];
+            }
+            $results[] = $row;
+            $exclude[] = $row['id'];
+            $count++;
+            if ($count >= $needed) break;
+        }
+        $stmt->close();
+        return $count;
+    };
+
+    $base_cols = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.price_jod, p.stock_quantity, p.image_link,
+                         p.original_price, p.discount_percentage, p.has_discount,
+                         b.name_en AS brand_en, b.name_ar AS brand_ar
+                  FROM products p
+                  LEFT JOIN brands b ON p.brand_id = b.id
+                  WHERE p.stock_quantity > 0 AND p.id != ?";
+
+    $needed = $limit;
+
+    // 1. Same subcategory
+    if ($subcategory_id) {
+        $needed -= $fetch(
+            "$base_cols AND p.subcategory_id = ? ORDER BY (p.is_recommended=1 OR p.is_best_seller=1) DESC, RAND() LIMIT ?",
+            [$product_id, $subcategory_id, $needed], 'iii', $needed
+        );
+    }
+
+    // 2. Same category (different subcategory)
+    if ($needed > 0 && $category_id) {
+        $needed -= $fetch(
+            "$base_cols AND p.subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?) AND p.subcategory_id != ? ORDER BY (p.is_recommended=1 OR p.is_best_seller=1) DESC, RAND() LIMIT ?",
+            [$product_id, $category_id, $subcategory_id, $needed], 'iiii', $needed
+        );
+    }
+
+    // 3. Same brand
+    if ($needed > 0 && $brand_id) {
+        $needed -= $fetch(
+            "$base_cols AND p.brand_id = ? ORDER BY (p.is_recommended=1 OR p.is_best_seller=1) DESC, RAND() LIMIT ?",
+            [$product_id, $brand_id, $needed], 'iii', $needed
+        );
+    }
+
+    // 4. Random fallback
+    if ($needed > 0) {
+        $exclude_ids = implode(',', array_merge([$product_id], array_map(function($r) { return $r['id']; }, $results)));
+        $fetch(
+            "SELECT p.id, p.name_en, p.name_ar, p.slug, p.price_jod, p.stock_quantity, p.image_link,
+                    p.original_price, p.discount_percentage, p.has_discount,
+                    b.name_en AS brand_en, b.name_ar AS brand_ar
+             FROM products p
+             LEFT JOIN brands b ON p.brand_id = b.id
+             WHERE p.stock_quantity > 0 AND p.id NOT IN ($exclude_ids)
+             ORDER BY RAND() LIMIT ?",
+            [$needed], 'i', $needed
+        );
+    }
+
+    return $results;
+}
