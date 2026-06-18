@@ -688,7 +688,7 @@ header('X-Frame-Options: SAMEORIGIN');
                 <h3><?= $lang === 'ar' ? 'لا توجد منتجات' : 'No products found' ?></h3>
                 <p><?= $lang === 'ar' ? 'لا توجد منتجات في هذا القسم بعد' : 'No products are available in this category yet' ?></p>
                 <a href="/index.php">
-                    <i class="fas fa-arrow-left"></i> <?= $lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home' ?>
+                    <i class="fas fa-arrow-<?= $lang === 'ar' ? 'right' : 'left' ?>"></i> <?= $lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home' ?>
                 </a>
             </div>
         <?php else: ?>
@@ -697,15 +697,15 @@ header('X-Frame-Options: SAMEORIGIN');
                 <div class="p-card fade-in<?= ($product['stock_quantity'] <= 0) ? ' out-of-stock-card' : '' ?>" style="animation-delay: <?= $idx * 0.03 ?>s;">
                     <div class="p-card-img">
                         <?php if ($product['stock_quantity'] <= 0): ?>
-                            <span style="position:absolute;top:10px;left:10px;z-index:5;background:rgba(239,68,68,0.92);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;"><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
+                            <span style="position:absolute;top:10px;inset-inline-start:10px;z-index:5;background:rgba(239,68,68,0.92);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;"><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
                         <?php endif; ?>
 
                         <?php if (!empty($product['is_best_seller'])): ?>
-                            <span style="position:absolute;top:<?= ($product['stock_quantity'] <= 0) ? '38px' : '10px' ?>;left:10px;z-index:5;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-fire"></i> <?= $lang === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller' ?></span>
+                            <span style="position:absolute;top:<?= ($product['stock_quantity'] <= 0) ? '38px' : '10px' ?>;inset-inline-start:10px;z-index:5;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-fire"></i> <?= $lang === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller' ?></span>
                         <?php endif; ?>
 
                         <?php if (!empty($product['is_recommended'])): ?>
-                            <span style="position:absolute;bottom:10px;left:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
+                            <span style="position:absolute;bottom:10px;inset-inline-start:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
                         <?php endif; ?>
 
                         <?php if (!empty($product['has_discount']) && $product['discount_percentage'] > 0): ?>

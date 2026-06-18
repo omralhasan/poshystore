@@ -261,7 +261,7 @@ $referral_stats = getReferralStats($_SESSION['user_id']);
                         <i class="fas fa-gift me-2"></i>You earned <strong style="color: var(--gold-color); font-size: 1.2rem;"><?= number_format($points_earned) ?></strong> loyalty points!
                     </p>
                     <small style="color: #5a7ba0;">
-                        <i class="fas fa-arrow-right me-1"></i>
+                        <i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'left' : 'right' ?> me-1"></i>
                         <a href="points_wallet.php" style="color: var(--purple-color); text-decoration: none; font-weight: 600;">
                             Visit Rewards Dashboard to convert points to wallet balance
                         </a>

@@ -311,7 +311,7 @@ $is_logged_in = isset($_SESSION['user_id']);
 
         <p><strong>For urgent delivery issues, please call us directly for fastest resolution.</strong></p>
 
-        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-left me-1"></i> Back to Home</a>
+        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?> me-1"></i> Back to Home</a>
     </div>
     </div>
     </div>

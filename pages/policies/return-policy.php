@@ -217,7 +217,7 @@ $is_logged_in = isset($_SESSION['user_id']);
             <li>⏰ Support Hours: Monday-Friday, 9 AM - 6 PM (Jordan Time)</li>
         </ul>
 
-        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-left me-1"></i> Back to Home</a>
+        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?> me-1"></i> Back to Home</a>
     </div>
     </div>
     </div>

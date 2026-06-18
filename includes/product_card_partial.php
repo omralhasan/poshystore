@@ -34,15 +34,15 @@ $meta_catalog_id = get_meta_catalog_id($product);
 <div class="p-card fade-in<?= ($product['stock_quantity'] <= 0) ? ' out-of-stock-card' : '' ?>" style="animation-delay: <?= $idx * 0.05 ?>s;">
     <div class="p-card-img">
         <?php if ($product['stock_quantity'] <= 0): ?>
-            <span class="out-of-stock-tag" style="position:absolute;top:10px;left:10px;z-index:5;background:rgba(239,68,68,0.92);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;"><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
+            <span class="out-of-stock-tag" style="position:absolute;top:10px;inset-inline-start:10px;z-index:5;background:rgba(239,68,68,0.92);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;"><?= $lang === 'ar' ? 'نفذت الكمية' : 'Out of Stock' ?></span>
         <?php endif; ?>
 
         <?php if (!empty($product['is_best_seller'])): ?>
-            <span style="position:absolute;top:<?= ($product['stock_quantity'] <= 0) ? '38px' : '10px' ?>;left:10px;z-index:5;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-fire"></i> <?= $lang === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller' ?></span>
+            <span style="position:absolute;top:<?= ($product['stock_quantity'] <= 0) ? '38px' : '10px' ?>;inset-inline-start:10px;z-index:5;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-fire"></i> <?= $lang === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller' ?></span>
         <?php endif; ?>
 
         <?php if (!empty($product['is_recommended'])): ?>
-            <span style="position:absolute;bottom:10px;left:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
+            <span style="position:absolute;bottom:10px;inset-inline-start:10px;z-index:5;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;font-weight:700;"><i class="fas fa-star"></i> <?= $lang === 'ar' ? 'موصى به' : 'Recommended' ?></span>
         <?php endif; ?>
 
         <?php if (!empty($product['has_discount']) && $product['discount_percentage'] > 0): ?>

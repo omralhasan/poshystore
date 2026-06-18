@@ -175,10 +175,11 @@ function chatbotAnswer(topic) {
     const answersEl = document.getElementById('chatbot-answers');
 
     optionsEl.style.display = 'none';
+    const isRtl = document.documentElement.dir === 'rtl';
     answersEl.innerHTML = `
         <div class="chat-msg user-msg"><div class="chat-bubble user">${data.q}</div></div>
         <div class="chat-msg bot-msg"><div class="chat-bubble bot">${data.a}</div></div>
-        <button class="back-btn" onclick="chatbotReset()"><i class="fas fa-arrow-left"></i> Back to topics</button>
+        <button class="back-btn" onclick="chatbotReset()"><i class="fas fa-arrow-${isRtl ? 'right' : 'left'}"></i> ${isRtl ? 'العودة للمواضيع' : 'Back to topics'}</button>
     `;
 }
 

@@ -1066,7 +1066,7 @@ unset($order); // Break reference
                 
                 <div class="cancel-modal-actions">
                     <button class="cancel-modal-btn cancel-btn-back" onclick="closeCancelModal()">
-                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                        <i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?> me-2"></i>Go Back
                     </button>
                     <button class="cancel-modal-btn cancel-btn-confirm" onclick="confirmCancelOrder()">
                         <i class="fas fa-check me-2"></i>Yes, Cancel Order

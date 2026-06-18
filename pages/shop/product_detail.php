@@ -316,6 +316,8 @@ if (window.metaTrackCatalogEvent) {
 /* Alert */
 .pd-alert{position:fixed;top:80px;inset-inline-end:20px;padding:.8rem 1.25rem;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,.15);z-index:1000;animation:pdSlideIn .3s ease-out;font-size:.9rem}
 @keyframes pdSlideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+[dir=rtl] .pd-alert{animation-name:pdSlideInRtl}
+@keyframes pdSlideInRtl{from{transform:translateX(-100px);opacity:0}to{transform:translateX(0);opacity:1}}
 .pd-alert.success{background:linear-gradient(135deg,rgba(201,168,106,.15),rgba(201,168,106,.05));color:#155724;border-inline-start:4px solid var(--gold-color);border:1px solid var(--gold-color)}
 .pd-alert.error{background:linear-gradient(135deg,rgba(220,53,69,.15),rgba(220,53,69,.05));color:#721c24;border-inline-start:4px solid #dc3545;border:1px solid #dc3545}
 
@@ -323,7 +325,7 @@ if (window.metaTrackCatalogEvent) {
 .pd-video-wrap{border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .pd-video-wrap video{width:100%;max-height:500px;display:block;background:#000}
 .pd-video-embed{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-.pd-video-embed iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+.pd-video-embed iframe{position:absolute;top:0;inset-inline-start:0;width:100%;height:100%;border:0}
 .pd-no-video{text-align:center;padding:2.5rem;background:linear-gradient(135deg,#f8f9fa,#e9ecef);border-radius:10px;border:2px dashed #dee2e6}
 .pd-no-video i{font-size:3rem;color:#adb5bd;margin-bottom:.5rem}
 .pd-no-video p{color:#6c757d;margin:0}
@@ -726,9 +728,9 @@ if (window.metaTrackCatalogEvent) {
 <!-- Lightbox -->
 <div class="pd-lb" id="pdLb" onclick="pdCloseLb(event)">
     <div class="pd-lb-close" onclick="pdCloseLb(event)"><i class="fas fa-times"></i></div>
-    <div class="pd-lb-nav pd-lb-prev" onclick="pdLbNav(event, -1)"><i class="fas fa-chevron-left"></i></div>
+    <div class="pd-lb-nav pd-lb-prev" onclick="pdLbNav(event, -1)"><i class="fas fa-chevron-<?= $current_lang === 'ar' ? 'right' : 'left' ?>"></i></div>
     <img class="pd-lb-img" id="pdLbImg" src="" alt="">
-    <div class="pd-lb-nav pd-lb-next" onclick="pdLbNav(event, 1)"><i class="fas fa-chevron-right"></i></div>
+    <div class="pd-lb-nav pd-lb-next" onclick="pdLbNav(event, 1)"><i class="fas fa-chevron-<?= $current_lang === 'ar' ? 'left' : 'right' ?>"></i></div>
     <div class="pd-lb-counter" id="pdLbCounter"></div>
 </div>
 

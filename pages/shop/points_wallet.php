@@ -444,7 +444,7 @@ $referral_stats = getReferralStats($user_id);
                                            placeholder="<?php printf(t('enter_points'), $settings['minimum_conversion_points']); ?>"
                                            required>
                                     <small class="conversion-preview mt-2 d-block">
-                                        <i class="fas fa-arrow-right"></i> <?= t('you_will_receive') ?> <strong id="conversion_preview">0.000 <?= t('currency') ?></strong>
+                                        <i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'left' : 'right' ?>"></i> <?= t('you_will_receive') ?> <strong id="conversion_preview">0.000 <?= t('currency') ?></strong>
                                     </small>
                                 </div>
                             </div>

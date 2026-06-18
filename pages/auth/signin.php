@@ -355,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signin'])) {
                             </p>
                             <p class="mb-0 mt-2">
                                 <a href="<?= BASE_PATH ?>/index.php" class="auth-link">
-                                    <i class="fas fa-arrow-left me-1"></i><?= t('back_to_store') ?>
+                                    <i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?> me-1"></i><?= t('back_to_store') ?>
                                 </a>
                             </p>
                         </div>

@@ -289,7 +289,7 @@ $is_logged_in = isset($_SESSION['user_id']);
         <h2>14. Your Consent</h2>
         <p>By using our website and services, you consent to this Privacy Policy. If you do not agree with this policy, please do not use our website.</p>
 
-        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-left me-1"></i> Back to Home</a>
+        <a href="../../index.php" class="back-link"><i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?> me-1"></i> Back to Home</a>
     </div>
     </div>
     </div>

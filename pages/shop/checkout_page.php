@@ -339,7 +339,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
-            border-left: 4px solid #dc3545;
+            border-inline-start: 4px solid #dc3545;
         }
 
         .form-control-ramadan {
@@ -511,7 +511,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                         <i class="fas fa-shipping-fast me-2"></i><?= t('shipping_details_tab') ?>
                                     </button>
                                 </li>
-                                <li class="nav-item" role="presentation" style="flex: 1; margin-left: 0.5rem;">
+                                <li class="nav-item" role="presentation" style="flex: 1; margin-inline-start: 0.5rem;">
                                     <button 
                                         class="nav-link" 
                                         id="gift-tab" 
@@ -926,7 +926,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                                        style="width: 20px; height: 20px; border: 2px solid #1890ff; cursor: pointer;"
                                        <?= $wallet_balance >= $cart_total_with_delivery ? 'checked' : '' ?>
                                        onchange="updateTotal()">
-                                <label class="form-check-label" for="useWalletCheckbox" style="color: var(--purple-color); font-weight: 600; margin-left: 0.5rem; cursor: pointer;">
+                                <label class="form-check-label" for="useWalletCheckbox" style="color: var(--purple-color); font-weight: 600; margin-inline-start: 0.5rem; cursor: pointer;">
                                     <i class="fas fa-check-circle me-1" style="color: #28a745;"></i>
                                     <?= t('use_wallet_balance_order') ?>
                                 </label>
@@ -991,7 +991,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_order'])) {
                         </button>
                         
                         <a href="/pages/shop/cart.php" class="btn-ramadan-secondary w-100 mt-3" style="display: block; text-align: center; text-decoration: none; padding: 0.75rem; font-weight: 600;">
-                            <i class="fas fa-arrow-left me-2"></i><?= t('back_to_cart') ?>
+                            <i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?> me-2"></i><?= t('back_to_cart') ?>
                         </a>
                         
                         <div style="text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(201, 168, 106, 0.2);">

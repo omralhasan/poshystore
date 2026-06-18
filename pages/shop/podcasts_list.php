@@ -127,7 +127,7 @@ if ($result) {
 </head>
 <body>
     <div class="page-header-bar">
-        <a href="<?= htmlspecialchars(getShopUrl($current_lang)) ?>" class="back-link"><i class="fas fa-arrow-left"></i> <?= $current_lang === 'ar' ? 'العودة للمتجر' : 'Back to Store' ?></a>
+        <a href="<?= htmlspecialchars(getShopUrl($current_lang)) ?>" class="back-link"><i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'right' : 'left' ?>"></i> <?= $current_lang === 'ar' ? 'العودة للمتجر' : 'Back to Store' ?></a>
         <h1><i class="fas fa-podcast"></i> Podcasts</h1>
         <p><?= $current_lang === 'ar' ? 'استكشف أحدث البودكاست والمحتوى الخاص بنا' : 'Explore our latest podcasts and lifestyle content' ?></p>
     </div>

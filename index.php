@@ -795,7 +795,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <h3><?= t('no_products_found') ?></h3>
                 <p><?= t('try_searching_else') ?></p>
                 <a href="index.php">
-                    <i class="fas fa-arrow-left"></i> <?= t('view_all_products') ?>
+                    <i class="fas fa-arrow-<?= $lang === 'ar' ? 'right' : 'left' ?>"></i> <?= t('view_all_products') ?>
                 </a>
             </div>
         <?php else: ?>

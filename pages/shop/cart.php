@@ -83,7 +83,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
+            inset-inline-start: 0;
             width: 5px;
             height: 100%;
             background: linear-gradient(180deg, var(--purple-color), var(--gold-color));
@@ -422,7 +422,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             border-radius: 6px;
             font-size: 0.8rem;
             cursor: pointer;
-            margin-left: 0.5rem;
+            margin-inline-start: 0.5rem;
             transition: all 0.2s;
         }
         
@@ -505,7 +505,7 @@ $placeholder_img = $normalize_asset_path('images/placeholder-cosmetics.svg');
             background: linear-gradient(135deg, #ffe6e6, #fff0f0);
             padding: 0.5rem 0.75rem;
             border-radius: 8px;
-            border-left: 4px solid #dc3545;
+            border-inline-start: 4px solid #dc3545;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;

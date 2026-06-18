@@ -268,7 +268,7 @@ $is_logged_in = isset($_SESSION['user_id']);
             </div>
             
             <a href="index.php" class="guest-link">
-                <?= $current_lang === 'ar' ? 'أو تصفح المنتجات كزائر' : 'or browse products as guest' ?> <i class="fas fa-arrow-right"></i>
+                <?= $current_lang === 'ar' ? 'أو تصفح المنتجات كزائر' : 'or browse products as guest' ?> <i class="fas fa-arrow-<?= $current_lang === 'ar' ? 'left' : 'right' ?>"></i>
             </a>
         </div>
     </div>
