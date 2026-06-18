@@ -54,6 +54,7 @@ if (
 // ─────────────────────────────────────────────────────────────
 
 require_once __DIR__ . '/includes/language.php';
+require_once __DIR__ . '/includes/seo_helper.php';
 require_once __DIR__ . '/includes/auth_functions.php';
 require_once __DIR__ . '/includes/product_manager.php';
 require_once __DIR__ . '/includes/cart_handler.php';
@@ -217,7 +218,6 @@ if (!$is_filtered_mode) {
         $cat_id = (int)$cat['id'];
         $is_home_subcategory = !empty($cat['is_subcategory_home_slot']);
         $where_filter_sql = $is_home_subcategory ? 'p.subcategory_id = ?' : 's.category_id = ?';
-        $fill_where_sql = $is_home_subcategory ? "p.subcategory_id = $cat_id" : "s.category_id = $cat_id";
         try {
             // Get recommended products first (is_recommended=1) for this category
             $rec_sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
@@ -245,31 +245,38 @@ if (!$is_filtered_mode) {
             }
             $rec_stmt->close();
 
-            // If fewer than 4 recommended, fill with best sellers / newest
             if (count($rec_products) < 4) {
                 $existing_ids = array_map(fn($p) => (int)$p['id'], $rec_products);
-                $exclude = !empty($existing_ids) ? implode(',', $existing_ids) : '0';
                 $remaining = 4 - count($rec_products);
+                $cat_id_int = (int)$cat_id;
+                $fill_where_field = $is_home_subcategory ? 'p.subcategory_id' : 's.category_id';
+                $placeholders = !empty($existing_ids) ? implode(',', array_fill(0, count($existing_ids), '?')) : '0';
                 $fill_sql = "SELECT p.id, p.name_en, p.name_ar, p.slug, p.short_description_en, p.short_description_ar,
-                                    p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
-                                    p.original_price, p.discount_percentage, p.has_discount,
-                                    p.is_recommended, p.is_best_seller,
-                                    s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
-                                    c.name_en AS category_en, c.name_ar AS category_ar,
-                                    b.name_en AS brand_en, b.name_ar AS brand_ar
+                                     p.price_jod, p.supplier_cost, p.stock_quantity, p.image_link, p.subcategory_id, p.brand_id,
+                                     p.original_price, p.discount_percentage, p.has_discount,
+                                     p.is_recommended, p.is_best_seller,
+                                     s.name_en AS subcategory_en, s.name_ar AS subcategory_ar,
+                                     c.name_en AS category_en, c.name_ar AS category_ar,
+                                     b.name_en AS brand_en, b.name_ar AS brand_ar
                              FROM products p
                              LEFT JOIN subcategories s ON p.subcategory_id = s.id
                              LEFT JOIN categories c ON s.category_id = c.id
                              LEFT JOIN brands b ON p.brand_id = b.id
-                             WHERE $fill_where_sql AND p.id NOT IN ($exclude)
+                             WHERE $fill_where_field = ? AND p.id NOT IN ($placeholders)
                              ORDER BY p.is_best_seller DESC, p.id DESC
-                             LIMIT $remaining";
-                $fill_result = $conn->query($fill_sql);
-                if ($fill_result) {
+                             LIMIT ?";
+                $fill_stmt = $conn->prepare($fill_sql);
+                if ($fill_stmt) {
+                    $fill_types = 'i' . str_repeat('i', count($existing_ids)) . 'i';
+                    $fill_params = array_merge([$cat_id_int], $existing_ids, [$remaining]);
+                    $fill_stmt->bind_param($fill_types, ...$fill_params);
+                    $fill_stmt->execute();
+                    $fill_result = $fill_stmt->get_result();
                     while ($row = $fill_result->fetch_assoc()) {
                         $row['price_formatted'] = formatJOD($row['price_jod']);
                         $rec_products[] = $row;
                     }
+                    $fill_stmt->close();
                 }
             }
 
@@ -428,8 +435,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Poshy Store - Premium beauty & skincare products">
-    <title><?= t('welcome') ?> - Poshy Store</title>
+    <meta name="description" content="<?= htmlspecialchars(getHomeMetaDescription($current_lang)) ?>">
+    <title>Poshy Store | Premium Korean Beauty & Skincare</title>
     
     <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
     
@@ -485,6 +492,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <?php require_once __DIR__ . '/includes/meta_pixel.php'; ?>
 </head>
 <body>
+    <?php renderGTMNoScript(); ?>
     <?php require_once __DIR__ . '/includes/home_navbar.php'; ?>
 
     <!-- ======== ANNOUNCEMENT BAR ======== -->
@@ -539,7 +547,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <?php if (!empty($slide['subtitle'])): ?>
                         <span class="hero-label"><?= htmlspecialchars($slide['subtitle']) ?></span>
                         <?php endif; ?>
-                        <h2><?= htmlspecialchars($slide['title']) ?></h2>
+                        <h1 class="hero-slide-title"><?= htmlspecialchars($slide['title']) ?></h1>
                         <?php if (!empty($slide['cta_text'])): ?>
                         <a href="<?= htmlspecialchars($slide_link) ?>"
                            class="hero-banner-cta"
@@ -935,6 +943,38 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <?php endforeach; ?>
     </div>
     <?php endif; ?>
+
+    <!-- ======== FAQ SECTION ======== -->
+    <?php
+    $homepage_faqs = getHomepageFAQs($current_lang);
+    renderFAQSchema($homepage_faqs);
+    ?>
+    <section class="faq-section" id="faq" style="max-width: 900px; margin: 2.5rem auto; padding: 2rem 1.5rem;">
+        <h2 style="text-align: center; font-size: 1.75rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+            <?= $current_lang === 'ar' ? 'الأسئلة الشائعة' : 'Frequently Asked Questions' ?>
+        </h2>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem;">
+            <?= $current_lang === 'ar' ? 'كل ما تود معرفته عن منتجات العناية بالبشرة الكورية' : 'Everything you need to know about Korean skincare' ?>
+        </p>
+        <div class="faq-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <?php foreach ($homepage_faqs as $i => $faq): ?>
+            <details class="faq-item" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.3s ease;">
+                <summary style="padding: 1rem 1.25rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: var(--text-primary); font-size: 0.95rem; list-style: none;">
+                    <?= htmlspecialchars($faq['question']) ?>
+                    <i class="fas fa-chevron-down" style="transition: transform 0.3s ease; color: var(--accent); flex-shrink: 0;"></i>
+                </summary>
+                <div style="padding: 0 1.25rem 1.25rem; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7;">
+                    <?= htmlspecialchars($faq['answer']) ?>
+                </div>
+            </details>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <style>
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item[open] summary i.fa-chevron-down { transform: rotate(180deg); }
+        .faq-item[open] { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    </style>
 
     <!-- ======== FOOTER ======== -->
     <?php require_once __DIR__ . '/includes/home_footer.php'; ?>

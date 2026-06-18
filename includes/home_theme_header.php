@@ -1,6 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 if (!function_exists('isRTL')) { require_once __DIR__ . '/language.php'; }
+require_once __DIR__ . '/seo_helper.php';
 $lang = $_SESSION['language'] ?? 'en';
 $baseHref = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') . '/' : '/';
 $scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
@@ -8,6 +9,11 @@ $isAdminPage = str_contains($scriptPath, '/pages/admin/');
 ?>
 <?php if (!$isAdminPage): ?>
 <base href="<?= htmlspecialchars($baseHref) ?>">
+<?php endif; ?>
+<?php if (!$isAdminPage): ?>
+<?php renderCanonical(); ?>
+<?php renderAnalytics(); ?>
+<?php renderOrganizationSchema(); ?>
 <?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

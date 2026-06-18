@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+Disallow: /pages/admin/
+Disallow: /api/
+Disallow: /vendor/
+Disallow: /includes/
+Disallow: /logs/
+Disallow: /uploads/
+Disallow: /backups/
+Disallow: /backup_images/
+Disallow: /docs/
+Disallow: /feeds/
+Disallow: /pending_sms/
+Disallow: /sql/
+Disallow: /tests/
+Disallow: /*.php$
+Disallow: /*.txt$
+Disallow: /*.csv$
+Disallow: /*.json$
+Disallow: /*.bak$
+Disallow: /*.log$
+Disallow: /signin.php
+Disallow: /signup.php
+Disallow: /start.php
+Disallow: /welcome.php
+Disallow: /status.php
+Disallow: /data-deletion.php
+Disallow: /diagnostics.php
+
+# Sitemap
+Sitemap: https://poshystore.com/sitemap.xml
+
+# Crawl delay for polite crawling
+Crawl-delay: 5

@@ -339,7 +339,12 @@ function setRememberMeCookie($user_id, $days = 30) {
     }
     
     // Clean up old expired tokens for this user
-    $conn->query("DELETE FROM remember_me_tokens WHERE user_id = $user_id AND expires_at < NOW()");
+    $clean_stmt = $conn->prepare("DELETE FROM remember_me_tokens WHERE user_id = ? AND expires_at < NOW()");
+    if ($clean_stmt) {
+        $clean_stmt->bind_param('i', $user_id);
+        $clean_stmt->execute();
+        $clean_stmt->close();
+    }
     
     // Set cookie: value = "user_id:token"
     $cookie_value = $user_id . ':' . $token;

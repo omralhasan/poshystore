@@ -85,8 +85,11 @@ if ($is_logged_in) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?> - Poshy Store</title>
+    <meta name="description" content="<?= htmlspecialchars(strip_tags(mb_substr(($current_lang === 'ar' && !empty($product['short_description_ar']) ? $product['short_description_ar'] : (!empty($product['short_description_en']) ? $product['short_description_en'] : $product['name_en'] . ' - Premium Korean beauty product at Poshy Store')), 0, 155))) ?>">
+    <title><?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?> | Poshy Store</title>
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
+    <?php renderProductSchema($product, $average_rating, $review_count); ?>
+    <?php if (!empty($reviews)): foreach ($reviews as $rv): renderReviewSchema($rv, $product); endforeach; endif; ?>
     <style>
         /* Product Detail Page Enhancements */
         .back-link {
@@ -1394,6 +1397,7 @@ if ($is_logged_in) {
     </script>
 </head>
 <body>
+    <?php renderGTMNoScript(); ?>
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
     
     <div class="page-container">

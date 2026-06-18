@@ -139,8 +139,8 @@ header('X-Frame-Options: SAMEORIGIN');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="<?= htmlspecialchars($category_name) ?> - Poshy Store">
-    <title><?= htmlspecialchars($category_name) ?> - Poshy Store</title>
+    <meta name="description" content="<?= htmlspecialchars($lang === 'ar' ? 'تسوقي أفضل منتجات ' . $category_name . ' الأصلية للعناية بالبشرة والتجميل من Poshy Store. أشهر الماركات الكورية بأسعار تنافسية وتوصيل سريع في الأردن.' : 'Shop authentic ' . $category_name . ' products at Poshy Store. Premium Korean beauty and skincare brands with fast delivery across Jordan. Best prices guaranteed.') ?>">
+    <title><?= htmlspecialchars($category_name) ?> | Poshy Store</title>
     
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     
@@ -601,6 +601,7 @@ header('X-Frame-Options: SAMEORIGIN');
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
 </head>
 <body>
+    <?php renderGTMNoScript(); ?>
 
     <?php require_once __DIR__ . '/../../includes/home_navbar.php'; ?>
 
