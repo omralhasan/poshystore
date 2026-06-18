@@ -453,6 +453,14 @@ $translations = [
         'howto_step4' => 'خزن في مكان بارد وجاف بعيداً عن أشعة الشمس المباشرة',
         'howto_step5' => 'توقف عن الاستخدام إذا حدث تهيج',
         'refer_packaging' => 'للتعليمات المحددة، يرجى الرجوع إلى عبوة المنتج أو التواصل مع خدمة العملاء.',
+        'shipping_info' => 'معلومات الشحن',
+        'shipping_detail' => 'نوفر شحناً مجانياً للطلبات التي تزيد عن 30 د.أ داخل الأردن. يتم التوصيل خلال 3-5 أيام عمل. للطلبات العاجلة، يمكنك اختيار الشحن السريع (2-3 أيام عمل).',
+        'add_photos' => 'إضافة صور',
+        'max_3_photos' => '3 صور كحد أقصى',
+        'free_shipping_over_30' => 'شحن مجاني للطلبات فوق 30 د.أ',
+        'easy_returns' => 'إرجاع سهل',
+        'secure_checkout' => 'دفع آمن',
+        'same_day_shipping' => 'شحن نفس اليوم للطلبات قبل 4م',
         
         // Chatbot
         'chatbot_assistant' => 'مساعد Poshy',
@@ -821,6 +829,14 @@ $translations = [
         'howto_step4' => 'Store in a cool, dry place away from direct sunlight',
         'howto_step5' => 'Discontinue use if irritation occurs',
         'refer_packaging' => 'For specific instructions, please refer to the product packaging or consult with our customer service.',
+        'shipping_info' => 'Shipping Info',
+        'shipping_detail' => 'We offer free shipping on orders over 30 JOD within Jordan. Delivery takes 3-5 business days. For urgent orders, choose express shipping (2-3 business days).',
+        'add_photos' => 'Add Photos',
+        'max_3_photos' => 'Max 3 photos',
+        'free_shipping_over_30' => 'Free shipping over 30 JOD',
+        'easy_returns' => 'Easy Returns',
+        'secure_checkout' => 'Secure Checkout',
+        'same_day_shipping' => 'Same Day Shipping for orders before 4PM',
         
         // Chatbot
         'chatbot_assistant' => 'Poshy Assistant',
