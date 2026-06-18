@@ -170,8 +170,8 @@ if (window.metaTrackCatalogEvent) {
 .pd-actions-row{display:flex;gap:10px}
 .pd-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:.85rem 1.5rem;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:var(--pd-transition);text-decoration:none;text-align:center}
 .pd-btn:disabled{opacity:.5;cursor:not-allowed}
-.pd-btn-primary{background:linear-gradient(135deg,var(--gold-color),var(--royal-gold));color:#fff}
-.pd-btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,168,106,.4);color:#fff}
+.pd-btn-primary{background:#E02B7D;color:#fff;border:2px solid #E02B7D}
+.pd-btn-primary:hover:not(:disabled){background:#c01f6a;border-color:#c01f6a;transform:translateY(-2px);box-shadow:0 6px 20px rgba(224,43,125,.4);color:#fff}
 .pd-btn-secondary{background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));color:#fff}
 .pd-btn-secondary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(72,54,112,.3);color:#fff}
 .pd-btn-outline{background:transparent;color:var(--purple-color);border:2px solid var(--purple-color)}
