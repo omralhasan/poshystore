@@ -295,10 +295,10 @@ if (window.metaTrackCatalogEvent) {
 .pd-drec-orig{font-size:.6rem;color:#aaa;text-decoration:line-through}
 
 /* Pink‑rose Add‑to‑Cart button — impossible to miss, sits at bottom of card */
-.pd-drec-btn{width:calc(100% - 0px);padding:5px 6px;border:1px solid rgba(245,87,108,.3);border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .2s ease;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.3px;margin-top:auto;flex-shrink:0;box-sizing:border-box}
-.pd-drec-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(245,87,108,.4)}
+.pd-drec-btn{width:100%;padding:6px 8px;border:2px solid #d6336c;border-radius:8px;font-size:.7rem;font-weight:700;cursor:pointer;transition:all .2s ease;background:#d6336c;color:#fff!important;display:flex!important;align-items:center;justify-content:center;gap:4px;margin-top:auto;flex-shrink:0;box-sizing:border-box;text-shadow:0 1px 2px rgba(0,0,0,.15);min-height:30px;line-height:1;visibility:visible!important;opacity:1!important}
+.pd-drec-btn:hover{background:#c2185b;border-color:#c2185b;transform:translateY(-1px);box-shadow:0 4px 14px rgba(214,51,108,.45)}
 .pd-drec-btn:active{transform:scale(.97)}
-.pd-drec-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.pd-drec-btn:disabled{opacity:.5!important;cursor:not-allowed;transform:none;box-shadow:none}
 
 /* Mobile: bottom sheet, larger height, same compact cards */
 @media(max-width:768px){
@@ -960,7 +960,7 @@ function pdRefreshCartCount(count) {
 function pdPopulateDrawer(d) {
     const p = d.added_product;
     const imgEl = document.getElementById('pdDrawerImg');
-    if (p.image_path) imgEl.innerHTML = `<img src="${p.image_path}" alt="${p.name_en}" onerror="this.onerror=null;this.parentElement.textContent='📦';">`;
+    if (p.image_path) imgEl.innerHTML = `<img src="${p.image_path}" alt="${(p.name_en||'').replace(/"/g,'&quot;')}" onerror="this.onerror=null;this.parentElement.textContent='📦';">`;
     else imgEl.textContent = '📦';
     document.getElementById('pdDrawerName').textContent = p.name_en;
     document.getElementById('pdDrawerPrice').textContent = p.price;
@@ -973,28 +973,35 @@ function pdPopulateDrawer(d) {
     // Recommended products
     const recSection = document.getElementById('pdDrawerRecSection');
     const recGrid = document.getElementById('pdDrawerRecs');
+    const recNames = {};
     recGrid.innerHTML = '';
     if (d.recommended_products && d.recommended_products.length) {
         recSection.style.display = 'block';
         d.recommended_products.forEach(r => {
+            const safeName = (r.name_en||'').replace(/[&<>"']/g,'');
+            recNames[r.id] = r.name_en || '';
             const card = document.createElement('div'); card.className = 'pd-drec-card';
             const priceHtml = r.has_discount
                 ? `<div class="pd-drec-price-line"><span class="pd-drec-orig">${r.original_price_formatted || r.price_formatted}</span><span class="pd-drec-price">${r.discounted_price_formatted || r.final_price_formatted || r.price_formatted}</span></div>`
                 : `<div class="pd-drec-price-line"><span class="pd-drec-price">${r.price_formatted}</span></div>`;
-            const imgSrc = r.image_path || '/images/placeholder-cosmetics.svg';
-            card.innerHTML = `<div class="pd-drec-img"><img src="${imgSrc}" alt="${r.name_en}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=font-size:1.8rem>✨</span>';"></div>
-                <div class="pd-drec-name">${r.name_en}</div>${priceHtml}
-                <button class="pd-drec-btn" onclick="pdRecOneClick(${r.id}, this,'${r.name_en.replace(/'/g,"\\'")}')"><i class="fas fa-plus"></i> <?= t('add_button') ?></button>`;
+            const imgSrc = (r.image_path || '/images/placeholder-cosmetics.svg').replace(/"/g,'&quot;');
+            card.innerHTML = `<div class="pd-drec-img"><img src="${imgSrc}" alt="${safeName}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=font-size:1.8rem>✨</span>';"></div>
+                <div class="pd-drec-name">${safeName}</div>${priceHtml}
+                <button class="pd-drec-btn" data-id="${r.id}"><i class="fas fa-plus"></i> <?= t('add_button') ?></button>`;
+            card.querySelector('.pd-drec-btn').addEventListener('click', function(e) {
+                pdRecOneClick(parseInt(this.dataset.id), this, recNames);
+            });
             recGrid.appendChild(card);
         });
     } else recSection.style.display = 'none';
 }
 // One-click add from drawer - no page reload, drawer stays open, live refresh
-function pdRecOneClick(id, btn, name) {
+function pdRecOneClick(id, btn, names) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     const endpoint = IS_LOGGED_IN ? BASE_URL + '/api/add_to_cart_api.php' : BASE_URL + '/api/guest_cart_api.php';
     const body = IS_LOGGED_IN ? 'product_id=' + id + '&quantity=1' : 'action=add&product_id=' + id + '&quantity=1';
+    const name = (names && names[id]) || '';
     fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
         .then(r => r.json()).then(d => {
             if (d.success) {
