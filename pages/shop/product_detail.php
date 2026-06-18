@@ -245,64 +245,73 @@ if (window.metaTrackCatalogEvent) {
 .pd-lb-counter{position:absolute;bottom:25px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:.9rem}
 .pd-lb img{cursor:default}
 
-/* Cart Drawer - slide-in from right on desktop, bottom sheet on mobile */
+/* Cart Drawer — slide-in right on desktop, bottom sheet on mobile */
 .pd-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;opacity:0;transition:opacity .3s ease;backdrop-filter:blur(4px)}
 .pd-drawer-overlay.active{display:block;opacity:1}
-.pd-drawer{position:fixed;top:0;inset-inline-end:0;width:440px;max-width:92vw;height:100%;background:#faf7f2;z-index:10000;box-shadow:-8px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.pd-drawer{position:fixed;top:0;inset-inline-end:0;width:700px;max-width:94vw;height:100%;background:#faf7f2;z-index:10000;box-shadow:-8px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
 [dir=rtl] .pd-drawer{transform:translateX(-100%)}
 .pd-drawer.active{transform:translateX(0)}
-.pd-drawer-hdr{flex-shrink:0;background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));padding:1.1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.pd-drawer-hdr h3{color:#fff;font-size:1.05rem;margin:0;display:flex;align-items:center;gap:8px;font-weight:600}
-.pd-drawer-hdr h3 i{font-size:1.2rem}
-.pd-drawer-close{background:rgba(255,255,255,.2);border:none;color:#fff;font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;transition:var(--pd-transition);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.pd-drawer-hdr{flex-shrink:0;background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pd-drawer-hdr h3{color:#fff;font-size:1rem;margin:0;display:flex;align-items:center;gap:6px;font-weight:600}
+.pd-drawer-hdr h3 i{font-size:1.1rem}
+.pd-drawer-close{background:rgba(255,255,255,.2);border:none;color:#fff;font-size:1.2rem;width:30px;height:30px;border-radius:50%;cursor:pointer;transition:var(--pd-transition);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .pd-drawer-close:hover{background:rgba(255,255,255,.3);transform:rotate(90deg)}
-.pd-drawer-body{flex:1;overflow-y:auto;padding:1rem 1.25rem}
+.pd-drawer-body{flex:1;overflow-y:auto;padding:1rem 1.5rem}
 .pd-drawer-body::-webkit-scrollbar{width:4px}
 .pd-drawer-body::-webkit-scrollbar-thumb{background:var(--gold-color);border-radius:2px}
 
-.pd-drawer-product{display:flex;gap:12px;align-items:center;background:#fff;border-radius:12px;padding:.85rem;margin-bottom:1rem;box-shadow:0 1px 6px rgba(0,0,0,.05)}
-.pd-drawer-product-img{width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;overflow:hidden}
+/* Added product summary — compact row */
+.pd-drawer-product{display:flex;gap:10px;align-items:center;background:#fff;border-radius:10px;padding:.65rem .85rem;margin-bottom:.85rem;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.pd-drawer-product-img{width:52px;height:52px;border-radius:8px;background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;overflow:hidden}
 .pd-drawer-product-img img{width:100%;height:100%;object-fit:contain}
 .pd-drawer-product-info{flex:1;min-width:0}
-.pd-drawer-product-name{font-weight:700;color:var(--purple-color);font-size:.9rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pd-drawer-product-price{color:var(--gold-color);font-weight:700;font-size:1rem}
-.pd-drawer-product-qty{color:#999;font-size:.8rem;margin-top:2px}
+.pd-drawer-product-name{font-weight:700;color:var(--purple-color);font-size:.85rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-drawer-product-price{color:var(--gold-color);font-weight:700;font-size:.95rem}
+.pd-drawer-product-qty{color:#999;font-size:.75rem}
 
-.pd-drawer-actions{display:flex;gap:8px;margin-bottom:1.25rem}
-.pd-drawer-btn{flex:1;padding:.7rem;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;transition:var(--pd-transition);text-decoration:none;text-align:center;display:block}
+/* Action buttons row */
+.pd-drawer-actions{display:flex;gap:8px;margin-bottom:1rem}
+.pd-drawer-btn{flex:1;padding:.65rem;border:none;border-radius:10px;font-size:.85rem;font-weight:700;cursor:pointer;transition:var(--pd-transition);text-decoration:none;text-align:center;display:block}
 .pd-drawer-btn-cart{background:linear-gradient(135deg,var(--purple-color),var(--purple-dark));color:#fff}
 .pd-drawer-btn-cart:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(72,54,112,.25);color:#fff}
 .pd-drawer-btn-continue{background:#fff;color:var(--gold-color);border:2px solid var(--gold-color)}
 .pd-drawer-btn-continue:hover{background:var(--gold-color);color:#fff}
 
-/* Recommended section inside drawer */
-.pd-drawer-rec{padding-top:.75rem;border-top:1px solid #e8e0d8}
-.pd-drawer-rec-title{font-weight:700;color:var(--purple-color);font-size:.95rem;margin-bottom:.85rem;display:flex;align-items:center;gap:6px}
+/* Recommended section — compact, no wasted space */
+.pd-drawer-rec{padding-top:.65rem;border-top:1px solid #e8e0d8}
+.pd-drawer-rec-title{font-weight:700;color:var(--purple-color);font-size:.9rem;margin-bottom:.7rem;display:flex;align-items:center;gap:5px}
 .pd-drawer-rec-title i{color:var(--gold-color)}
-.pd-drawer-rec-grid{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--gold-color) transparent}
-.pd-drawer-rec-grid::-webkit-scrollbar{height:3px}
+.pd-drawer-rec-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--gold-color) transparent}
+.pd-drawer-rec-grid::-webkit-scrollbar{height:2px}
 .pd-drawer-rec-grid::-webkit-scrollbar-thumb{background:var(--gold-color);border-radius:2px}
-.pd-drec-card{flex:0 0 160px;background:#fff;border-radius:10px;padding:.6rem;box-shadow:0 1px 6px rgba(72,54,112,.06);transition:var(--pd-transition);text-align:center}
-.pd-drec-card:hover{transform:translateY(-3px);box-shadow:0 4px 14px rgba(72,54,112,.12)}
-.pd-drec-img{width:100%;height:80px;border-radius:6px;background:#f5edf8;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:.35rem;overflow:hidden}
-.pd-drec-img img{width:100%;height:100%;object-fit:contain}
-.pd-drec-name{font-size:.75rem;font-weight:600;color:var(--purple-color);margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pd-drec-price{font-size:.8rem;font-weight:700;color:var(--gold-color);margin-bottom:.4rem}
-.pd-drec-orig{font-size:.65rem;color:#999;text-decoration:line-through;margin-inline-end:3px}
-.pd-drec-btn{width:100%;padding:.35rem;border:none;border-radius:6px;font-size:.7rem;font-weight:600;cursor:pointer;transition:var(--pd-transition);background:linear-gradient(135deg,var(--gold-color),var(--royal-gold));color:#fff;display:flex;align-items:center;justify-content:center;gap:4px}
-.pd-drec-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(201,168,106,.3)}
-.pd-drec-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
-/* Mobile: bottom sheet instead of side drawer */
+/* Rec product card — compact, image fills well, text tight */
+.pd-drec-card{flex:0 0 165px;background:#fff;border-radius:10px;padding:6px 6px 8px;box-shadow:0 1px 4px rgba(72,54,112,.06);transition:var(--pd-transition);text-align:center;display:flex;flex-direction:column}
+.pd-drec-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(72,54,112,.1)}
+.pd-drec-img{width:100%;height:110px;border-radius:6px;background:#f5edf8;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0}
+.pd-drec-img img{width:100%;height:100%;object-fit:contain;padding:4px}
+.pd-drec-name{font-size:.72rem;font-weight:600;color:var(--purple-color);margin:5px 2px 2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-drec-price-line{display:flex;align-items:center;justify-content:center;gap:4px;margin:0 2px 4px}
+.pd-drec-price{font-size:.8rem;font-weight:700;color:var(--gold-color)}
+.pd-drec-orig{font-size:.62rem;color:#aaa;text-decoration:line-through}
+
+/* Pink‑rose Add‑to‑Cart button — impossible to miss */
+.pd-drec-btn{width:100%;padding:5px 8px;border:none;border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .2s ease;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.3px;margin-top:auto}
+.pd-drec-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(245,87,108,.4)}
+.pd-drec-btn:active{transform:scale(.97)}
+.pd-drec-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Mobile: bottom sheet, larger height, same compact cards */
 @media(max-width:768px){
-.pd-drawer{width:100%;max-width:100%;height:78vh;top:auto;bottom:0;inset-inline:0;border-radius:20px 20px 0 0;transform:translateY(100%)}
+.pd-drawer{width:100%;max-width:100%;height:82vh;top:auto;bottom:0;inset-inline:0;border-radius:18px 18px 0 0;transform:translateY(100%)}
 [dir=rtl] .pd-drawer{transform:translateY(100%)}
 .pd-drawer.active{transform:translateY(0)}
-.pd-drawer-hdr{border-radius:20px 20px 0 0;padding:1rem 1.25rem}
-.pd-drawer-hdr h3{font-size:.95rem}
+.pd-drawer-hdr{border-radius:18px 18px 0 0;padding:.85rem 1.25rem}
+.pd-drawer-hdr h3{font-size:.9rem}
 .pd-drawer-body{padding:.75rem 1rem}
-.pd-drawer-rec-grid{gap:8px}
-.pd-drec-card{flex:0 0 140px}
+.pd-drawer-actions{flex-direction:column;gap:6px}
+.pd-drawer-rec-grid{gap:6px}
+.pd-drec-card{flex:0 0 145px}
 }
 
 /* Alert */
@@ -967,10 +976,10 @@ function pdPopulateDrawer(d) {
         d.recommended_products.forEach(r => {
             const card = document.createElement('div'); card.className = 'pd-drec-card';
             const priceHtml = r.has_discount
-                ? `<span class="pd-drec-orig">${r.original_price_formatted || r.price_formatted}</span><span class="pd-drec-price">${r.discounted_price_formatted || r.final_price_formatted || r.price_formatted}</span>`
-                : `<div class="pd-drec-price">${r.price_formatted}</div>`;
+                ? `<div class="pd-drec-price-line"><span class="pd-drec-orig">${r.original_price_formatted || r.price_formatted}</span><span class="pd-drec-price">${r.discounted_price_formatted || r.final_price_formatted || r.price_formatted}</span></div>`
+                : `<div class="pd-drec-price-line"><span class="pd-drec-price">${r.price_formatted}</span></div>`;
             const imgSrc = r.image_path || '/images/placeholder-cosmetics.svg';
-            card.innerHTML = `<div class="pd-drec-img"><img src="${imgSrc}" alt="${r.name_en}" loading="lazy" onerror="this.onerror=null;this.parentElement.textContent='✨';"></div>
+            card.innerHTML = `<div class="pd-drec-img"><img src="${imgSrc}" alt="${r.name_en}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=font-size:1.8rem>✨</span>';"></div>
                 <div class="pd-drec-name">${r.name_en}</div>${priceHtml}
                 <button class="pd-drec-btn" onclick="pdRecOneClick(${r.id}, this,'${r.name_en.replace(/'/g,"\\'")}')"><i class="fas fa-plus"></i> <?= t('add_button') ?></button>`;
             recGrid.appendChild(card);
