@@ -535,10 +535,9 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <div class="hero-banner-slide"
                    data-banner-link="<?= htmlspecialchars($slide_link) ?>"
                   style="cursor:pointer;">
-                 <a href="<?= htmlspecialchars($slide_link) ?>"
-                    class="hero-banner-slide-link"
-                    aria-label="<?= htmlspecialchars($slide_label) ?>"
-                    <?= $slide_is_external ? 'target="_blank" rel="noopener noreferrer"' : '' ?>></a>
+                  <a href="<?= htmlspecialchars($slide_link) ?>"
+                     class="hero-banner-slide-link"
+                     aria-label="<?= htmlspecialchars($slide_label) ?>"></a>
                 <img src="<?= htmlspecialchars(prefer_webp_relative_path((string)($slide['image'] ?? ''), ROOT_DIR)) ?>"
                      alt="<?= htmlspecialchars($slide['title'] ?: 'Poshy Store Banner') ?>"
                      <?= $i === 0 ? 'loading="eager" fetchpriority="high" decoding="async"' : 'loading="lazy" fetchpriority="low" decoding="async"' ?>>
@@ -551,8 +550,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                         <h1 class="hero-slide-title"><?= htmlspecialchars($slide['title']) ?></h1>
                         <?php if (!empty($slide['cta_text'])): ?>
                         <a href="<?= htmlspecialchars($slide_link) ?>"
-                           class="hero-banner-cta"
-                           <?= $slide_is_external ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
+                           class="hero-banner-cta">
                             <i class="fas fa-shopping-bag"></i> <?= htmlspecialchars($slide['cta_text']) ?>
                         </a>
                         <?php endif; ?>
