@@ -419,9 +419,9 @@ header('X-Frame-Options: SAMEORIGIN');
         .p-card-img img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             background: var(--surface-alt);
-            padding: 4px;
+            padding: 0;
             transition: transform 0.5s ease;
         }
         .p-card:hover .p-card-img img { transform: scale(1.08); }

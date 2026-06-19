@@ -403,6 +403,7 @@ if ($is_ajax_request) {
             exit();
         }
         @chmod($new_path, 0664);
+        process_product_image($new_path);
 
         // Get product name to build relative paths
         $pstmt = $conn->prepare('SELECT name_en FROM products WHERE id = ?');
@@ -475,6 +476,7 @@ if ($is_ajax_request) {
                 continue;
             }
             @chmod($dest, 0664);
+            process_product_image($dest);
             $added++;
             // If this is the first image ever, set image_link
             if (empty($prow['image_link']) && $max_num === 1) {

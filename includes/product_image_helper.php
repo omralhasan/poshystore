@@ -407,3 +407,99 @@ function get_product_gallery_images($product_name, $image_link, $images_dir, $pa
     
     return $gallery;
 }
+
+/**
+ * Auto-resize and crop a product image to a uniform square aspect ratio.
+ * Uses GD library. Creates a squared 800x800 JPEG/PNG with center-crop.
+ *
+ * @param string $source_path  Absolute path to the uploaded image.
+ * @param int    $size         Target width/height in pixels (default 800).
+ * @return bool  True on success, false on failure.
+ */
+function process_product_image($source_path, $size = 800) {
+    if (!file_exists($source_path)) return false;
+    if (!extension_loaded('gd') && !function_exists('imagecreatefromstring')) return false;
+
+    $info = @getimagesize($source_path);
+    if (!$info) return false;
+
+    [$src_w, $src_h, $type] = $info;
+
+    if ($src_w <= 0 || $src_h <= 0) return false;
+
+    // Load source image based on mime type
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            $src_img = @imagecreatefromjpeg($source_path);
+            break;
+        case IMAGETYPE_PNG:
+            $src_img = @imagecreatefrompng($source_path);
+            break;
+        case IMAGETYPE_WEBP:
+            if (function_exists('imagecreatefromwebp')) {
+                $src_img = @imagecreatefromwebp($source_path);
+            } else {
+                return false;
+            }
+            break;
+        default:
+            return false;
+    }
+
+    if (!$src_img) return false;
+
+    // Calculate center-crop coordinates
+    $min_side = min($src_w, $src_h);
+    $crop_x = (int)(($src_w - $min_side) / 2);
+    $crop_y = (int)(($src_h - $min_side) / 2);
+
+    // Create destination image
+    $dst_img = imagecreatetruecolor($size, $size);
+
+    // Preserve transparency for PNG
+    if ($type === IMAGETYPE_PNG) {
+        imagealphablending($dst_img, false);
+        imagesavealpha($dst_img, true);
+    }
+
+    // Resize and crop in one step
+    if (!imagecopyresampled($dst_img, $src_img, 0, 0, $crop_x, $crop_y, $size, $size, $min_side, $min_side)) {
+        imagedestroy($src_img);
+        imagedestroy($dst_img);
+        return false;
+    }
+
+    // Save — always save as JPEG for smaller size (unless source was PNG with alpha)
+    $ext = strtolower(pathinfo($source_path, PATHINFO_EXTENSION));
+    $saved = false;
+
+    if (in_array($ext, ['png', 'webp']) && ($type === IMAGETYPE_PNG)) {
+        // Keep as PNG if source had transparency
+        $saved = imagepng($dst_img, $source_path, 7);
+    } else {
+        // Convert to JPEG for smaller size
+        $jpeg_path = preg_replace('/\.(png|webp)$/i', '.jpg', $source_path);
+        $saved = imagejpeg($dst_img, $jpeg_path, 88);
+        if ($saved && $jpeg_path !== $source_path) {
+            @unlink($source_path);
+        }
+    }
+
+    imagedestroy($src_img);
+    imagedestroy($dst_img);
+
+    // Also create a WebP variant if supported
+    if ($saved && function_exists('imagewebp')) {
+        $final_path = isset($jpeg_path) && $jpeg_path !== $source_path ? $jpeg_path : $source_path;
+        $webp_path = preg_replace('/\.(jpg|jpeg|png)$/i', '.webp', $final_path);
+        if ($final_path !== $webp_path) {
+            $webp_img = @imagecreatefromstring(file_get_contents($final_path));
+            if ($webp_img) {
+                @imagewebp($webp_img, $webp_path, 85);
+                imagedestroy($webp_img);
+            }
+        }
+    }
+
+    return true;
+}

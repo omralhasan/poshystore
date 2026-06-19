@@ -8,6 +8,7 @@ session_start();
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/slug_helper.php';
+require_once __DIR__ . '/../../includes/product_image_helper.php';
 
 function trigger_feed_csv_regeneration(): void {
     $generator = realpath(__DIR__ . '/../../generate_feed_csv.php');
@@ -211,6 +212,9 @@ if ($is_ajax_request) {
                 $upload_errors[] = 'Failed to save image ' . (string)$files['name'][$i] . ' to ' . $dest . ($last_error ? ' (' . $last_error['message'] . ')' : '');
                 continue;
             }
+
+            // Auto-resize and crop to uniform square
+            process_product_image($dest);
 
             $relative_path = 'images/' . $folder_name . '/' . $num . '.' . $orig_ext;
             $uploaded_image_paths[] = $relative_path;
