@@ -1266,6 +1266,10 @@ $total_revenue = (float)($stats_row['total_revenue'] ?? 0);
                 <i class="fas fa-users"></i>
                 <span>Users Management</span>
             </div>
+            <div class="nav-item" onclick="showTab('reviews')">
+                <i class="fas fa-star"></i>
+                <span>Reviews Management</span>
+            </div>
             <a href="/pages/admin/add_product.php" class="nav-item">
                 <i class="fas fa-plus-circle"></i>
                 <span>Add New Product</span>
@@ -1367,6 +1371,10 @@ $total_revenue = (float)($stats_row['total_revenue'] ?? 0);
             <button class="tab-btn" onclick="showTab('users')">
                 <i class="fas fa-users"></i>
                 Users Management
+            </button>
+            <button class="tab-btn" onclick="showTab('reviews')">
+                <i class="fas fa-star"></i>
+                Reviews
             </button>
         </div>
         
@@ -1653,6 +1661,73 @@ $total_revenue = (float)($stats_row['total_revenue'] ?? 0);
                                         <?php else: ?>
                                             <span style="color: var(--text-gray); font-size: 0.875rem;">Admin (cannot change)</span>
                                         <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Reviews Tab -->
+        <?php
+        $all_reviews = [];
+        $rev_result = $conn->query("
+            SELECT r.id, r.product_id, r.user_id, r.rating, r.review_text, r.created_at,
+                   u.firstname, u.lastname, p.name_en AS product_name
+            FROM product_reviews r
+            JOIN users u ON r.user_id = u.id
+            JOIN products p ON r.product_id = p.id
+            ORDER BY r.created_at DESC
+            LIMIT 200
+        ");
+        if ($rev_result) $all_reviews = $rev_result->fetch_all(MYSQLI_ASSOC);
+        ?>
+        <div id="reviews-tab" class="tab-content">
+            <div class="section">
+                <h2><i class="fas fa-star"></i> Reviews Management</h2>
+                <p style="color: var(--text-gray); margin-bottom: 1.5rem;">View and manage customer product reviews.</p>
+
+                <div id="reviews-alert"></div>
+
+                <?php if (empty($all_reviews)): ?>
+                    <p style="text-align: center; padding: 3rem; color: var(--text-gray);">No reviews found.</p>
+                <?php else: ?>
+                    <div class="table-container">
+                        <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Product</th>
+                                <th>Customer</th>
+                                <th>Rating</th>
+                                <th>Review</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($all_reviews as $rev): ?>
+                                <tr id="review-row-<?= $rev['id'] ?>">
+                                    <td><strong>#<?= $rev['id'] ?></strong></td>
+                                    <td>
+                                        <a href="/<?= htmlspecialchars($rev['product_name']) ?>" target="_blank" style="color:var(--bb-accent);text-decoration:none">
+                                            <?= htmlspecialchars($rev['product_name']) ?>
+                                        </a>
+                                    </td>
+                                    <td><?= htmlspecialchars($rev['firstname'] . ' ' . $rev['lastname']) ?></td>
+                                    <td>
+                                        <span style="color:#ffc107;font-size:1.1rem"><?php for ($i = 1; $i <= 5; $i++) echo $i <= $rev['rating'] ? '★' : '☆'; ?></span>
+                                        <br><small><?= $rev['rating'] ?>/5</small>
+                                    </td>
+                                    <td style="max-width:300px;word-break:break-word"><?= htmlspecialchars(mb_substr($rev['review_text'] ?? '', 0, 200)) ?><?= mb_strlen($rev['review_text'] ?? '') > 200 ? '...' : '' ?></td>
+                                    <td><?= date('M j, Y', strtotime($rev['created_at'])) ?></td>
+                                    <td>
+                                        <button class="btn-update" style="background:#dc3545" onclick="adminDeleteReview(<?= $rev['id'] ?>, this)">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -2053,6 +2128,34 @@ $total_revenue = (float)($stats_row['total_revenue'] ?? 0);
             } catch (e) {
                 showAlert('products', '❌ Error: ' + e.message, false);
                 btn.disabled = false;
+            }
+        }
+
+        async function adminDeleteReview(reviewId, btn) {
+            if (!confirm('Are you sure you want to delete this review? This cannot be undone.')) return;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const fd = new FormData();
+                fd.append('review_id', reviewId);
+                const r = await fetch('/api/delete_review.php', { method: 'POST', body: fd });
+                const d = await r.json();
+                if (d.success) {
+                    const row = document.getElementById('review-row-' + reviewId);
+                    if (row) { row.style.transition = 'all .3s ease'; row.style.opacity = '0'; setTimeout(() => row.remove(), 300); }
+                    const alertDiv = document.getElementById('reviews-alert');
+                    if (alertDiv) alertDiv.innerHTML = '<div class="alert-success">✅ Review deleted successfully</div>';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                    const alertDiv = document.getElementById('reviews-alert');
+                    if (alertDiv) alertDiv.innerHTML = '<div class="alert-error">❌ ' + (d.error || 'Failed to delete') + '</div>';
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                const alertDiv = document.getElementById('reviews-alert');
+                if (alertDiv) alertDiv.innerHTML = '<div class="alert-error">❌ Error: ' + e.message + '</div>';
             }
         }
     </script>

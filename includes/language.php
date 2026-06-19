@@ -478,9 +478,11 @@ $translations = [
         'chatbot_contact_a' => 'البريد الإلكتروني: support@poshystore.com<br>الهاتف: +962 6 123 4567<br>نرد خلال 24 ساعة!',
         'chatbot_discount_q' => '🎁 خصومات؟',
         'chatbot_discount_a' => 'العملاء الجدد يحصلون على خصم 10%! اشترك في نشرتنا الإخبارية لتلقي عروض حصرية ورموز ترويجية.',
+        'confirm_delete_review' => 'هل أنت متأكد من حذف هذا التقييم؟',
+        'failed_delete_review' => 'فشل حذف التقييم',
         'currency' => 'د.أ',
     ],
-    
+
     'en' => [
         // Navigation
         'home' => 'Home',
@@ -854,6 +856,8 @@ $translations = [
         'chatbot_contact_a' => 'Email: support@poshystore.com<br>Phone: +962 6 123 4567<br>We respond within 24 hours!',
         'chatbot_discount_q' => '🎁 Discounts?',
         'chatbot_discount_a' => 'First-time customers get 10% off! Sign up for our newsletter to receive exclusive deals and promotional codes.',
+        'confirm_delete_review' => 'Are you sure you want to delete this review?',
+        'failed_delete_review' => 'Failed to delete review',
         'currency' => 'JOD',
     ]
 ];

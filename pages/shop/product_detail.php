@@ -17,6 +17,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 
 $product_id = (int)$_GET['id'];
 $is_logged_in = isset($_SESSION['user_id']);
+$is_admin = isAdmin();
 
 $product_result = getProductById($product_id);
 if (!$product_result['success']) {
@@ -92,6 +93,7 @@ if (window.metaTrackCatalogEvent) {
 }
 </script>
 <style>
+html{overflow-x:hidden}
 :root{--pd-gap:2.5rem;--pd-radius:16px;--pd-transition:all .3s cubic-bezier(.4,0,.2,1)}
 .pd-container{max-width:1260px;margin:0 auto;padding:0 1rem}
 .pd-breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.75rem 0;font-size:.9rem;color:#666;list-style:none;margin:0}
@@ -215,7 +217,9 @@ if (window.metaTrackCatalogEvent) {
 .pd-rev-list{display:flex;flex-direction:column;gap:1rem}
 .pd-rev-card{padding:1.25rem;background:#fff;border-radius:10px;border:1px solid #eee;transition:var(--pd-transition)}
 .pd-rev-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.04)}
-.pd-rev-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem}
+.pd-rev-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;flex-wrap:wrap;gap:4px}
+.pd-rev-delete-btn{background:none;border:none;color:#dc3545;font-size:.9rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .2s ease;opacity:.6;flex-shrink:0}
+.pd-rev-delete-btn:hover{opacity:1;background:rgba(220,53,69,.1);transform:scale(1.1)}
 .pd-rev-author{font-weight:600;color:var(--purple-color);font-size:.95rem}
 .pd-rev-date{color:#999;font-size:.8rem}
 .pd-rev-stars-display{color:#ffc107;font-size:1rem;margin-bottom:.5rem;letter-spacing:2px}
@@ -357,6 +361,31 @@ if (window.metaTrackCatalogEvent) {
 .pd-alert{inset-inline-end:10px;left:10px}
 .pd-lb-prev{inset-inline-start:10px}
 .pd-lb-next{inset-inline-end:10px}
+}
+@media(max-width:480px){
+.pd-container{padding:0 .75rem}
+.pd-grid{padding:1rem;gap:1rem}
+.pd-main-img{padding:0}
+.pd-thumb{flex:0 0 48px;width:48px;height:48px}
+.pd-name{font-size:1.2rem}
+.pd-price-current{font-size:1.35rem}
+.pd-desc{padding:.75rem 1rem;font-size:.9rem}
+.pd-btn{padding:.75rem 1rem;font-size:.9rem}
+.pd-qty-btn{width:36px;height:36px;font-size:1rem}
+.pd-qty-val{font-size:1.2rem;min-width:36px}
+.pd-card{border-radius:12px}
+.pd-main-img{border-radius:12px}
+.pd-acc-header{font-size:.9rem;padding:1rem 0}
+.pd-acc-body{font-size:.85rem}
+.pd-rev-card{padding:1rem}
+.pd-rev-text{font-size:.85rem}
+.pd-drawer{height:78vh}
+.pd-drec-card{flex:0 0 115px}
+.pd-mini-player{width:200px;inset-inline-end:8px;bottom:8px}
+.pd-alert{inset-inline-end:8px;left:8px;font-size:.85rem;top:70px}
+.pd-lb-prev{inset-inline-start:8px}
+.pd-lb-next{inset-inline-end:8px}
+.pd-lb-img{max-width:95vw}
 }
 </style>
 </head>
@@ -701,10 +730,13 @@ if (window.metaTrackCatalogEvent) {
                             <div class="pd-no-rev"><?= t('no_reviews_yet') ?></div>
                         <?php else: ?>
                             <?php foreach ($reviews as $review): ?>
-                            <div class="pd-rev-card">
+                            <div class="pd-rev-card" data-review-id="<?= $review['id'] ?>">
                                 <div class="pd-rev-card-top">
                                     <span class="pd-rev-author"><?= htmlspecialchars($review['user_full_name']) ?></span>
                                     <span class="pd-rev-date"><?= date('F j, Y', strtotime($review['created_at'])) ?></span>
+                                    <?php if ($is_admin): ?>
+                                    <button class="pd-rev-delete-btn" onclick="pdDeleteReview(<?= $review['id'] ?>, this)" title="Delete review"><i class="fas fa-trash-alt"></i></button>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="pd-rev-stars-display"><?php for ($i = 1; $i <= 5; $i++) echo $i <= $review['rating'] ? '★' : '☆'; ?></div>
                                 <div class="pd-rev-text"><?= nl2br(htmlspecialchars($review['review_text'])) ?></div>
@@ -1038,6 +1070,34 @@ document.getElementById('pdReviewForm')?.addEventListener('submit', function(e) 
             else pdAlert('error', d.error || '<?= t("failed_submit_review") ?>');
         }).catch(e => pdAlert('error', '<?= t("network_error") ?>'));
 });
+
+// Admin Delete Review
+window.pdDeleteReview = function(reviewId, btn) {
+    if (!confirm('<?= t('confirm_delete_review') ?>')) return;
+    const card = btn.closest('.pd-rev-card');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    fetch(BASE_URL + '/api/delete_review.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'review_id=' + reviewId
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            if (card) card.style.transition = 'all .3s ease';
+            if (card) card.style.opacity = '0';
+            if (card) card.style.transform = 'translateX(20px)';
+            setTimeout(() => { if (card) card.remove(); pdAlert('success', d.message); }, 300);
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            pdAlert('error', d.error || '<?= t("failed_delete_review") ?>');
+        }
+    }).catch(e => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        pdAlert('error', '<?= t("network_error") ?>');
+    });
+};
 
 // Sticky Mini Player
 <?php if (!empty($product['video_review_url']) && (strpos($product['video_review_url'], 'uploads/') === 0 || strpos($product['video_review_url'], '/uploads/') === 0)): ?>
