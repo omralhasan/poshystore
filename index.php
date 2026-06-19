@@ -496,8 +496,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
     <!-- ======== ANNOUNCEMENT BAR ======== -->
     <div id="promo-tape" class="announcement-bar">
-        <i class="fas fa-truck me-1"></i>
-        <?= $lang === 'ar' ? 'شحن مجاني للطلبات فوق 35 دينار | استخدم كود <strong>WELCOME</strong> لخصم على طلبك الأول' : 'Free Shipping on Orders Over 35 JOD | Use code <strong>WELCOME</strong> for a discount on your first order' ?>
+        <a href="#" style="color:inherit;text-decoration:none;display:inline">
+            <i class="fas fa-truck me-1"></i>
+            <?= $lang === 'ar' ? 'شحن مجاني للطلبات فوق 35 دينار | استخدم كود <strong>WELCOME</strong> لخصم على طلبك الأول' : 'Free Shipping on Orders Over 35 JOD | Use code <strong>WELCOME</strong> for a discount on your first order' ?>
+        </a>
         <button class="announcement-close" onclick="document.getElementById('promo-tape').style.display='none'">&times;</button>
     </div>
 
