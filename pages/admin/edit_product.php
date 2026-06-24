@@ -864,6 +864,8 @@ if (is_dir($img_folder)) {
         .add-more-images-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
         .hidden-replace-input{display:none;}
         .toast{position:fixed;top:2rem;right:2rem;padding:1rem 1.5rem;border-radius:12px;color:#fff;font-weight:600;z-index:9999;transform:translateX(120%);transition:transform .4s;box-shadow:0 10px 30px rgba(0,0,0,.2);}
+        .saved-alert{display:flex;align-items:center;gap:12px;padding:1rem 1.5rem;margin:0 1.5rem 1rem;background:linear-gradient(135deg,#d4edda,#c3e6cb);color:#155724;border-radius:12px;border:1px solid #b8daff;font-size:.95rem;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.05);animation:fadeIn .3s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
         .toast.show{transform:translateX(0);}
         .toast-success{background:linear-gradient(135deg,var(--success),#059669);}
         .toast-error{background:linear-gradient(135deg,var(--danger),#dc2626);}
@@ -907,6 +909,14 @@ if (is_dir($img_folder)) {
             <button type="button" class="btn btn-sm" onclick="deleteProduct()" style="background:linear-gradient(135deg,var(--danger),#dc2626);color:#fff;"><i class="fas fa-trash"></i> Delete</button>
         </div>
     </div>
+
+    <?php if (isset($_GET['saved']) && $_GET['saved'] === '1'): ?>
+    <div class="saved-alert">
+        <i class="fas fa-check-circle"></i>
+        <span>✅ تم حفظ التغييرات بنجاح!</span>
+        <span style="margin-inline-start:auto;font-size:.85rem;opacity:.8">Changes saved successfully!</span>
+    </div>
+    <?php endif; ?>
 
     <form id="editProductForm" enctype="multipart/form-data">
         <input type="hidden" name="product_id" value="<?= $product_id ?>">
@@ -1340,8 +1350,7 @@ document.getElementById('editProductForm').addEventListener('submit', async func
         showLoading(false);
         document.getElementById('submitBtn').disabled = false;
         if (data.success) {
-            showToast(data.message || 'Product updated!');
-            setTimeout(() => window.location.href = 'admin_panel.php', 1500);
+            window.location.href = 'edit_product.php?id=<?= $product_id ?>&saved=1';
         } else {
             showToast(data.error || 'Something went wrong', 'error');
         }
