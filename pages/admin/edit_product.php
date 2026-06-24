@@ -904,7 +904,7 @@ if (is_dir($img_folder)) {
     <div class="page-header">
         <h1><i class="fas fa-edit"></i> Edit Product #<?= $product_id ?></h1>
         <div style="display:flex;gap:.75rem;">
-            <a href="/pages/admin/admin_panel.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+            <a href="/pages/admin/manage_products.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
             <a href="/<?= htmlspecialchars($product['slug'] ?? '') ?>" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-eye"></i> View Product</a>
             <button type="button" class="btn btn-sm" onclick="deleteProduct()" style="background:linear-gradient(135deg,var(--danger),#dc2626);color:#fff;"><i class="fas fa-trash"></i> Delete</button>
         </div>
