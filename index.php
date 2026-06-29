@@ -436,8 +436,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= htmlspecialchars(getHomeMetaDescription($current_lang)) ?>">
     <title>Poshy Store | Premium Korean Beauty & Skincare</title>
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+    <link rel="alternate" hreflang="en" href="https://poshystore.com/">
+    <link rel="alternate" hreflang="ar" href="https://poshystore.com/?lang=ar">
+    <link rel="alternate" hreflang="x-default" href="https://poshystore.com/">
     
     <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
+    <?php renderWebSiteSchema(); ?>
     
         <link rel="stylesheet" href="assets/css/home.min.css">
     <style>

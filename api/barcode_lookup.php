@@ -1,0 +1,95 @@
+<?php
+/**
+ * Barcode Lookup API
+ * 
+ * 1. Checks local products table for matching barcode
+ * 2. If not found, queries Open Food Facts API
+ * 3. Returns JSON with product info
+ */
+
+require_once __DIR__ . '/../includes/db_connect.php';
+
+header('Content-Type: application/json; charset=utf-8');
+
+$code = preg_replace('/[^0-9]/', '', $_GET['code'] ?? '');
+
+if (empty($code)) {
+    echo json_encode(['found' => false, 'error' => 'No barcode provided']);
+    exit();
+}
+
+// 1. Check local database first
+$stmt = $conn->prepare(
+    "SELECT id, name_en, name_ar, slug, price_jod, stock_quantity, image_link, barcode, cost, supplier_cost
+     FROM products WHERE barcode = ?"
+);
+$stmt->bind_param('s', $code);
+$stmt->execute();
+$local = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if ($local) {
+    echo json_encode([
+        'found'    => 'local',
+        'product'  => [
+            'id'             => (int) $local['id'],
+            'name_en'        => $local['name_en'],
+            'name_ar'        => $local['name_ar'],
+            'slug'           => $local['slug'],
+            'price_jod'      => (float) ($local['price_jod'] ?? 0),
+            'stock_quantity' => (int) ($local['stock_quantity'] ?? 0),
+            'image_link'     => $local['image_link'] ?? '',
+            'barcode'        => $local['barcode'],
+            'cost'           => $local['cost'] !== null ? (float) $local['cost'] : null,
+            'supplier_cost'  => $local['supplier_cost'] !== null ? (float) $local['supplier_cost'] : null,
+        ],
+    ]);
+    exit();
+}
+
+// 2. Look up via Open Food Facts API
+$off_url = "https://world.openfoodfacts.org/api/v2/product/{$code}.json";
+$ctx = stream_context_create([
+    'http' => [
+        'timeout'    => 8,
+        'user_agent' => 'PoshyLifestyle/1.0 (admin barcode scanner)',
+    ],
+]);
+
+$response = @file_get_contents($off_url, false, $ctx);
+
+if ($response === false) {
+    // Try barcode lookup as fallback
+    echo json_encode([
+        'found'    => false,
+        'error'    => 'Could not reach barcode database',
+        'barcode'  => $code,
+    ]);
+    exit();
+}
+
+$data = json_decode($response, true);
+
+if (empty($data) || empty($data['product'])) {
+    echo json_encode([
+        'found'   => false,
+        'barcode' => $code,
+    ]);
+    exit();
+}
+
+$product = $data['product'];
+$product_name = $product['product_name'] ?? $product['product_name_en'] ?? '';
+
+echo json_encode([
+    'found'   => 'api',
+    'barcode' => $code,
+    'product' => [
+        'name_en'       => !empty($product_name) ? $product_name : 'Unknown Product',
+        'name_ar'       => $product['product_name_ar'] ?? '',
+        'brand'         => $product['brands'] ?? '',
+        'image_url'     => $product['image_url'] ?? $product['image_front_url'] ?? '',
+        'quantity'      => $product['quantity'] ?? '',
+        'categories'    => $product['categories'] ?? '',
+    ],
+]);

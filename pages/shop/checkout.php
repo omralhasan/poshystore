@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/cart_handler.php';
 require_once __DIR__ . '/../../includes/product_manager.php';
 require_once __DIR__ . '/../../includes/points_wallet_handler.php';
+require_once __DIR__ . '/../../includes/fifo_helper.php';
 
 /**
  * Get table columns as a fast lookup map.
@@ -252,6 +253,7 @@ function processCheckout($user_id = null, $additional_data = []) {
         
         // Process each cart item
         $order_items = [];
+        $null_cost = null; // cost_per_item populated via FIFO at delivery time
         foreach ($cart['cart_items'] as $item) {
             // Decrease product stock
             $stock_result = updateStock($item['product_id'], -$item['quantity'], true);
@@ -260,15 +262,7 @@ function processCheckout($user_id = null, $additional_data = []) {
                 throw new Exception("Failed to update stock for product " . $item['product_id']);
             }
             
-            // Fetch product cost for snapshot
-            $cost_stmt = $conn->prepare("SELECT cost, supplier_cost FROM products WHERE id = ?");
-            $cost_stmt->bind_param('i', $item['product_id']);
-            $cost_stmt->execute();
-            $cost_row = $cost_stmt->get_result()->fetch_assoc();
-            $cost_stmt->close();
-            $item_cost = $cost_row['cost'] ?? $cost_row['supplier_cost'] ?? null;
-            
-            // Save order item
+            // Save order item (cost_per_item = NULL initially; will be set via FIFO at delivery)
             $item_stmt->bind_param(
                 'iissiddd',
                 $order_id,
@@ -277,7 +271,7 @@ function processCheckout($user_id = null, $additional_data = []) {
                 $item['name_ar'],
                 $item['quantity'],
                 $item['price'],
-                $item_cost,
+                $null_cost,
                 $item['subtotal']
             );
             
@@ -591,10 +585,32 @@ function updateOrderStatus($order_id, $new_status) {
     $old_status = $result->fetch_assoc()['status'];
     $check_stmt->close();
     
+    // FIFO: when marking as delivered, consume from oldest batches and update cost_per_item
+    if ($new_status === 'delivered' && $old_status !== 'delivered') {
+        $items_sql = "SELECT id, product_id, quantity FROM order_items WHERE order_id = ?";
+        $items_stmt = $conn->prepare($items_sql);
+        $items_stmt->bind_param('i', $order_id);
+        $items_stmt->execute();
+        $items_result = $items_stmt->get_result();
+        
+        while ($item = $items_result->fetch_assoc()) {
+            $fifo_result = consumeProductBatches($item['product_id'], $item['quantity']);
+            if ($fifo_result['success']) {
+                $upd = $conn->prepare("UPDATE order_items SET cost_per_item = ? WHERE id = ?");
+                $upd->bind_param('di', $fifo_result['avg_cost'], $item['id']);
+                $upd->execute();
+                $upd->close();
+            } else {
+                error_log("FIFO consumption failed for order #{$order_id}, product #{$item['product_id']}: " . ($fifo_result['error'] ?? 'unknown'));
+            }
+        }
+        $items_stmt->close();
+    }
+    
     // If changing to cancelled from a non-cancelled status, restore stock AND reverse points
     if ($new_status === 'cancelled' && $old_status !== 'cancelled') {
-        // Get all order items
-        $items_sql = "SELECT product_id, quantity FROM order_items WHERE order_id = ?";
+        // Get all order items (include cost_per_item for FIFO restoration)
+        $items_sql = "SELECT product_id, quantity, cost_per_item FROM order_items WHERE order_id = ?";
         $items_stmt = $conn->prepare($items_sql);
         $items_stmt->bind_param('i', $order_id);
         $items_stmt->execute();
@@ -608,6 +624,11 @@ function updateOrderStatus($order_id, $new_status) {
             $update_stock_stmt->bind_param('ii', $item['quantity'], $item['product_id']);
             $update_stock_stmt->execute();
             $update_stock_stmt->close();
+            
+            // FIFO: restore batches if the order was previously delivered (cost_per_item was set)
+            if ($old_status === 'delivered' && $item['cost_per_item'] !== null) {
+                restoreProductBatches($item['product_id'], $item['quantity'], $item['cost_per_item']);
+            }
             
             $restored_items[] = [
                 'product_id' => $item['product_id'],

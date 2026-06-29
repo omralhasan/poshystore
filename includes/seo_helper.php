@@ -33,22 +33,35 @@ function renderCanonical(): void
 }
 
 /**
- * Render Organization Schema (JSON-LD)
+ * Render OnlineStore / LocalBusiness Schema (JSON-LD)
+ * Uses OnlineStore (subtype of LocalBusiness) for GEO visibility
  */
 function renderOrganizationSchema(): void
 {
     $schema = [
         '@context' => 'https://schema.org',
-        '@type' => 'Organization',
+        '@type' => 'OnlineStore',
+        '@id' => 'https://poshystore.com/#store',
         'name' => 'Poshy Store',
         'url' => 'https://poshystore.com',
         'logo' => 'https://poshystore.com/images/poshy-store-logo.png',
         'description' => 'Premium Korean beauty and skincare products in Jordan. Authentic K-beauty cosmetics, serums, moisturizers, and skincare routines.',
         'email' => 'info@poshystore.com',
         'telephone' => '+962770058416',
+        'areaServed' => 'JO',
         'address' => [
             '@type' => 'PostalAddress',
+            'addressLocality' => 'Amman',
+            'addressRegion' => 'Amman Governorate',
             'addressCountry' => 'JO',
+        ],
+        'currenciesAccepted' => 'JOD',
+        'priceRange' => '$$',
+        'openingHoursSpecification' => [
+            '@type' => 'OpeningHoursSpecification',
+            'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            'opens' => '09:00',
+            'closes' => '23:00',
         ],
         'sameAs' => [
             'https://www.facebook.com/share/1Am5FrXwQU/',
@@ -67,7 +80,7 @@ function renderOrganizationSchema(): void
 }
 
 /**
- * Render Product Schema (JSON-LD)
+ * Render Product Schema (JSON-LD) — GEO-optimised for AI crawlers
  */
 function renderProductSchema(array $product, float $avgRating = 0, int $reviewCount = 0): void
 {
@@ -79,29 +92,77 @@ function renderProductSchema(array $product, float $avgRating = 0, int $reviewCo
     $url = 'https://poshystore.com/' . $slug;
     $brandName = $product['brand_en'] ?? '';
     $sku = $product['id'] ?? '';
+    $categoryEn = $product['category_en'] ?? '';
+    $stockQty = (int)($product['stock_quantity'] ?? 0);
+    $inStock = $stockQty > 0;
 
     $schema = [
         '@context' => 'https://schema.org',
         '@type' => 'Product',
+        '@id' => $url . '#product',
         'name' => $name,
         'description' => strip_tags($desc),
         'url' => $url,
         'sku' => (string)$sku,
+        'mpn' => (string)$sku,
         'image' => $image,
+        'category' => $categoryEn,
         'brand' => [
             '@type' => 'Brand',
             'name' => $brandName ?: 'Poshy Store',
         ],
         'offers' => [
             '@type' => 'Offer',
+            '@id' => $url . '#offer',
             'url' => $url,
             'priceCurrency' => 'JOD',
             'price' => number_format((float)$price, 3, '.', ''),
             'priceValidUntil' => date('Y-12-31', strtotime('+1 year')),
-            'availability' => ((int)($product['stock_quantity'] ?? 0) > 0)
+            'availability' => $inStock
                 ? 'https://schema.org/InStock'
                 : 'https://schema.org/OutOfStock',
             'itemCondition' => 'https://schema.org/NewCondition',
+            'seller' => [
+                '@type' => 'OnlineStore',
+                '@id' => 'https://poshystore.com/#store',
+                'name' => 'Poshy Store',
+            ],
+            'hasMerchantReturnPolicy' => [
+                '@type' => 'MerchantReturnPolicy',
+                'applicableCountry' => 'JO',
+                'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                'merchantReturnDays' => 7,
+                'returnMethod' => 'https://schema.org/ReturnByMail',
+                'returnFees' => 'https://schema.org/FreeReturn',
+            ],
+            'shippingDetails' => [
+                '@type' => 'OfferShippingDetails',
+                'shippingRate' => [
+                    '@type' => 'MonetaryAmount',
+                    'value' => 2,
+                    'currency' => 'JOD',
+                ],
+                'shippingDestination' => [
+                    '@type' => 'DefinedRegion',
+                    'addressCountry' => 'JO',
+                ],
+                'deliveryTime' => [
+                    '@type' => 'ShippingDeliveryTime',
+                    'handlingTime' => [
+                        '@type' => 'QuantitativeValue',
+                        'minValue' => 0,
+                        'maxValue' => 1,
+                        'unitCode' => 'DAY',
+                    ],
+                    'transitTime' => [
+                        '@type' => 'QuantitativeValue',
+                        'minValue' => 1,
+                        'maxValue' => 5,
+                        'unitCode' => 'DAY',
+                    ],
+                ],
+                'shippingLabel' => $inStock ? 'In Stock' : 'Out of Stock',
+            ],
         ],
     ];
 
@@ -110,9 +171,44 @@ function renderProductSchema(array $product, float $avgRating = 0, int $reviewCo
             '@type' => 'AggregateRating',
             'ratingValue' => number_format($avgRating, 1),
             'reviewCount' => $reviewCount,
+            'bestRating' => '5',
+            'worstRating' => '1',
         ];
     }
 
+    echo '<script type="application/ld+json">' . "\n";
+    echo json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo "\n" . '</script>' . "\n";
+}
+
+/**
+ * Render WebSite Schema (JSON-LD) with SearchAction — for homepage GEO
+ */
+function renderWebSiteSchema(): void
+{
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        '@id' => 'https://poshystore.com/#website',
+        'name' => 'Poshy Store',
+        'url' => 'https://poshystore.com',
+        'description' => 'Premium Korean beauty and skincare products in Jordan.',
+        'inLanguage' => ['en', 'ar'],
+        'potentialAction' => [
+            [
+                '@type' => 'SearchAction',
+                'target' => [
+                    '@type' => 'EntryPoint',
+                    'urlTemplate' => 'https://poshystore.com/?s={search_term_string}',
+                ],
+                'query-input' => 'required name=search_term_string',
+            ],
+            [
+                '@type' => 'ReadAction',
+                'target' => ['https://poshystore.com/index.php#products'],
+            ],
+        ],
+    ];
     echo '<script type="application/ld+json">' . "\n";
     echo json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     echo "\n" . '</script>' . "\n";

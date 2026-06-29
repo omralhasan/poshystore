@@ -73,6 +73,14 @@ if ($is_logged_in) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="<?= htmlspecialchars(strip_tags(mb_substr(($current_lang === 'ar' && !empty($product['short_description_ar']) ? $product['short_description_ar'] : (!empty($product['short_description_en']) ? $product['short_description_en'] : $product['name_en'] . ' - Premium Korean beauty product at Poshy Store')), 0, 155))) ?>">
 <title><?= htmlspecialchars($current_lang === 'ar' ? $product['name_ar'] : $product['name_en']) ?> | Poshy Store</title>
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<?php
+$product_slug = $product['slug'] ?? '';
+if ($product_slug): ?>
+<link rel="alternate" hreflang="en" href="https://poshystore.com/<?= htmlspecialchars($product_slug) ?>">
+<link rel="alternate" hreflang="ar" href="https://poshystore.com/%D9%85%D9%86%D8%AA%D8%AC/<?= htmlspecialchars($product_slug) ?>">
+<link rel="alternate" hreflang="x-default" href="https://poshystore.com/<?= htmlspecialchars($product_slug) ?>">
+<?php endif; ?>
 <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
 <?php renderProductSchema($product, $average_rating, $review_count); ?>
 <?php if (!empty($reviews)): foreach ($reviews as $rv): renderReviewSchema($rv, $product); endforeach; endif; ?>

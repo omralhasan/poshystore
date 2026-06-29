@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/slug_helper.php';
 require_once __DIR__ . '/../../includes/product_image_helper.php';
+require_once __DIR__ . '/../../includes/fifo_helper.php';
 
 function trigger_feed_csv_regeneration(): void {
     $generator = realpath(__DIR__ . '/../../generate_feed_csv.php');
@@ -120,6 +121,8 @@ if ($is_ajax_request) {
     $subcat_id  = intval($_POST['subcategory_id'] ?? 0) ?: null;
     $brand_id   = intval($_POST['brand_id'] ?? 0) ?: null;
     $tags_raw   = trim($_POST['tags'] ?? '');
+    $barcode    = trim($_POST['barcode'] ?? '');
+    if ($barcode === '') $barcode = null;
     $sup_cost   = ($_POST['supplier_price'] ?? '') !== '' ? floatval($_POST['supplier_price']) : null;
     $product_cost = ($_POST['cost'] ?? '') !== '' ? floatval($_POST['cost']) : null;
     $orig_price = $price;
@@ -240,9 +243,9 @@ if ($is_ajax_request) {
     $sql = "INSERT INTO products (name_en, name_ar, slug, short_description_en, short_description_ar,
             description, description_ar, product_details, product_details_ar, how_to_use_en, how_to_use_ar, video_review_url,
             price_jod, stock_quantity, image_link, subcategory_id, brand_id,
-            supplier_cost, cost,
+            supplier_cost, cost, barcode,
             original_price, discount_percentage, has_discount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -251,17 +254,22 @@ if ($is_ajax_request) {
         exit();
     }
 
-    $stmt->bind_param('ssssssssssssdisiiddddi',
+    $stmt->bind_param('ssssssssssssdisiiddsddi',
         $name_en, $name_ar, $slug, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar, $how_en, $how_ar, $video_url,
         $price, $stock, $image_link, $subcat_id, $brand_id,
-        $sup_cost, $product_cost,
+        $sup_cost, $product_cost, $barcode,
         $orig_price, $discount, $has_disc
     );
 
     if ($stmt->execute()) {
         $product_id = $stmt->insert_id;
         $stmt->close();
+
+        // Create initial FIFO batch with the product cost and stock
+        if ($stock > 0 && $product_cost !== null && $product_cost > 0) {
+            addProductBatch($product_id, $stock, $product_cost);
+        }
 
         if (!empty($uploaded_image_paths)) {
             $conn->query("CREATE TABLE IF NOT EXISTS product_images (
@@ -538,6 +546,10 @@ if ($brand_res) { while ($r = $brand_res->fetch_assoc()) $brands[] = $r; }
                             <option value="<?= $br['id'] ?>"><?= htmlspecialchars($br['name_en']) ?></option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <div class="form-group" style="flex:0 0 100%;">
+                    <label>Barcode <span style="font-weight:400;color:var(--text-gray);font-size:.8rem;">(scan with camera or enter manually)</span></label>
+                    <input type="text" name="barcode" id="barcodeInput" placeholder="e.g. 6291106859508" style="font-family:monospace;font-size:1rem;letter-spacing:1px;">
                 </div>
                 <div class="form-group full-width">
                     <label>Tags</label>

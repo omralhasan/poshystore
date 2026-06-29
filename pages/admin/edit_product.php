@@ -8,6 +8,7 @@ session_start();
 require_once __DIR__ . '/../../includes/db_connect.php';
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/product_image_helper.php';
+require_once __DIR__ . '/../../includes/fifo_helper.php';
 
 $is_ajax_request =
     $_SERVER['REQUEST_METHOD'] === 'POST' &&
@@ -58,6 +59,14 @@ if ($is_ajax_request) {
 $product_id = intval($_GET['id'] ?? 0);
 if (!$product_id) {
     header('Location: admin_panel.php');
+    exit();
+}
+
+// Ajax endpoint for batch data (used by loadBatches() JS)
+if (isset($_GET['ajax_batches'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $result = getProductBatchSummary($product_id);
+    echo json_encode($result);
     exit();
 }
 
@@ -572,6 +581,16 @@ if ($is_ajax_request) {
         exit();
     }
 
+    // ── Add batch (FIFO) handler ──
+    if (($_POST['action'] ?? '') === 'add_batch') {
+        $pid          = intval($_POST['product_id'] ?? 0);
+        $batch_qty    = intval($_POST['batch_quantity'] ?? 0);
+        $batch_cost   = floatval($_POST['batch_cost'] ?? 0);
+        $result       = addProductBatch($pid, $batch_qty, $batch_cost);
+        echo json_encode($result);
+        exit();
+    }
+
     $pid        = intval($_POST['product_id'] ?? 0);
     $name_en    = trim($_POST['name_en'] ?? '');
     $name_ar    = trim($_POST['name_ar'] ?? '');
@@ -651,24 +670,27 @@ if ($is_ajax_request) {
         }
     }
 
+    $barcode = trim($_POST['barcode'] ?? '');
+    if ($barcode === '') $barcode = null;
+
     // Build UPDATE query (images are now managed via separate AJAX actions)
     $sql = "UPDATE products SET
                 name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
                 description=?, description_ar=?, product_details=?, product_details_ar=?,
                 how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
                 price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
-                supplier_cost=?, cost=?,
+                supplier_cost=?, cost=?, barcode=?,
                 original_price=?, discount_percentage=?, has_discount=?
             WHERE id=?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) { echo json_encode(['success' => false, 'error' => 'DB prepare error: ' . $conn->error]); exit(); }
 
-    $stmt->bind_param('sssssssssssdiiiddddii',
+    $stmt->bind_param('sssssssssssdiiiddssdii',
         $name_en, $name_ar, $short_en, $short_ar,
         $desc, $desc_ar, $details, $details_ar,
         $how_en, $how_ar, $video_url,
         $price, $stock, $subcat_id, $brand_id,
-        $sup_cost, $product_cost,
+        $sup_cost, $product_cost, $barcode,
         $orig_price, $discount, $has_disc,
         $pid
     );
@@ -871,6 +893,8 @@ if (is_dir($img_folder)) {
         .toast-error{background:linear-gradient(135deg,var(--danger),#dc2626);}
         .loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;align-items:center;justify-content:center;}
         .loading-overlay.active{display:flex;}
+        #scannerOverlay.active{display:flex !important;}
+        #batchPopup.active{display:flex !important;}
         .spinner{width:50px;height:50px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
         @keyframes spin{to{transform:rotate(360deg);}}
         @media(max-width:1024px){.sidebar{width:70px;}.sidebar .logo,.sidebar .admin-badge,.sidebar .nav-item span,.sidebar .logout-btn span{display:none;}.nav-item{justify-content:center;padding:.75rem;}.main-content{margin-left:70px;}.form-grid,.price-grid{grid-template-columns:1fr;}}
@@ -878,6 +902,7 @@ if (is_dir($img_folder)) {
     </style>
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <?php require_once __DIR__ . '/../../includes/meta_pixel.php'; ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 <div class="sidebar">
@@ -967,6 +992,15 @@ if (is_dir($img_folder)) {
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="form-group" style="flex:0 0 100%;">
+                    <label>Barcode <span style="font-weight:400;color:var(--text-gray);font-size:.8rem;">(scan with camera or enter manually)</span></label>
+                    <div style="display:flex;gap:.5rem;align-items:stretch;">
+                        <input type="text" name="barcode" id="barcodeInput" placeholder="e.g. 6291106859508" value="<?= htmlspecialchars($product['barcode'] ?? '') ?>" style="flex:1;font-family:monospace;font-size:1rem;letter-spacing:1px;">
+                        <button type="button" class="btn btn-primary" id="scanBtn" onclick="openBarcodeScanner()" style="white-space:nowrap;padding:.5rem 1rem;">
+                            <i class="fas fa-camera"></i> Scan
+                        </button>
+                    </div>
+                </div>
                 <div class="form-group full-width">
                     <label>Tags</label>
                     <input type="text" name="tags" placeholder="e.g. skincare, acne, moisturizer" maxlength="500" value="<?= htmlspecialchars($tags_string) ?>">
@@ -1014,6 +1048,46 @@ if (is_dir($img_folder)) {
                     <input type="number" name="discount_percentage" step="0.01" min="0" max="100" value="<?= $product['discount_percentage'] ?? 0 ?>">
                 </div>
             </div>
+        </div>
+
+        <!-- FIFO Batches Management -->
+        <div class="form-card">
+            <h2><i class="fas fa-warehouse"></i> Inventory Batches (FIFO)</h2>
+            <p style="color:var(--text-gray);margin-bottom:1rem;font-size:.85rem;">
+                <i class="fas fa-info-circle"></i>
+                Each shipment received gets its own cost price. When products are sold, the cost is deducted from the oldest batch first (First-In, First-Out).
+            </p>
+
+            <div id="batches-container" style="margin-bottom:1rem;">
+                <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--border);">
+                            <th style="text-align:left;padding:.5rem;">Qty Added</th>
+                            <th style="text-align:left;padding:.5rem;">Qty Remaining</th>
+                            <th style="text-align:left;padding:.5rem;">Cost/Unit (JOD)</th>
+                            <th style="text-align:left;padding:.5rem;">Date Added</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batches-tbody">
+                        <tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--text-gray);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex;gap:1rem;align-items:end;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:1rem;">
+                <div class="form-group" style="flex:1;min-width:120px;">
+                    <label>Quantity Received</label>
+                    <input type="number" id="batch-qty" min="1" value="1" style="width:100%;">
+                </div>
+                <div class="form-group" style="flex:1;min-width:140px;">
+                    <label>Cost per Unit (JOD)</label>
+                    <input type="number" id="batch-cost" step="0.001" min="0" value="0" style="width:100%;">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addBatch()" style="padding:.5rem 1.2rem;">
+                    <i class="fas fa-plus"></i> Add Batch
+                </button>
+            </div>
+            <div id="batch-msg" style="margin-top:.5rem;font-size:.85rem;"></div>
         </div>
 
         <!-- Descriptions -->
@@ -1144,6 +1218,51 @@ if (is_dir($img_folder)) {
 
 <div class="toast" id="toast"></div>
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+<!-- Barcode Scanner Overlay -->
+<div id="scannerOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,.85);flex-direction:column;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;width:90%;max-width:500px;padding:1.5rem;position:relative;">
+        <button type="button" onclick="closeBarcodeScanner()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1;" title="Close">&times;</button>
+        <h3 style="margin:0 0 .5rem;font-size:1.1rem;"><i class="fas fa-camera"></i> Scan Barcode</h3>
+        <p style="color:var(--text-gray);font-size:.85rem;margin:0 0 1rem;">Point your camera at the product barcode. Scanning is automatic.</p>
+        <div id="qr-reader" style="width:100%;border-radius:8px;overflow:hidden;"></div>
+        <div id="scanResult" style="margin-top:.75rem;font-size:.9rem;text-align:center;min-height:24px;"></div>
+        <button type="button" onclick="closeBarcodeScanner()" class="btn btn-secondary" style="width:100%;margin-top:.75rem;">Cancel</button>
+    </div>
+</div>
+
+<!-- Quick Batch Popup (for existing products found via barcode) -->
+<div id="batchPopup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;background:rgba(0,0,0,.5);flex-direction:column;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;width:90%;max-width:450px;padding:1.5rem;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <button type="button" onclick="closeBatchPopup()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1;" title="Close">&times;</button>
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+            <div style="width:60px;height:60px;border-radius:8px;overflow:hidden;background:#f3f4f6;flex-shrink:0;">
+                <img id="popupProductImg" src="" style="width:100%;height:100%;object-fit:cover;display:none;" onerror="this.style.display='none'">
+                <div id="popupPlaceholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;"><i class="fas fa-box"></i></div>
+            </div>
+            <div>
+                <h3 id="popupProductName" style="margin:0;font-size:1rem;"></h3>
+                <p style="margin:.25rem 0 0;color:var(--text-gray);font-size:.85rem;">Product found in local database</p>
+                <input type="hidden" id="popupProductId">
+            </div>
+        </div>
+        <div style="display:flex;gap:1rem;margin-bottom:1rem;">
+            <div class="form-group" style="flex:1;">
+                <label>Quantity Received</label>
+                <input type="number" id="popupBatchQty" min="1" value="1" style="width:100%;">
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label>Cost per Unit (JOD)</label>
+                <input type="number" id="popupBatchCost" step="0.001" min="0" value="0" style="width:100%;">
+            </div>
+        </div>
+        <div style="display:flex;gap:.5rem;">
+            <button type="button" class="btn btn-primary" onclick="savePopupBatch()" style="flex:1;padding:.7rem;"><i class="fas fa-save"></i> Save Batch</button>
+            <button type="button" onclick="closeBatchPopup()" class="btn btn-secondary" style="flex:1;padding:.7rem;">Cancel</button>
+        </div>
+        <div id="popupMsg" style="margin-top:.5rem;font-size:.85rem;text-align:center;"></div>
+    </div>
+</div>
 
 <script>
 function showToast(msg, type = 'success') {
@@ -1553,6 +1672,224 @@ async function deleteOptionValue(valueId) {
 }
 
 loadOptions();
+loadBatches();
+
+let html5QrCode = null;
+
+async function loadBatches() {
+    try {
+        const r = await fetch(window.location.href + '&ajax_batches=1');
+        const d = await r.json();
+        const tbody = document.getElementById('batches-tbody');
+        if (!d.success || !d.batches || d.batches.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--text-gray);">No batches recorded yet. Add your first shipment above.</td></tr>';
+            return;
+        }
+        let html = '';
+        d.batches.forEach(b => {
+            const date = new Date(b.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            html += `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:.5rem;">${b.quantity_added}</td>
+                <td style="padding:.5rem;">${b.quantity_remaining}</td>
+                <td style="padding:.5rem;">${parseFloat(b.cost_price).toFixed(3)}</td>
+                <td style="padding:.5rem;">${date}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    } catch (e) {
+        document.getElementById('batches-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--error);">Failed to load batches.</td></tr>';
+    }
+}
+
+async function addBatch() {
+    const qtyEl = document.getElementById('batch-qty');
+    const costEl = document.getElementById('batch-cost');
+    const msgEl = document.getElementById('batch-msg');
+    const qty = parseInt(qtyEl.value);
+    const cost = parseFloat(costEl.value);
+
+    if (!qty || qty <= 0) { msgEl.innerHTML = '<span style="color:var(--error);">Please enter a valid quantity.</span>'; return; }
+    if (cost < 0) { msgEl.innerHTML = '<span style="color:var(--error);">Cost cannot be negative.</span>'; return; }
+
+    const fd = new FormData();
+    fd.append('action', 'add_batch');
+    fd.append('product_id', PRODUCT_ID);
+    fd.append('batch_quantity', qty);
+    fd.append('batch_cost', cost);
+
+    try {
+        const r = await fetch(window.location.href, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const d = await r.json();
+        if (d.success) {
+            msgEl.innerHTML = '<span style="color:var(--success);">✅ Batch added successfully! Stock updated.</span>';
+            qtyEl.value = '1';
+            costEl.value = '0';
+            loadBatches();
+            document.querySelector('[name="stock_quantity"]').value = parseInt(document.querySelector('[name="stock_quantity"]').value) + qty;
+        } else {
+            msgEl.innerHTML = '<span style="color:var(--error);">❌ ' + (d.error || 'Failed') + '</span>';
+        }
+    } catch (e) {
+        msgEl.innerHTML = '<span style="color:var(--error);">❌ Network error: ' + e.message + '</span>';
+    }
+}
+
+// ====== Barcode Scanner ======
+async function openBarcodeScanner() {
+    document.getElementById('scannerOverlay').classList.add('active');
+    document.getElementById('scanResult').textContent = 'Initializing camera...';
+    document.getElementById('scanResult').style.color = '#666';
+
+    if (!html5QrCode) {
+        try {
+            html5QrCode = new Html5Qrcode('qr-reader');
+        } catch (e) {
+            document.getElementById('scanResult').innerHTML = '<span style="color:var(--error);">Failed to initialize scanner: ' + e.message + '</span>';
+            return;
+        }
+    }
+
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 150 },
+        aspectRatio: 1.0,
+    };
+
+    try {
+        await html5QrCode.start(
+            { facingMode: 'environment' },
+            config,
+            onScanSuccess,
+            onScanFailure
+        );
+        document.getElementById('scanResult').innerHTML = '<span style="color:var(--success);">📷 Camera active — point at a barcode</span>';
+    } catch (e) {
+        document.getElementById('scanResult').innerHTML = '<span style="color:var(--error);">❌ Camera error: ' + e.message + '</span>';
+    }
+}
+
+function onScanSuccess(decodedText) {
+    stopScanner();
+    document.getElementById('scanResult').innerHTML = '<span style="color:var(--success);">✅ Scanned: ' + decodedText + '</span>';
+    document.getElementById('barcodeInput').value = decodedText;
+    lookupBarcode(decodedText);
+}
+
+function onScanFailure(err) {
+    // Ignore — scanner keeps trying
+}
+
+function stopScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        try { html5QrCode.stop(); } catch(e) {}
+    }
+}
+
+function closeBarcodeScanner() {
+    stopScanner();
+    document.getElementById('scannerOverlay').classList.remove('active');
+}
+
+async function lookupBarcode(code) {
+    const resultEl = document.getElementById('scanResult');
+    resultEl.innerHTML = '<span style="color:#666;">🔍 Looking up barcode...</span>';
+
+    try {
+        const r = await fetch('/api/barcode_lookup.php?code=' + encodeURIComponent(code));
+        const d = await r.json();
+
+        if (d.found === 'local') {
+            closeBarcodeScanner();
+            showBatchPopup(d.product);
+        } else if (d.found === 'api') {
+            resultEl.innerHTML = '<span style="color:var(--success);">✅ Product info found online! Auto-filling form...</span>';
+            setTimeout(() => {
+                closeBarcodeScanner();
+                fillFormFromApi(d.product);
+            }, 1200);
+        } else {
+            resultEl.innerHTML = '<span style="color:var(--error);">❌ Product not found. You can enter details manually and save.</span>';
+        }
+    } catch (e) {
+        resultEl.innerHTML = '<span style="color:var(--error);">❌ Lookup failed: ' + e.message + '</span>';
+    }
+}
+
+function fillFormFromApi(product) {
+    const nameEn = document.querySelector('[name="name_en"]');
+    const nameAr = document.querySelector('[name="name_ar"]');
+    const barcodeInput = document.getElementById('barcodeInput');
+
+    if (product.name_en && (!nameEn.value || confirm('Product name found: "' + product.name_en + '". Auto-fill fields?'))) {
+        if (product.name_en) nameEn.value = product.name_en;
+        if (product.name_ar) nameAr.value = product.name_ar;
+        if (barcodeInput) barcodeInput.value = product.barcode || barcodeInput.value;
+        showToast('✅ Filled from online lookup: ' + product.name_en);
+    }
+}
+
+function showBatchPopup(product) {
+    document.getElementById('popupProductId').value = product.id;
+    document.getElementById('popupProductName').textContent = product.name_en + (product.name_ar ? ' (' + product.name_ar + ')' : '');
+    document.getElementById('popupBatchQty').value = 1;
+    document.getElementById('popupBatchCost').value = product.cost > 0 ? product.cost : 0;
+    document.getElementById('popupMsg').textContent = '';
+
+    const imgEl = document.getElementById('popupProductImg');
+    const placeholder = document.getElementById('popupPlaceholder');
+    if (product.image_link) {
+        imgEl.src = '/' + product.image_link;
+        imgEl.style.display = 'block';
+        placeholder.style.display = 'none';
+    } else {
+        imgEl.style.display = 'none';
+        placeholder.style.display = 'flex';
+    }
+
+    document.getElementById('batchPopup').classList.add('active');
+    document.getElementById('popupBatchQty').focus();
+}
+
+function closeBatchPopup() {
+    document.getElementById('batchPopup').classList.remove('active');
+}
+
+async function savePopupBatch() {
+    const pid = document.getElementById('popupProductId').value;
+    const qty = parseInt(document.getElementById('popupBatchQty').value);
+    const cost = parseFloat(document.getElementById('popupBatchCost').value);
+    const msgEl = document.getElementById('popupMsg');
+
+    if (!qty || qty <= 0) { msgEl.innerHTML = '<span style="color:var(--error);">Enter a valid quantity.</span>'; return; }
+    if (cost < 0) { msgEl.innerHTML = '<span style="color:var(--error);">Cost cannot be negative.</span>'; return; }
+
+    const fd = new FormData();
+    fd.append('action', 'add_batch');
+    fd.append('product_id', pid);
+    fd.append('batch_quantity', qty);
+    fd.append('batch_cost', cost);
+
+    try {
+        const r = await fetch(window.location.href, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const d = await r.json();
+        if (d.success) {
+            msgEl.innerHTML = '<span style="color:var(--success);">✅ Batch saved! Stock updated.</span>';
+            setTimeout(() => {
+                closeBatchPopup();
+                if (parseInt(pid) === PRODUCT_ID) {
+                    loadBatches();
+                    document.querySelector('[name="stock_quantity"]').value = parseInt(document.querySelector('[name="stock_quantity"]').value) + qty;
+                } else {
+                    showToast('Batch added to product #' + pid);
+                }
+            }, 800);
+        } else {
+            msgEl.innerHTML = '<span style="color:var(--error);">❌ ' + (d.error || 'Failed') + '</span>';
+        }
+    } catch (e) {
+        msgEl.innerHTML = '<span style="color:var(--error);">❌ Network error: ' + e.message + '</span>';
+    }
+}
 </script>
 </body>
 </html>

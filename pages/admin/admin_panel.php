@@ -248,9 +248,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Order not found');
             }
 
-            // If order was not already cancelled, restore stock
+            // If order was not already cancelled, restore stock and FIFO batches
             if ($order_row['status'] !== 'cancelled') {
-                $items_stmt = $conn->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+                $items_stmt = $conn->prepare("SELECT product_id, quantity, cost_per_item FROM order_items WHERE order_id = ?");
                 if (!$items_stmt) {
                     throw new Exception('Failed to prepare order items lookup');
                 }
@@ -268,6 +268,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         throw new Exception('Failed to restore stock');
                     }
                     $restock->close();
+
+                    // Restore FIFO batches if the order was delivered (cost_per_item was set)
+                    if ($order_row['status'] === 'delivered' && $item['cost_per_item'] !== null) {
+                        restoreProductBatches($item['product_id'], $item['quantity'], $item['cost_per_item']);
+                    }
                 }
                 $items_stmt->close();
 
