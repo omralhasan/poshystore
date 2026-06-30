@@ -1795,8 +1795,16 @@ async function lookupBarcode(code) {
     resultEl.innerHTML = '<span style="color:#666;">🔍 Looking up barcode...</span>';
 
     try {
-        const r = await fetch('/api/barcode_lookup.php?code=' + encodeURIComponent(code));
+        const r = await fetch('/api/barcode_lookup.php?barcode=' + encodeURIComponent(code));
+        if (!r.ok) {
+            const errText = await r.text().catch(() => 'Unknown server error');
+            throw new Error('Server returned ' + r.status + ': ' + errText.substring(0, 200));
+        }
         const d = await r.json();
+
+        if (d.status === 'error') {
+            throw new Error(d.message || 'Server error');
+        }
 
         if (d.found === 'local') {
             closeBarcodeScanner();
