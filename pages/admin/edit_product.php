@@ -670,30 +670,43 @@ if ($is_ajax_request) {
         }
     }
 
+    // Build UPDATE query with optional barcode
     $barcode = trim($_POST['barcode'] ?? '');
-    if ($barcode === '') $barcode = null;
+    $has_barcode = ($barcode !== '');
 
-    // Build UPDATE query (images are now managed via separate AJAX actions)
-    $sql = "UPDATE products SET
-                name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
-                description=?, description_ar=?, product_details=?, product_details_ar=?,
-                how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
-                price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
-                supplier_cost=?, cost=?, barcode=?,
+    $common_set = "name_en=?, name_ar=?, short_description_en=?, short_description_ar=?,
+                   description=?, description_ar=?, product_details=?, product_details_ar=?,
+                   how_to_use_en=?, how_to_use_ar=?, video_review_url=?,
+                   price_jod=?, stock_quantity=?, subcategory_id=?, brand_id=?,
+                   supplier_cost=?, cost=?";
+    $extra_set = $has_barcode ? ", barcode=?" : "";
+    $sql = "UPDATE products SET {$common_set}{$extra_set},
                 original_price=?, discount_percentage=?, has_discount=?
             WHERE id=?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) { echo json_encode(['success' => false, 'error' => 'DB prepare error: ' . $conn->error]); exit(); }
 
-    $stmt->bind_param('sssssssssssdiiiddssdii',
-        $name_en, $name_ar, $short_en, $short_ar,
-        $desc, $desc_ar, $details, $details_ar,
-        $how_en, $how_ar, $video_url,
-        $price, $stock, $subcat_id, $brand_id,
-        $sup_cost, $product_cost, $barcode,
-        $orig_price, $discount, $has_disc,
-        $pid
-    );
+    if ($has_barcode) {
+        $stmt->bind_param('sssssssssssdiiiddsddii',
+            $name_en, $name_ar, $short_en, $short_ar,
+            $desc, $desc_ar, $details, $details_ar,
+            $how_en, $how_ar, $video_url,
+            $price, $stock, $subcat_id, $brand_id,
+            $sup_cost, $product_cost, $barcode,
+            $orig_price, $discount, $has_disc,
+            $pid
+        );
+    } else {
+        $stmt->bind_param('sssssssssssdiiiddddii',
+            $name_en, $name_ar, $short_en, $short_ar,
+            $desc, $desc_ar, $details, $details_ar,
+            $how_en, $how_ar, $video_url,
+            $price, $stock, $subcat_id, $brand_id,
+            $sup_cost, $product_cost,
+            $orig_price, $discount, $has_disc,
+            $pid
+        );
+    }
 
     if ($stmt->execute()) {
         $stmt->close();
