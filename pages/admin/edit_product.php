@@ -748,6 +748,41 @@ if ($is_ajax_request) {
             }
         }
 
+        // Process images marked for deletion (hidden-input approach)
+        $image_folder = __DIR__ . '/../../images/' . $name_en . '/';
+        if (!empty($_POST['deleted_images']) && is_array($_POST['deleted_images'])) {
+            foreach ($_POST['deleted_images'] as $del_img) {
+                $del_path = build_image_abs_path(trim($del_img));
+                if ($del_path !== null) {
+                    $del_target = resolve_existing_image_variant_path($del_path);
+                    if ($del_target !== null) {
+                        safe_unlink_file($del_target, $_fs_err);
+                    }
+                }
+            }
+            // Renumber remaining images in the folder
+            if (is_dir($image_folder)) {
+                $remaining = glob($image_folder . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+                sort($remaining);
+                foreach ($remaining as $idx => $f) {
+                    $ext = pathinfo($f, PATHINFO_EXTENSION);
+                    $new_name = $image_folder . ($idx + 1) . '.' . $ext;
+                    if ($f !== $new_name) {
+                        @rename($f, $new_name);
+                    }
+                }
+                // Update image_link to first remaining image
+                $new_files = glob($image_folder . '*.{png,jpg,jpeg,gif,webp}', GLOB_BRACE);
+                sort($new_files);
+                if (!empty($new_files)) {
+                    $new_link = 'images/' . $name_en . '/' . basename($new_files[0]);
+                    $conn->query("UPDATE products SET image_link = '" . $conn->real_escape_string($new_link) . "' WHERE id = $pid");
+                } else {
+                    $conn->query("UPDATE products SET image_link = '' WHERE id = $pid");
+                }
+            }
+        }
+
         syncProductImagesTable($conn, $pid, $name_en);
 
         // Handle tags — clear old, insert new
@@ -1158,7 +1193,7 @@ if (is_dir($img_folder)) {
                         <div class="current-img-item <?= $i === 0 ? 'is-main' : '' ?>" data-img="<?= htmlspecialchars($img) ?>">
                             <?php if ($i === 0): ?><span class="img-main-badge"><i class="fas fa-star"></i> Main</span><?php endif; ?>
                             <div class="img-actions">
-                                <button type="button" class="img-action-btn delete" title="Delete image" onclick="deleteImage('<?= htmlspecialchars($img) ?>')">
+                                <button type="button" class="img-action-btn delete" title="Delete image" data-img="<?= htmlspecialchars($img) ?>">
                                     <i class="fas fa-trash"></i>
                                 </button>
                                 <button type="button" class="img-action-btn replace" title="Replace image" onclick="triggerReplace('<?= htmlspecialchars($img) ?>')">
@@ -1363,7 +1398,7 @@ function renderImages(images) {
         let html = '';
         if (i === 0) html += '<span class="img-main-badge"><i class="fas fa-star"></i> Main</span>';
         html += '<div class="img-actions">';
-        html += `<button type="button" class="img-action-btn delete" title="Delete image" onclick="deleteImage('${img}')"><i class="fas fa-trash"></i></button>`;
+        html += `<button type="button" class="img-action-btn delete" title="Delete image" data-img="${img}"><i class="fas fa-trash"></i></button>`;
         html += `<button type="button" class="img-action-btn replace" title="Replace image" onclick="triggerReplace('${img}')"><i class="fas fa-sync"></i></button>`;
         if (i !== 0) html += `<button type="button" class="img-action-btn set-main" title="Set as main image" onclick="setMainImage('${img}')"><i class="fas fa-star"></i></button>`;
         html += '</div>';
@@ -1374,25 +1409,27 @@ function renderImages(images) {
     });
 }
 
-async function deleteImage(imgFile) {
-    if (!confirm('Delete this image?')) return;
-    const fd = new FormData();
-    fd.append('ajax', '1');
-    fd.append('action', 'delete_image');
-    fd.append('product_id', '<?= $product_id ?>');
-    fd.append('image_file', imgFile);
-    showLoading(true);
-    try {
-        const d = await postEdit(fd);
-        showLoading(false);
-        if (d.success) {
-            showToast('Image deleted');
-            renderImages(d.images);
-        } else {
-            showToast(d.error || 'Failed to delete image', 'error');
-        }
-    } catch(e) { showLoading(false); showToast('Network error: ' + e.message, 'error'); }
-}
+// ─── Delete image (hidden-input approach, no AJAX) ───
+document.getElementById('currentImagesContainer').addEventListener('click', function(e) {
+    const btn = e.target.closest('.img-action-btn.delete');
+    if (!btn) return;
+    const imgFile = btn.dataset.img;
+    if (!imgFile || !confirm('Delete this image?')) return;
+    const item = btn.closest('.current-img-item');
+    if (item) {
+        item.style.transition = 'all .3s';
+        item.style.opacity = '0';
+        item.style.transform = 'scale(0.8)';
+        setTimeout(function() {
+            if (item.parentNode) item.remove();
+        }, 300);
+    }
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'deleted_images[]';
+    input.value = imgFile;
+    document.getElementById('editProductForm').appendChild(input);
+});
 
 function triggerReplace(imgFile) {
     replaceTarget = imgFile;
