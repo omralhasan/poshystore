@@ -80,6 +80,44 @@ UPDATE products
       AND how_to_use != ''
       AND (how_to_use_en IS NULL OR how_to_use_en = '');
 
+-- ─── Barcode column for scanner support ────────────────────────────────────────
+SET @sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schema_name
+          AND TABLE_NAME = 'products'
+          AND COLUMN_NAME = 'barcode'
+    ),
+    'SELECT ''barcode exists''',
+    'ALTER TABLE products ADD COLUMN barcode VARCHAR(100) DEFAULT NULL COMMENT ''Barcode/UPC for scanner lookup'' AFTER slug'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Ensure the column is nullable (in case it already exists as NOT NULL)
+SET @sql = 'ALTER TABLE products MODIFY barcode VARCHAR(100) DEFAULT NULL';
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Re-create index if missing
+SET @sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = @schema_name
+          AND TABLE_NAME = 'products'
+          AND INDEX_NAME = 'idx_barcode'
+    ),
+    'SELECT ''idx_barcode exists''',
+    'ALTER TABLE products ADD INDEX idx_barcode (barcode)'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- Verify
 SELECT
     COLUMN_NAME, DATA_TYPE, IS_NULLABLE
