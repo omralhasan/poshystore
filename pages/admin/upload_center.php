@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // If product_id provided, update the product's image_url
         if ($product_id > 0) {
-            $stmt = $conn->prepare("UPDATE products SET image_url = ? WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE products SET image_link = ? WHERE id = ?");
             $stmt->bind_param('si', $relative, $product_id);
             $stmt->execute();
             $stmt->close();

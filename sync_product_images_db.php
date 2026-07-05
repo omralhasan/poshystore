@@ -66,6 +66,28 @@ function pick_primary(array $files): ?string
     return $files[0] ?? null;
 }
 
+/**
+ * Deduplicate image files by base name: keep only one entry per image.
+ * Priority: .jpg > .jpeg > .png > .webp > .gif
+ * Physical .webp files are preserved on disk — they just won't be tracked
+ * as separate rows in product_images.
+ */
+function filter_preferred_image_format(array $files): array
+{
+    $ext_priority = ['jpg' => 0, 'jpeg' => 1, 'png' => 2, 'webp' => 3, 'gif' => 4];
+    $best_per_base = [];
+    foreach ($files as $file) {
+        $base = pathinfo($file, PATHINFO_FILENAME);
+        $ext  = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $priority = $ext_priority[$ext] ?? 99;
+        if (!isset($best_per_base[$base]) || $priority < $best_per_base[$base]['priority']) {
+            $best_per_base[$base] = $file;
+        }
+    }
+    uksort($best_per_base, 'strnatcasecmp');
+    return array_values($best_per_base);
+}
+
 $dbName = '';
 $dbRes = $conn->query("SELECT DATABASE() AS db_name");
 if ($dbRes && ($row = $dbRes->fetch_assoc())) {
@@ -177,8 +199,9 @@ while ($product = $productsRes->fetch_assoc()) {
 
     if (!empty($folder)) {
         $stats['products_with_folder']++;
-        $folderPath = rtrim($imagesDir, '/') . '/' . $folder;
-        $files = get_png_files($folderPath);
+            $folderPath = rtrim($imagesDir, '/') . '/' . $folder;
+            $files = get_png_files($folderPath);
+            $files = filter_preferred_image_format($files);
 
         foreach ($files as $file) {
             $rel = normalize_rel('images/' . $folder . '/' . $file);

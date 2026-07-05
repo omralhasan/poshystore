@@ -94,20 +94,31 @@ function syncProductImagesTable(mysqli $conn, int $productId, string $productNam
         return;
     }
 
-    usort($files, static function ($a, $b) {
-        return strnatcasecmp(basename($a), basename($b));
-    });
+    // Deduplicate by base filename: keep only one row per image (prefer .jpg > .png > .webp > .gif)
+    // .webp files stay on disk — they just won't be tracked as separate DB rows.
+    $ext_priority = ['jpg' => 0, 'jpeg' => 1, 'png' => 2, 'webp' => 3, 'gif' => 4];
+    $best_per_base = [];
+    foreach ($files as $f) {
+        $base = pathinfo($f, PATHINFO_FILENAME);
+        $ext  = strtolower(pathinfo($f, PATHINFO_EXTENSION));
+        $priority = $ext_priority[$ext] ?? 99;
+        if (!isset($best_per_base[$base]) || $priority < $best_per_base[$base]['priority']) {
+            $best_per_base[$base] = ['path' => $f, 'priority' => $priority];
+        }
+    }
+    uksort($best_per_base, 'strnatcasecmp');
 
     $img_stmt = $conn->prepare("INSERT INTO product_images (product_id, image_path, sort_order) VALUES (?, ?, ?)");
     if (!$img_stmt) {
         return;
     }
 
-    foreach ($files as $idx => $f) {
-        $path = 'images/' . $productName . '/' . basename($f);
-        $ord = $idx + 1;
+    $ord = 1;
+    foreach ($best_per_base as $base => $info) {
+        $path = 'images/' . $productName . '/' . basename($info['path']);
         $img_stmt->bind_param('isi', $productId, $path, $ord);
         $img_stmt->execute();
+        $ord++;
     }
     $img_stmt->close();
 }
