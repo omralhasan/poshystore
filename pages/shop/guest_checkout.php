@@ -103,6 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_guest_order']
                     if (isset($orders_columns['is_guest'])) {
                         $order_data['is_guest'] = 1;
                     }
+                    if (isset($orders_columns['discount_amount'])) {
+                        $order_data['discount_amount'] = 0;
+                    }
+                    if (isset($orders_columns['delivery_fee'])) {
+                        $order_data['delivery_fee'] = $delivery_fee;
+                    }
 
                     $order_columns = array_keys($order_data);
                     $order_placeholders = implode(', ', array_fill(0, count($order_columns), '?'));

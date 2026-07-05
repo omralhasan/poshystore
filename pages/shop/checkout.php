@@ -212,6 +212,12 @@ function processCheckout($user_id = null, $additional_data = []) {
         if (tableHasColumn('orders', 'order_type')) {
             $order_data['order_type'] = $order_type;
         }
+        if (tableHasColumn('orders', 'discount_amount')) {
+            $order_data['discount_amount'] = $coupon_discount;
+        }
+        if (tableHasColumn('orders', 'delivery_fee')) {
+            $order_data['delivery_fee'] = $delivery_fee;
+        }
 
         $order_columns = array_keys($order_data);
         $order_placeholders = implode(', ', array_fill(0, count($order_columns), '?'));

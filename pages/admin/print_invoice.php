@@ -31,8 +31,11 @@ if (!$order_id) {
 }
 
 // Fetch order details
-$sql = "SELECT o.id, o.user_id, o.total_amount, o.status, 
-         o.order_date, o.shipping_address, o.phone, o.city, o.notes,
+$discount_col = tableHasColumn('orders', 'discount_amount') ? 'o.discount_amount' : '0 AS discount_amount';
+$delivery_col = tableHasColumn('orders', 'delivery_fee') ? 'o.delivery_fee' : '0 AS delivery_fee';
+
+$sql = "SELECT o.id, o.user_id, o.total_amount, {$discount_col}, {$delivery_col},
+         o.status, o.order_date, o.shipping_address, o.phone, o.city, o.notes,
          o.guest_name, o.guest_email, o.is_guest,
                u.firstname, u.lastname, u.email, u.phonenumber
         FROM orders o
@@ -50,6 +53,9 @@ if ($result->num_rows === 0) {
 
 $order = $result->fetch_assoc();
 $stmt->close();
+
+$discount_amount = (float)($order['discount_amount'] ?? 0);
+$delivery_fee = (float)($order['delivery_fee'] ?? 0);
 
 $customer_name = trim((string)($order['guest_name'] ?? ''));
 if ($customer_name === '') {
@@ -107,6 +113,9 @@ while ($item = $items_result->fetch_assoc()) {
     $order_items[] = $item;
 }
 $items_stmt->close();
+
+$subtotal = $invoice_total;
+$grand_total = $subtotal - $discount_amount + $delivery_fee;
 
 // Company information
 $company = [
@@ -531,15 +540,21 @@ $company = [
                 </tr>
                 <tr>
                     <td>Subtotal (<?php echo count($order_items); ?> items)</td>
-                    <td class="text-right"><?php echo formatJOD($invoice_total); ?></td>
+                    <td class="text-right"><?php echo formatJOD($subtotal); ?></td>
                 </tr>
+                <?php if ($discount_amount > 0): ?>
+                <tr style="color: #28a745;">
+                    <td><strong>Discount</strong></td>
+                    <td class="text-right">-<?php echo formatJOD($discount_amount); ?></td>
+                </tr>
+                <?php endif; ?>
                 <tr>
                     <td>Shipping</td>
-                    <td class="text-right">JOD 0.000</td>
+                    <td class="text-right"><?php echo $delivery_fee > 0 ? formatJOD($delivery_fee) : 'JOD 0.000'; ?></td>
                 </tr>
                 <tr class="total-row">
                     <td><strong>Total</strong></td>
-                    <td class="text-right"><strong><?php echo formatJOD($invoice_total); ?></strong></td>
+                    <td class="text-right"><strong><?php echo formatJOD($grand_total); ?></strong></td>
                 </tr>
             </table>
         </div>
