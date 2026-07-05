@@ -115,7 +115,17 @@ while ($item = $items_result->fetch_assoc()) {
 $items_stmt->close();
 
 $subtotal = $invoice_total;
-$grand_total = $subtotal - $discount_amount + $delivery_fee;
+$db_total = (float)$order['total_amount'];
+
+// For old orders where discount/delivery were not stored in the DB,
+// derive the discount from the difference between subtotal and actual total.
+if ($discount_amount == 0 && $delivery_fee == 0 && $subtotal > $db_total && $db_total > 0) {
+    $discount_amount = $subtotal - $db_total;
+}
+
+// Grand total is always the actual total_amount stored in the orders table,
+// ensuring correct totals for ALL orders (old and new).
+$grand_total = $db_total;
 
 // Company information
 $company = [
