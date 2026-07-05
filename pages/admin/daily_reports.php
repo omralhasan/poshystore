@@ -67,6 +67,7 @@ $sql = "SELECT o.id as order_id, o.user_id, o.total_amount, o.status, o.order_ty
 $orders = [];
 $total_revenue = 0;
 $total_cost = 0;
+$total_items_revenue = 0;
 $customer_revenue = 0;
 $supplier_revenue = 0;
 $total_customer_price = 0;
@@ -90,10 +91,12 @@ try {
         $order['items_subtotal'] = floatval($order['items_subtotal']);
         $order['customer_price_total'] = floatval($order['total_customer_price']);
         $order['supplier_price_total'] = floatval($order['total_supplier_price']);
-        $order['profit'] = $order_revenue - $order_cost_val;
-        $order['profit_margin'] = $order_revenue > 0 ? (($order_revenue - $order_cost_val) / $order_revenue * 100) : 0;
+        // Profit = items subtotal (product revenue only) - cost (shipping excluded)
+        $order['profit'] = $order['items_subtotal'] - $order_cost_val;
+        $order['profit_margin'] = $order['items_subtotal'] > 0 ? (($order['items_subtotal'] - $order_cost_val) / $order['items_subtotal'] * 100) : 0;
 
         $total_revenue += $order_revenue;
+        $total_items_revenue += $order['items_subtotal'];
         $total_cost += $order_cost_val;
         $total_customer_price += floatval($order['total_customer_price']);
         $total_supplier_price += floatval($order['total_supplier_price']);
@@ -112,8 +115,8 @@ try {
     $orders = [];
 }
 
-$total_profit = $total_revenue - $total_cost;
-$profit_margin = $total_revenue > 0 ? (($total_revenue - $total_cost) / $total_revenue * 100) : 0;
+$total_profit = $total_items_revenue - $total_cost;
+$profit_margin = $total_items_revenue > 0 ? (($total_items_revenue - $total_cost) / $total_items_revenue * 100) : 0;
 $total_orders = count($orders);
 ?>
 <!DOCTYPE html>
