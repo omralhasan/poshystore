@@ -93,13 +93,43 @@ function getAllProducts($filters = [], $limit = 50, $offset = 0)
     }
 
     if (isset($filters['search']) && !empty($filters['search'])) {
-        $search = '%' . $filters['search'] . '%';
-        $sql .= " AND (p.name_en LIKE ? OR p.name_ar LIKE ? OR p.id IN (SELECT pt.product_id FROM product_tags pt JOIN tags t ON pt.tag_id = t.id WHERE t.name_en LIKE ? OR t.name_ar LIKE ?))";
-        $types .= 'ssss';
-        $params[] = $search;
-        $params[] = $search;
-        $params[] = $search;
-        $params[] = $search;
+        $search_term = trim($filters['search']);
+        $words = preg_split('/\s+/', $search_term);
+
+        // Names: split into individual words, require ALL words in any order
+        // e.g. "cream face" now matches "Face Cream"
+        $name_conditions = [];
+        foreach ($words as $word) {
+            $word_like = '%' . $word . '%';
+            $name_conditions[] = "(p.name_en LIKE ? OR p.name_ar LIKE ?)";
+            $types .= 'ss';
+            $params[] = $word_like;
+            $params[] = $word_like;
+        }
+
+        $search_sql = '(' . implode(' AND ', $name_conditions) . ')';
+
+        // Full phrase search in descriptions, barcode
+        $phrase_like = '%' . $search_term . '%';
+        $search_sql .= " OR (p.short_description_en LIKE ? OR p.short_description_ar LIKE ? 
+                        OR p.description LIKE ? OR p.description_ar LIKE ? 
+                        OR p.barcode LIKE ?)";
+        $types .= 'sssss';
+        $params[] = $phrase_like;
+        $params[] = $phrase_like;
+        $params[] = $phrase_like;
+        $params[] = $phrase_like;
+        $params[] = $phrase_like;
+
+        // Tags with full phrase
+        $search_sql .= " OR p.id IN (SELECT pt.product_id FROM product_tags pt 
+                        JOIN tags t ON pt.tag_id = t.id 
+                        WHERE t.name_en LIKE ? OR t.name_ar LIKE ?)";
+        $types .= 'ss';
+        $params[] = $phrase_like;
+        $params[] = $phrase_like;
+
+        $sql .= " AND (" . $search_sql . ")";
     }
 
     if (isset($filters['in_stock']) && $filters['in_stock'] == true) {

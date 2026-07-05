@@ -98,7 +98,7 @@ if ($is_logged_in) {
 }
 
 // Get search & filter params (sanitized)
-$search_query = isset($_GET['search']) ? trim(htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8')) : '';
+$search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 $category_param = isset($_GET['category']) ? trim((string)$_GET['category']) : '';
 $active_category = ctype_digit($category_param) ? (int)$category_param : 0;
 $active_category_keyword = ($active_category === 0 && $category_param !== '')
