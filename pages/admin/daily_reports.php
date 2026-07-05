@@ -61,7 +61,7 @@ $sql = "SELECT o.id as order_id, o.user_id, o.total_amount, o.status, o.order_ty
             LEFT JOIN products p ON oi.product_id = p.id
             GROUP BY oi.order_id
         ) items ON items.order_id = o.id
-        WHERE DATE(o.order_date) BETWEEN ? AND ?
+        WHERE o.status != 'cancelled' AND DATE(o.order_date) BETWEEN ? AND ?
         ORDER BY o.order_date DESC";
 
 $orders = [];

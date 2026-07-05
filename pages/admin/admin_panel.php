@@ -471,7 +471,8 @@ $stats_result = $conn->query(
     "SELECT COUNT(*) AS total_orders,
             SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_orders,
             COALESCE(SUM(total_amount), 0) AS total_revenue
-     FROM orders"
+     FROM orders
+     WHERE status != 'cancelled'"
 );
 if ($stats_result) {
     $stats_row = $stats_result->fetch_assoc() ?: $stats_row;
