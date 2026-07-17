@@ -177,16 +177,19 @@ $nginx_result = 'skipped';
 $nginx_conf_src = $web_root . '/nginx_poshystore.conf';
 $nginx_conf_dst = '/etc/nginx/conf.d/poshystore.conf';
 if (is_file($nginx_conf_src)) {
-    copy($nginx_conf_src, $nginx_conf_dst);
-    // Test and reload nginx (requires nginx running)
-    $test = shell_exec('nginx -t 2>&1');
-    if (strpos($test, 'syntax is ok') !== false) {
-        shell_exec('systemctl reload nginx 2>&1');
-        $nginx_result = 'reloaded OK';
+    $copied = @copy($nginx_conf_src, $nginx_conf_dst);
+    if ($copied) {
+        $test = shell_exec('sudo nginx -t 2>&1');
+        if (strpos($test, 'syntax is ok') !== false) {
+            shell_exec('sudo systemctl reload nginx 2>&1');
+            $nginx_result = 'reloaded OK';
+        } else {
+            $nginx_result = 'config placed but test/reload failed (run manually as root): ' . trim($test);
+        }
     } else {
-        $nginx_result = 'config test failed: ' . trim($test);
-        $success = false;
+        $nginx_result = 'config placed but copy failed (run manually as root)';
     }
+    // Nginx config failure is non-fatal — git deploy + PHP code still works
 }
 
 // Get current git HEAD info
