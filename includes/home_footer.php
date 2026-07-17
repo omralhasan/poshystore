@@ -27,22 +27,22 @@ if (strpos($current_path, '/pages/') !== false) {
             <div class="col-md-4 mb-4">
                 <h6 class="mb-3"><?= $current_lang === 'ar' ? 'روابط سريعة' : 'Quick Links' ?></h6>
                 <div class="d-flex flex-column gap-2">
-                    <a href="<?= $base_path ?>index.php" class="text-decoration-none" style="color: var(--gold-light);">
+                    <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="text-decoration-none" style="color: var(--gold-light);">
                         <i class="fas fa-home me-2"></i><?= $current_lang === 'ar' ? 'الرئيسية' : 'Home' ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/shop/shop.php" class="text-decoration-none" style="color: var(--gold-light);">
+                    <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="text-decoration-none" style="color: var(--gold-light);">
                         <i class="fas fa-shopping-bag me-2"></i><?= $current_lang === 'ar' ? 'المتجر' : 'Shop' ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/policies/about-us.php" class="text-decoration-none" style="color: var(--gold-light);">
+                    <a href="<?= htmlspecialchars(getPageUrl('pages/policies/about-us.php')) ?>" class="text-decoration-none" style="color: var(--gold-light);">
                         <i class="fas fa-store me-2"></i><?= $current_lang === 'ar' ? 'عن بوشي' : 'About Us' ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/policies/contact-us.php" class="text-decoration-none" style="color: var(--gold-light);">
+                    <a href="<?= htmlspecialchars(getPageUrl('pages/policies/contact-us.php')) ?>" class="text-decoration-none" style="color: var(--gold-light);">
                         <i class="fas fa-envelope me-2"></i><?= $current_lang === 'ar' ? 'اتصل بنا' : 'Contact Us' ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/policies/privacy-policy.php" class="text-decoration-none" style="color: var(--gold-light);">
+                    <a href="<?= htmlspecialchars(getPageUrl('pages/policies/privacy-policy.php')) ?>" class="text-decoration-none" style="color: var(--gold-light);">
                         <i class="fas fa-shield-alt me-2"></i><?= $current_lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy' ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/policies/terms-of-service.php" class="text-decoration-none" style="color: var(--gold-light);">
+                    <a href="<?= htmlspecialchars(getPageUrl('pages/policies/terms-of-service.php')) ?>" class="text-decoration-none" style="color: var(--gold-light);">
                         <i class="fas fa-file-contract me-2"></i><?= $current_lang === 'ar' ? 'الشروط والأحكام' : 'Terms of Service' ?>
                     </a>
                 </div>

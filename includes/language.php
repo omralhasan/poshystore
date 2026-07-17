@@ -2,6 +2,7 @@
 /**
  * Language System for Poshy Lifestyle
  * Supports Arabic and English
+ * URL structure: / = English (default), /ar/ = Arabic
  */
 
 // Load central config (DB, SITE_URL, error logging, session)
@@ -9,96 +10,188 @@ if (!defined('POSHY_CONFIG_LOADED')) {
     require_once __DIR__ . '/../config.php';
 }
 
-// Normalize language session key (supports legacy `lang` key)
-if (!isset($_SESSION['language']) && isset($_SESSION['lang']) && in_array($_SESSION['lang'], ['ar', 'en'], true)) {
-    $_SESSION['language'] = $_SESSION['lang'];
+// ── Detect language from URL path (/ar/ prefix) ──────────────────────────
+$request_uri = $_SERVER['REQUEST_URI'] ?? '/';
+$request_path = parse_url($request_uri, PHP_URL_PATH);
+$base_path_const = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '';
+$request_path_clean = $request_path;
+if ($base_path_const !== '' && str_starts_with($request_path_clean, $base_path_const)) {
+    $request_path_clean = substr($request_path_clean, strlen($base_path_const));
 }
+$request_path_clean = rtrim($request_path_clean, '/');
 
-// Set default language
-if (!isset($_SESSION['language']) || !in_array($_SESSION['language'], ['ar', 'en'], true)) {
-    $_SESSION['language'] = 'en'; // Default to English
-}
-$_SESSION['lang'] = $_SESSION['language'];
+$is_arabic_path = ($request_path_clean === '/ar' || str_starts_with($request_path_clean, '/ar/'));
+$detected_lang = $is_arabic_path ? 'ar' : 'en';
 
-// Handle language change
-if (isset($_GET['lang'])) {
-    $lang = $_GET['lang'];
-    if (in_array($lang, ['ar', 'en'])) {
-        $_SESSION['language'] = $lang;
-        $_SESSION['lang'] = $lang;
+// ── Handle legacy ?lang= query param → 301 redirect to /ar/ or root ──────
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['ar', 'en'], true)) {
+    $old_lang = $_GET['lang'];
+    $is_get_request   = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET');
+    $is_ajax_request  = (
+        (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+        (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+    );
+    $is_api_request   = (strpos($request_uri, '/api/') !== false);
 
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
-        $lang_explicit_in_url = (bool)preg_match('/[?&]lang=(ar|en)\b/i', $request_uri);
+    if ($is_get_request && !$is_ajax_request && !$is_api_request && !headers_sent()) {
+        $path_part = strtok($request_path, '?');
+        $path_part = rtrim($path_part, '/');
 
-        // Redirect to remove lang parameter from URL (only for normal page GET requests)
-        $is_get_request = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET');
-        $is_ajax_request = (
-            (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
-            (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-        );
-        $is_api_request = (strpos($request_uri, '/api/') !== false);
+        $remaining_query = $_SERVER['QUERY_STRING'] ?? '';
+        parse_str($remaining_query, $qp);
+        unset($qp['lang']);
+        $qs = !empty($qp) ? '?' . http_build_query($qp) : '';
 
-        if ($lang_explicit_in_url && $is_get_request && !$is_ajax_request && !$is_api_request && !headers_sent()) {
-            $redirect_url = strtok($_SERVER['REQUEST_URI'], '?');
-            if (!empty($_SERVER['QUERY_STRING'])) {
-                parse_str($_SERVER['QUERY_STRING'], $params);
-                unset($params['lang']);
-                if (!empty($params)) {
-                    $redirect_url .= '?' . http_build_query($params);
-                }
-            }
-
-            header("Location: $redirect_url");
-            exit();
+        // Strip any existing /ar/ prefix from the path to avoid double-prefixing
+        $base_pattern = $base_path_const !== '' ? $base_path_const : '';
+        $clean_path = $path_part;
+        if ($base_pattern !== '' && str_starts_with($clean_path, $base_pattern)) {
+            $clean_path = substr($clean_path, strlen($base_pattern));
         }
+        if (str_starts_with($clean_path, '/ar')) {
+            $clean_path = preg_replace('#^/ar(/|$)#', '/', $clean_path);
+        }
+
+        if ($old_lang === 'ar') {
+            $redirect = $base_path_const . '/ar' . ($clean_path === '/' ? '/' : $clean_path) . $qs;
+        } else {
+            $redirect = $base_path_const . ($clean_path === '' ? '/' : $clean_path) . $qs;
+        }
+
+        header("Location: $redirect", true, 301);
+        exit();
     }
 }
+
+// ── Set session language (always in sync with URL) ───────────────────────
+$_SESSION['language'] = $detected_lang;
+$_SESSION['lang']     = $detected_lang;
 
 // Get current language
 $current_lang = $_SESSION['language'];
 
+// ── URL Generation Helpers ───────────────────────────────────────────────
+
 /**
  * Generate Arabic-aware product URL
- * In Arabic mode: /منتج/product-slug
- * In English mode: /product-slug
+ * English: /product-slug
+ * Arabic:  /ar/product-slug
  */
 function getProductUrl($slug, $lang = null) {
     global $current_lang;
     $lang = $lang ?? $current_lang;
     $base = defined('BASE_PATH') ? BASE_PATH : '';
-    
+
     if ($lang === 'ar') {
-        return $base . '/منتج/' . $slug;
+        return $base . '/ar/' . $slug;
     }
     return $base . '/' . $slug;
 }
 
 /**
  * Generate Arabic-aware podcast URL
+ * English: /podcast or /podcast/slug
+ * Arabic:  /ar/podcast or /ar/podcast/slug
  */
 function getPodcastUrl($slug = null, $lang = null) {
     global $current_lang;
     $lang = $lang ?? $current_lang;
     $base = defined('BASE_PATH') ? BASE_PATH : '';
-    
+
     if ($lang === 'ar') {
-        return $base . '/بودكاست' . ($slug ? '/' . $slug : '');
+        return $base . '/ar/podcast' . ($slug ? '/' . $slug : '');
     }
     return $base . '/podcast' . ($slug ? '/' . $slug : '');
 }
 
 /**
- * Generate Arabic-aware shop URL
+ * Generate Arabic-aware shop/home URL
+ * English: /
+ * Arabic:  /ar/
  */
 function getShopUrl($lang = null) {
     global $current_lang;
     $lang = $lang ?? $current_lang;
     $base = defined('BASE_PATH') ? BASE_PATH : '';
-    
+
     if ($lang === 'ar') {
-        return $base . '/متجر';
+        return $base . '/ar/';
     }
     return $base . '/';
+}
+
+/**
+ * Generate Arabic-aware category URL
+ * English: /category/slug
+ * Arabic:  /ar/category/slug
+ */
+function getCategoryUrl($slug, $lang = null) {
+    global $current_lang;
+    $lang = $lang ?? $current_lang;
+    $base = defined('BASE_PATH') ? BASE_PATH : '';
+
+    if ($lang === 'ar') {
+        return $base . '/ar/category/' . $slug;
+    }
+    return $base . '/category/' . $slug;
+}
+
+/**
+ * Generate Arabic-aware generic page URL
+ * English: /$path
+ * Arabic:  /ar/$path
+ */
+function getPageUrl($path, $lang = null) {
+    global $current_lang;
+    $lang = $lang ?? $current_lang;
+    $base = defined('BASE_PATH') ? BASE_PATH : '';
+    $path = ltrim($path, '/');
+
+    if ($lang === 'ar') {
+        return $base . '/ar/' . $path;
+    }
+    return $base . '/' . $path;
+}
+
+/**
+ * Get the URL for the current page in the OTHER language.
+ * Mirrors the current path under /ar/ or strips /ar/.
+ */
+function getMirrorUrl($lang = null) {
+    global $current_lang;
+    $target = $lang ?? ($current_lang === 'ar' ? 'en' : 'ar');
+    $request_uri = $_SERVER['REQUEST_URI'] ?? '/';
+    $base_path_const = defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '';
+
+    $parsed = parse_url($request_uri);
+    $path   = $parsed['path'] ?? '/';
+    $query  = $parsed['query'] ?? '';
+
+    // Strip base path if present
+    $clean_path = $path;
+    if ($base_path_const !== '' && str_starts_with($clean_path, $base_path_const)) {
+        $clean_path = substr($clean_path, strlen($base_path_const));
+    }
+    $clean_path = rtrim($clean_path, '/') ?: '/';
+
+    // Strip existing /ar/ prefix
+    if (str_starts_with($clean_path, '/ar')) {
+        $clean_path = preg_replace('#^/ar(/|$)#', '/', $clean_path);
+    }
+    $clean_path = rtrim($clean_path, '/') ?: '/';
+
+    // Build mirrored URL
+    if ($target === 'ar') {
+        $new_path = $base_path_const . '/ar' . ($clean_path === '/' ? '/' : $clean_path);
+    } else {
+        $new_path = $base_path_const . $clean_path;
+    }
+
+    if ($query !== '') {
+        $new_path .= '?' . $query;
+    }
+
+    return $new_path;
 }
 
 /**

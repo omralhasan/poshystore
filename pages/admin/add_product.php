@@ -12,19 +12,25 @@ require_once __DIR__ . '/../../includes/product_image_helper.php';
 require_once __DIR__ . '/../../includes/fifo_helper.php';
 
 function trigger_feed_csv_regeneration(): void {
-    $generator = realpath(__DIR__ . '/../../generate_feed_csv.php');
-    if ($generator === false || !is_file($generator)) {
-        return;
-    }
-
     $disabled = array_map('trim', explode(',', (string)ini_get('disable_functions')));
     if (!function_exists('exec') || in_array('exec', $disabled, true)) {
         return;
     }
 
     $php_binary = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
-    $cmd = escapeshellarg($php_binary) . ' ' . escapeshellarg($generator) . ' > /tmp/feed_csv_autogen.log 2>&1 &';
-    @exec($cmd);
+    $root = realpath(__DIR__ . '/../../');
+
+    // Regenerate Google Merchant CSV
+    $gmc = $root . '/generate_feed_csv.php';
+    if (is_file($gmc)) {
+        @exec(escapeshellarg($php_binary) . ' ' . escapeshellarg($gmc) . ' > /tmp/feed_csv_autogen.log 2>&1 &');
+    }
+
+    // Regenerate Meta Commerce CSV
+    $meta = $root . '/meta_feed.php';
+    if (is_file($meta)) {
+        @exec(escapeshellarg($php_binary) . ' ' . escapeshellarg($meta) . ' > /tmp/meta_feed_autogen.log 2>&1 &');
+    }
 }
 
 function describe_fs_path(string $path): string {

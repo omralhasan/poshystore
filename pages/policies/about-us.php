@@ -12,6 +12,9 @@ $is_logged_in = isset($_SESSION['user_id']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= $current_lang === 'ar' ? 'تعرف على قصة Poshy Store - متجرك الموثوق لمنتجات العناية بالبشرة والتجميل الكورية الأصلية في الأردن. شغف بالجمال، التزام بالجودة.' : 'Discover the story of Poshy Store - your trusted source for authentic Korean beauty and skincare products in Jordan. Passion for beauty, commitment to quality.' ?>">
     <title><?= $current_lang === 'ar' ? 'عن بوشي ستور' : 'About Us' ?> | Poshy Store</title>
+    <link rel="alternate" hreflang="en" href="https://poshystore.com/pages/policies/about-us.php">
+    <link rel="alternate" hreflang="ar" href="https://poshystore.com/ar/pages/policies/about-us.php">
+    <link rel="alternate" hreflang="x-default" href="https://poshystore.com/pages/policies/about-us.php">
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         .about-hero {

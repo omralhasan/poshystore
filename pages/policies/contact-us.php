@@ -48,6 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_contact'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= $current_lang === 'ar' ? 'تواصل مع Poshy Store - فريق خدمة العملاء لدينا جاهز لمساعدتك. واتساب، بريد إلكتروني، أو نموذج الاتصال.' : 'Contact Poshy Store - Our customer service team is ready to help. WhatsApp, email, or contact form.' ?>">
     <title><?= $current_lang === 'ar' ? 'اتصل بنا' : 'Contact Us' ?> | Poshy Store</title>
+    <link rel="alternate" hreflang="en" href="https://poshystore.com/pages/policies/contact-us.php">
+    <link rel="alternate" hreflang="ar" href="https://poshystore.com/ar/pages/policies/contact-us.php">
+    <link rel="alternate" hreflang="x-default" href="https://poshystore.com/pages/policies/contact-us.php">
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         .contact-hero {

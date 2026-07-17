@@ -46,16 +46,16 @@ if (strpos($current_path, '/pages/') !== false) {
 <nav class="ramadan-navbar">
     <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center w-100">
-            <a href="<?= $base_path ?>index.php" class="navbar-brand-ramadan" aria-label="Poshy Store Home">
+            <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="navbar-brand-ramadan" aria-label="Poshy Store Home">
                 Poshy
                 <span class="logo-subtitle">STORE</span>
             </a>
             
             <div class="d-none d-md-flex gap-3">
-                <a href="<?= $base_path ?>index.php" class="nav-link-ramadan">
+                <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="nav-link-ramadan">
                     <i class="fas fa-home me-1"></i><?= t('home') ?>
                 </a>
-                <a href="<?= $base_path ?>pages/shop/shop.php" class="nav-link-ramadan">
+                <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="nav-link-ramadan">
                     <i class="fas fa-shopping-bag me-1"></i><?= t('shop') ?>
                 </a>
                 <?php if ($is_logged_in): ?>
@@ -70,7 +70,7 @@ if (strpos($current_path, '/pages/') !== false) {
             
             <div class="d-flex align-items-center gap-2">
                 <!-- Language Switcher -->
-                <a href="?lang=<?= getOtherLang() ?>" class="nav-icon-ramadan" title="<?= getLangName(getOtherLang()) ?>" style="font-size: 1.2rem;">
+                <a href="<?= htmlspecialchars(getMirrorUrl()) ?>" class="nav-icon-ramadan" title="<?= getLangName(getOtherLang()) ?>" style="font-size: 1.2rem;">
                     <?= $current_lang === 'ar' ? '🇬🇧' : '🇯🇴' ?>
                 </a>
                 
@@ -125,11 +125,11 @@ if (strpos($current_path, '/pages/') !== false) {
         </button>
     </div>
     <div class="mobile-menu-links">
-        <a href="<?= $base_path ?>index.php" class="mobile-menu-link">
+        <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="mobile-menu-link">
             <i class="fas fa-home"></i>
             <span><?= t('home') ?></span>
         </a>
-        <a href="<?= $base_path ?>pages/shop/shop.php" class="mobile-menu-link">
+        <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="mobile-menu-link">
             <i class="fas fa-shopping-bag"></i>
             <span><?= t('shop') ?></span>
         </a>
@@ -182,12 +182,12 @@ function toggleMobileMenu() {
 
 <!-- Mobile Bottom Navigation Bar -->
 <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile navigation">
-    <a href="<?= $base_path ?>index.php" class="bottom-nav-item <?= (basename($_SERVER['PHP_SELF']) === 'index.php' && !isset($_GET['search'])) ? 'active' : '' ?>">
+    <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="bottom-nav-item <?= (basename($_SERVER['PHP_SELF']) === 'index.php' && !isset($_GET['search'])) ? 'active' : '' ?>">
         <i class="fas fa-home"></i>
         <span><?= $current_lang === 'ar' ? 'الرئيسية' : 'Home' ?></span>
     </a>
     
-    <a href="<?= $base_path ?>index.php?show_all=1" class="bottom-nav-item <?= isset($_GET['search']) || isset($_GET['brand']) || isset($_GET['subcategory']) ? 'active' : '' ?>" id="bottomNavSearch">
+    <a href="<?= htmlspecialchars(getShopUrl()) ?>?show_all=1" class="bottom-nav-item <?= isset($_GET['search']) || isset($_GET['brand']) || isset($_GET['subcategory']) ? 'active' : '' ?>" id="bottomNavSearch">
         <i class="fas fa-search"></i>
         <span><?= $current_lang === 'ar' ? 'بحث' : 'Search' ?></span>
     </a>
@@ -211,7 +211,7 @@ function toggleMobileMenu() {
         <span><?= $current_lang === 'ar' ? 'مكافآت' : 'Rewards' ?></span>
     </a>
     <?php else: ?>
-    <a href="<?= $base_path ?>pages/shop/shop.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'shop.php' ? 'active' : '' ?>">
+    <a href="<?= htmlspecialchars(getShopUrl()) ?>" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'shop.php' ? 'active' : '' ?>">
         <i class="fas fa-shopping-bag"></i>
         <span><?= $current_lang === 'ar' ? 'المتجر' : 'Shop' ?></span>
     </a>

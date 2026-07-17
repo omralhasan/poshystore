@@ -10,6 +10,9 @@ $is_logged_in = isset($_SESSION['user_id']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Return Policy - Poshy Store</title>
+    <link rel="alternate" hreflang="en" href="https://poshystore.com/pages/policies/return-policy.php">
+    <link rel="alternate" hreflang="ar" href="https://poshystore.com/ar/pages/policies/return-policy.php">
+    <link rel="alternate" hreflang="x-default" href="https://poshystore.com/pages/policies/return-policy.php">
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     <style>
         .policy-container {

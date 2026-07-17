@@ -9,7 +9,7 @@ require_once __DIR__ . '/config.php';
 
 // ── Slug Router ──────────────────────────────────────────────
 // nginx sends all unknown URLs to index.php via try_files.
-// Detect product slug URLs and hand off to product.php.
+// Detect /ar/ prefix and product slug URLs, hand off to product.php.
 $request_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 $request_path = rtrim($request_path, '/');
 
@@ -24,28 +24,30 @@ if ($base_path !== '' && str_starts_with($request_path, $base_path)) {
 
 $decoded_path = urldecode($request_path);
 
-// Arabic product URLs: /منتج/product-slug
-if (preg_match('#^/منتج/([\p{L}0-9]+(?:[-\p{L}0-9]+)*)$#u', $decoded_path, $m)) {
-    $_GET['slug'] = $m[1];
-    $_GET['lang'] = 'ar';
-    require __DIR__ . '/product.php';
-    exit;
+// Detect /ar/ prefix → strip it, set Arabic language, continue routing
+$is_arabic_path = false;
+if (preg_match('#^/ar(/.*)?$#u', $decoded_path, $ar_match)) {
+    $is_arabic_path = true;
+    $decoded_path = !empty($ar_match[1]) ? $ar_match[1] : '/';
+    $decoded_path = rtrim($decoded_path, '/') ?: '/';
+    // Set language session for Arabic path
+    $_SESSION['language'] = 'ar';
+    $_SESSION['lang'] = 'ar';
 }
 
-// The redesigned index.php now serves as the main landing page
-// No separate landing page needed - the Beauty Box design is built into index.php
-// if ($request_path === '' || $request_path === '/') {
-//     require __DIR__ . '/poshy-luxury-home.html';
-//     exit;
-// }
+// Legacy Arabic product URLs: /منتج/product-slug → redirect to /ar/slug
+if (preg_match('#^/منتج/([\p{L}0-9]+(?:[-\p{L}0-9]+)*)$#u', $decoded_path, $m)) {
+    header('Location: /ar/' . $m[1], true, 301);
+    exit;
+}
 
 // A slug looks like /some-product-name (lowercase, digits, hyphens only)
 // Exclude known paths: /index.php, /pages/..., /api/..., /images/..., etc.
 if (
-    $request_path !== '' &&
-    $request_path !== '/' &&
-    preg_match('#^/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $request_path, $m) &&
-    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts)#i', $request_path)
+    $decoded_path !== '' &&
+    $decoded_path !== '/' &&
+    preg_match('#^/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $decoded_path, $m) &&
+    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar)#i', $decoded_path)
 ) {
     $_GET['slug'] = $m[1];
     require __DIR__ . '/product.php';
@@ -438,7 +440,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <title>Poshy Store | Premium Korean Beauty & Skincare</title>
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
     <link rel="alternate" hreflang="en" href="https://poshystore.com/">
-    <link rel="alternate" hreflang="ar" href="https://poshystore.com/?lang=ar">
+    <link rel="alternate" hreflang="ar" href="https://poshystore.com/ar/">
     <link rel="alternate" hreflang="x-default" href="https://poshystore.com/">
     
     <?php require_once __DIR__ . '/includes/home_theme_header.php'; ?>
@@ -490,7 +492,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
     <!-- ======== SEARCH BAR (above hero) ======== -->
     <div class="top-search-bar">
         <div class="top-search-inner">
-            <form method="GET" action="index.php" class="top-search-form" id="topSearchForm">
+            <form method="GET" action="<?= htmlspecialchars(getShopUrl()) ?>" class="top-search-form" id="topSearchForm">
                 <div class="search-wrapper">
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" name="search" id="searchInput" class="search-input" 
@@ -638,7 +640,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
         <div class="filter-inner">
             <div class="search-row">
                 <!-- Hidden form for filter JS (actual search input is above hero) -->
-                <form method="GET" action="index.php" id="searchForm" style="display:none">
+                <form method="GET" action="<?= htmlspecialchars(getShopUrl()) ?>" id="searchForm" style="display:none">
                     <input type="text" name="search" value="<?= htmlspecialchars($search_query) ?>">
                     <input type="hidden" name="brand" id="searchBrandHidden" value="<?= $active_brand ?>">
                     <input type="hidden" name="category" id="searchCategoryHidden" value="<?= $active_category ?>">

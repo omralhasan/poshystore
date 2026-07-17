@@ -76,7 +76,8 @@ $sql = "SELECT
             $mpn_select
             COALESCE(b.name_en, 'Poshy Lifestyle') AS brand_en,
             COALESCE(b.name_ar, 'بوشي لايف ستايل')  AS brand_ar,
-            COALESCE(c.name_en, 'Health & Beauty')   AS category_en
+            COALESCE(c.name_en, 'Health & Beauty')   AS category_en,
+            COALESCE(s.name_en, '') AS subcategory_en
         FROM products p
         LEFT JOIN brands        b ON p.brand_id      = b.id
         LEFT JOIN subcategories s ON p.subcategory_id = s.id
@@ -138,6 +139,7 @@ $headers = [
     'identifier_exists',
     'condition',
     'google_product_category',
+    'product_type',
 ];
 fputcsv($fh, $headers);
 
@@ -277,6 +279,9 @@ while ($p = $result->fetch_assoc()) {
 
     $catalog_id = get_meta_catalog_id($p, (string)$p['id']);
 
+    // product_type = subcategory name (your own categorization for Google)
+    $product_type = (string)($p['subcategory_en'] ?? '');
+
     fputcsv($fh, [
         $catalog_id,
         $title,
@@ -292,6 +297,7 @@ while ($p = $result->fetch_assoc()) {
         $identifier_exists,
         'new',
         $gpc,
+        $product_type,
     ]);
 
     $count++;

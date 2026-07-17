@@ -141,6 +141,12 @@ header('X-Frame-Options: SAMEORIGIN');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= htmlspecialchars($lang === 'ar' ? 'تسوقي أفضل منتجات ' . $category_name . ' الأصلية للعناية بالبشرة والتجميل من Poshy Store. أشهر الماركات الكورية بأسعار تنافسية وتوصيل سريع في الأردن.' : 'Shop authentic ' . $category_name . ' products at Poshy Store. Premium Korean beauty and skincare brands with fast delivery across Jordan. Best prices guaranteed.') ?>">
     <title><?= htmlspecialchars($category_name) ?> | Poshy Store</title>
+    <?php $cat_slug_for_hreflang = stringToSlug($current_category['name_en'] ?? ''); ?>
+    <?php if ($cat_slug_for_hreflang): ?>
+    <link rel="alternate" hreflang="en" href="https://poshystore.com/category/<?= htmlspecialchars($cat_slug_for_hreflang) ?>">
+    <link rel="alternate" hreflang="ar" href="https://poshystore.com/ar/category/<?= htmlspecialchars($cat_slug_for_hreflang) ?>">
+    <link rel="alternate" hreflang="x-default" href="https://poshystore.com/category/<?= htmlspecialchars($cat_slug_for_hreflang) ?>">
+    <?php endif; ?>
     
     <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
     

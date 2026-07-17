@@ -52,7 +52,7 @@ Disallow: /data-deletion.php
 Disallow: /diagnostics.php
 
 # Sitemap
-Sitemap: https://poshystore.com/sitemap.xml
+Sitemap: https://poshystore.com/sitemap.php
 
 # Crawl delay for polite crawling
 Crawl-delay: 5

@@ -58,10 +58,11 @@ require_once __DIR__ . '/language.php';
 $other_lang = getOtherLang();
 $other_lang_name = getLangName($other_lang);
 $other_lang_flag = $other_lang === 'ar' ? '🇯🇴' : '🇬🇧';
+$mirror_url = getMirrorUrl();
 ?>
 
 <div class="language-switcher">
-    <a href="?lang=<?= $other_lang ?>" class="lang-btn" title="<?= $other_lang_name ?>">
+    <a href="<?= htmlspecialchars($mirror_url) ?>" class="lang-btn" title="<?= $other_lang_name ?>">
         <span class="lang-flag"><?= $other_lang_flag ?></span>
         <span class="lang-btn-text"><?= $other_lang_name ?></span>
         <i class="fas fa-globe"></i>

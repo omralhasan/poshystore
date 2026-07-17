@@ -63,9 +63,12 @@ $sql = "SELECT
             p.stock_quantity,
             p.image_link,
             COALESCE(b.name_en, 'Poshy Lifestyle') AS brand_en,
-            COALESCE(b.name_ar, 'بوشي لايف ستايل')  AS brand_ar
+            COALESCE(b.name_ar, 'بوشي لايف ستايل')  AS brand_ar,
+            COALESCE(s.name_en, '') AS subcategory_en,
+            COALESCE(s.name_ar, '') AS subcategory_ar
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN subcategories s ON p.subcategory_id = s.id
         ORDER BY p.id ASC";
 
 $result = $conn->query($sql);
@@ -102,6 +105,7 @@ $headers = [
     'link',
     'image_link',
     'brand',
+    'product_type',
 ];
 fputcsv($fh, $headers);
 
@@ -159,6 +163,11 @@ while ($p = $result->fetch_assoc()) {
 
     $catalog_id = get_meta_catalog_id($p, (string)$p['id']);
 
+    // product_type = subcategory name (maps to Meta "Collections" / product_type field)
+    $product_type = ($LANG === 'ar' && !empty($p['subcategory_ar']))
+        ? (string)$p['subcategory_ar']
+        : (string)$p['subcategory_en'];
+
     fputcsv($fh, [
         $catalog_id,
         $title,
@@ -169,6 +178,7 @@ while ($p = $result->fetch_assoc()) {
         $link,
         $image_link,
         $brand,
+        $product_type,
     ]);
 
     $rows_written++;

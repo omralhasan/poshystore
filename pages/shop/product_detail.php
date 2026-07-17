@@ -78,7 +78,7 @@ if ($is_logged_in) {
 $product_slug = $product['slug'] ?? '';
 if ($product_slug): ?>
 <link rel="alternate" hreflang="en" href="https://poshystore.com/<?= htmlspecialchars($product_slug) ?>">
-<link rel="alternate" hreflang="ar" href="https://poshystore.com/%D9%85%D9%86%D8%AA%D8%AC/<?= htmlspecialchars($product_slug) ?>">
+<link rel="alternate" hreflang="ar" href="https://poshystore.com/ar/<?= htmlspecialchars($product_slug) ?>">
 <link rel="alternate" hreflang="x-default" href="https://poshystore.com/<?= htmlspecialchars($product_slug) ?>">
 <?php endif; ?>
 <?php require_once __DIR__ . '/../../includes/home_theme_header.php'; ?>
@@ -576,22 +576,18 @@ html{overflow-x:hidden}
 
                 <!-- Accordion Info Tabs -->
                 <div class="pd-accordion">
-                    <?php if (!empty($product['video_review_url']) || true): ?>
+                    <?php if (!empty($product['video_review_url'])): ?>
                     <div class="pd-acc-item open">
                         <div class="pd-acc-header" onclick="pdToggleAcc(this)">
                             <span><i class="fas fa-play-circle"></i><?= t('see_in_action') ?></span>
                             <span class="pd-acc-icon"><i class="fas fa-chevron-down"></i></span>
                         </div>
                         <div class="pd-acc-body">
-                            <?php if (!empty($product['video_review_url'])): ?>
-                                <?php $video_src = $product['video_review_url']; $is_local = (strpos($video_src, 'uploads/') === 0 || strpos($video_src, '/uploads/') === 0); ?>
-                                <?php if ($is_local): ?>
-                                    <div class="pd-video-wrap"><video id="pdVideo" controls playsinline preload="metadata" poster=""><source src="<?= $base_url . '/' . htmlspecialchars($video_src) ?>" type="video/mp4"><?= $current_lang === 'ar' ? 'متصفحك لا يدعم الفيديو' : 'Your browser does not support video.' ?></video></div>
-                                <?php else: ?>
-                                    <div class="pd-video-embed"><iframe src="<?= htmlspecialchars($video_src) ?>" allowfullscreen loading="lazy"></iframe></div>
-                                <?php endif; ?>
+                            <?php $video_src = $product['video_review_url']; $is_local = (strpos($video_src, 'uploads/') === 0 || strpos($video_src, '/uploads/') === 0); ?>
+                            <?php if ($is_local): ?>
+                                <div class="pd-video-wrap"><video id="pdVideo" controls playsinline preload="metadata" poster=""><source src="<?= $base_url . '/' . htmlspecialchars($video_src) ?>" type="video/mp4"><?= $current_lang === 'ar' ? 'متصفحك لا يدعم الفيديو' : 'Your browser does not support video.' ?></video></div>
                             <?php else: ?>
-                                <div class="pd-no-video"><i class="fas fa-play-circle"></i><p><?= $current_lang === 'ar' ? 'سيتم إضافة الفيديو قريباً' : 'Video coming soon' ?></p></div>
+                                <div class="pd-video-embed"><iframe src="<?= htmlspecialchars($video_src) ?>" allowfullscreen loading="lazy"></iframe></div>
                             <?php endif; ?>
                         </div>
                     </div>

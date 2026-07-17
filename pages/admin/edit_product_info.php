@@ -7,6 +7,17 @@
 require_once __DIR__ . '/../../includes/auth_functions.php';
 require_once __DIR__ . '/../../includes/db_connect.php';
 
+function trigger_feed_csv_regeneration(): void {
+    $disabled = array_map('trim', explode(',', (string)ini_get('disable_functions')));
+    if (!function_exists('exec') || in_array('exec', $disabled, true)) return;
+    $php_binary = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
+    $root = realpath(__DIR__ . '/../../');
+    $gmc = $root . '/generate_feed_csv.php';
+    if (is_file($gmc)) @exec(escapeshellarg($php_binary) . ' ' . escapeshellarg($gmc) . ' > /tmp/feed_csv_autogen.log 2>&1 &');
+    $meta = $root . '/meta_feed.php';
+    if (is_file($meta)) @exec(escapeshellarg($php_binary) . ' ' . escapeshellarg($meta) . ' > /tmp/meta_feed_autogen.log 2>&1 &');
+}
+
 // Check admin access
 if (!isAdmin()) {
     header('Location: ../../index.php');
@@ -42,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
     
     if ($stmt->execute()) {
         $message = "Product information updated successfully!";
+        trigger_feed_csv_regeneration();
     } else {
         $error = "Failed to update product information.";
     }

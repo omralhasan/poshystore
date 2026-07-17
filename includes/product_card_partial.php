@@ -80,16 +80,6 @@ $meta_catalog_id = get_meta_catalog_id($product);
             <div class="p-card-name-ar"><?= htmlspecialchars($lang === 'ar' ? $product['name_en'] : ($product['name_ar'] ?? '')) ?></div>
         </a>
         
-        <?php if (!empty($product['short_description_en']) || !empty($product['short_description_ar'])): ?>
-        <div class="p-card-short-desc" style="font-size: 0.85rem; color: #666; font-style: italic; margin-bottom: 0.5rem; line-height: 1.4;">
-            <?php if ($lang === 'ar' && !empty($product['short_description_ar'])): ?>
-                <?= htmlspecialchars($product['short_description_ar']) ?>
-            <?php elseif (!empty($product['short_description_en'])): ?>
-                <?= htmlspecialchars($product['short_description_en']) ?>
-            <?php endif; ?>
-        </div>
-        <?php endif; ?>
-        
         <div class="p-card-price">
             <?php 
                 $display_price = $product['price_jod'];
