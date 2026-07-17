@@ -172,6 +172,23 @@ foreach ($feed_commands as $feed_cmd) {
     }
 }
 
+// ─── Deploy nginx config and reload ──────────────────────────────────────
+$nginx_result = 'skipped';
+$nginx_conf_src = $web_root . '/nginx_poshystore.conf';
+$nginx_conf_dst = '/etc/nginx/conf.d/poshystore.conf';
+if (is_file($nginx_conf_src)) {
+    copy($nginx_conf_src, $nginx_conf_dst);
+    // Test and reload nginx (requires nginx running)
+    $test = shell_exec('nginx -t 2>&1');
+    if (strpos($test, 'syntax is ok') !== false) {
+        shell_exec('systemctl reload nginx 2>&1');
+        $nginx_result = 'reloaded OK';
+    } else {
+        $nginx_result = 'config test failed: ' . trim($test);
+        $success = false;
+    }
+}
+
 // Get current git HEAD info
 $head = trim(shell_exec("git log --oneline -1 2>&1"));
 
@@ -182,5 +199,6 @@ echo json_encode([
     'db_migration'   => $db_migration_output,
     'uploads_permissions' => $uploads_permissions,
     'feed_refresh'   => $feed_refresh,
+    'nginx'          => $nginx_result,
     'details'        => $all_output,
 ], JSON_PRETTY_PRINT);
