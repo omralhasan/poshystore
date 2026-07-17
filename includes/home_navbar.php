@@ -59,10 +59,10 @@ if (strpos($current_path, '/pages/') !== false) {
                     <i class="fas fa-shopping-bag me-1"></i><?= t('shop') ?>
                 </a>
                 <?php if ($is_logged_in): ?>
-                    <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="nav-link-ramadan">
+                    <a href="<?= htmlspecialchars(getPageUrl('rewards')) ?>" class="nav-link-ramadan">
                         <i class="fas fa-award me-1"></i><?= t('rewards') ?>
                     </a>
-                    <a href="<?= $base_path ?>pages/shop/my_orders.php" class="nav-link-ramadan">
+                    <a href="<?= htmlspecialchars(getPageUrl('my-orders')) ?>" class="nav-link-ramadan">
                         <i class="fas fa-box me-1"></i><?= $current_lang === 'ar' ? 'طلباتي' : 'My Orders' ?>
                     </a>
                 <?php endif; ?>
@@ -80,7 +80,7 @@ if (strpos($current_path, '/pages/') !== false) {
                     </a>
                 <?php endif; ?>
                 <?php if ($is_logged_in): ?>
-                    <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="nav-icon-ramadan d-none d-md-inline" title="<?= t('points_wallet') ?>">
+                    <a href="<?= htmlspecialchars(getPageUrl('rewards')) ?>" class="nav-icon-ramadan d-none d-md-inline" title="<?= t('points_wallet') ?>">
                         <i class="fas fa-award"></i>
                     </a>
                     <a href="<?= $base_path ?>pages/shop/cart.php" class="nav-icon-ramadan position-relative">
@@ -138,11 +138,11 @@ if (strpos($current_path, '/pages/') !== false) {
                 <i class="fas fa-shopping-cart"></i>
                 <span><?= $current_lang === 'ar' ? 'السلة' : 'Cart' ?> <?php if ($cart_count > 0): ?><span class="mobile-cart-count"><?= $cart_count ?></span><?php endif; ?></span>
             </a>
-            <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="mobile-menu-link">
+            <a href="<?= htmlspecialchars(getPageUrl('rewards')) ?>" class="mobile-menu-link">
                 <i class="fas fa-award"></i>
                 <span><?= t('rewards') ?></span>
             </a>
-            <a href="<?= $base_path ?>pages/shop/my_orders.php" class="mobile-menu-link">
+            <a href="<?= htmlspecialchars(getPageUrl('my-orders')) ?>" class="mobile-menu-link">
                 <i class="fas fa-box"></i>
                 <span><?= $current_lang === 'ar' ? 'طلباتي' : 'My Orders' ?></span>
             </a>
@@ -201,12 +201,12 @@ function toggleMobileMenu() {
         <span><?= $current_lang === 'ar' ? 'السلة' : 'Cart' ?></span>
     </a>
     
-    <a href="<?= $base_path ?>pages/shop/my_orders.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'my_orders.php' ? 'active' : '' ?>">
+    <a href="<?= htmlspecialchars(getPageUrl('my-orders')) ?>" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'my_orders.php' ? 'active' : '' ?>">
         <i class="fas fa-box"></i>
         <span><?= $current_lang === 'ar' ? 'طلباتي' : 'Orders' ?></span>
     </a>
     
-    <a href="<?= $base_path ?>pages/shop/points_wallet.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'points_wallet.php' ? 'active' : '' ?>">
+    <a href="<?= htmlspecialchars(getPageUrl('rewards')) ?>" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'points_wallet.php' ? 'active' : '' ?>">
         <i class="fas fa-award"></i>
         <span><?= $current_lang === 'ar' ? 'مكافآت' : 'Rewards' ?></span>
     </a>

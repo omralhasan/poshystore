@@ -48,13 +48,23 @@ if (preg_match('#^/category/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $decoded_path, $m)) {
     exit;
 }
 
+// Clean page routes (also served under /ar/ after prefix strip)
+$page_routes = [
+    '/rewards'   => '/pages/shop/points_wallet.php',
+    '/my-orders' => '/pages/shop/my_orders.php',
+];
+if (isset($page_routes[$decoded_path])) {
+    require __DIR__ . $page_routes[$decoded_path];
+    exit;
+}
+
 // A slug looks like /some-product-name (lowercase, digits, hyphens only)
 // Exclude known paths: /index.php, /pages/..., /api/..., /images/..., etc.
 if (
     $decoded_path !== '' &&
     $decoded_path !== '/' &&
     preg_match('#^/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $decoded_path, $m) &&
-    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar|category)#i', $decoded_path)
+    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar|category|rewards|my-orders)#i', $decoded_path)
 ) {
     $_GET['slug'] = $m[1];
     require __DIR__ . '/product.php';
