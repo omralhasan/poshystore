@@ -41,13 +41,20 @@ if (preg_match('#^/منتج/([\p{L}0-9]+(?:[-\p{L}0-9]+)*)$#u', $decoded_path, $
     exit;
 }
 
+// Category URLs: /category/{slug} or /ar/category/{slug}
+if (preg_match('#^/category/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $decoded_path, $m)) {
+    $_GET['slug'] = $m[1];
+    require __DIR__ . '/pages/shop/category.php';
+    exit;
+}
+
 // A slug looks like /some-product-name (lowercase, digits, hyphens only)
 // Exclude known paths: /index.php, /pages/..., /api/..., /images/..., etc.
 if (
     $decoded_path !== '' &&
     $decoded_path !== '/' &&
     preg_match('#^/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $decoded_path, $m) &&
-    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar)#i', $decoded_path)
+    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar|category)#i', $decoded_path)
 ) {
     $_GET['slug'] = $m[1];
     require __DIR__ . '/product.php';
