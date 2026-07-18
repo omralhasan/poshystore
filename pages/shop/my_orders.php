@@ -193,6 +193,11 @@ unset($order); // Break reference
             z-index: 0;
         }
         
+        [dir="rtl"] .tracking-step::before {
+            left: -50%;
+            right: 50%;
+        }
+        
         .tracking-step:last-child::before {
             display: none;
         }
@@ -284,6 +289,11 @@ unset($order); // Break reference
             overflow: hidden;
         }
         
+        [dir="rtl"] .item-icon {
+            margin-right: 0;
+            margin-left: 1rem;
+        }
+        
         .item-image-slide {
             position: absolute;
             width: 100%;
@@ -349,6 +359,14 @@ unset($order); // Break reference
             font-weight: 600;
             margin-left: auto;
             padding-left: 1rem;
+        }
+        
+        [dir="rtl"] .item-price {
+            text-align: left;
+            margin-left: 0;
+            margin-right: auto;
+            padding-left: 0;
+            padding-right: 1rem;
         }
         
         .item-unit-price {
@@ -484,8 +502,93 @@ unset($order); // Break reference
         }
         
         @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+            
             .customer-details {
                 grid-template-columns: 1fr;
+            }
+            
+            .order-card-header {
+                padding: 1rem;
+            }
+            
+            .order-card-body {
+                padding: 1rem;
+            }
+            
+            .order-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .order-status {
+                align-self: flex-start;
+            }
+            
+            .order-item {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+            
+            .item-icon {
+                width: 60px;
+                height: 60px;
+                margin-right: 0.75rem;
+            }
+            
+            [dir="rtl"] .item-icon {
+                margin-right: 0;
+                margin-left: 0.75rem;
+            }
+            
+            .item-info {
+                flex: 1 1 calc(100% - 75px);
+                min-width: 0;
+            }
+            
+            .item-price {
+                flex: 1 1 100%;
+                text-align: left;
+                margin-left: 0;
+                padding-left: 0;
+                padding-top: 0.5rem;
+                border-top: 1px solid #eee;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            [dir="rtl"] .item-price {
+                text-align: right;
+                border-top: 1px solid #eee;
+            }
+            
+            .item-description {
+                max-width: 100%;
+            }
+            
+            .tracking-steps {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .tracking-step {
+                min-width: 0;
+                flex: 0 0 33.33%;
+            }
+            
+            .tracking-step::before {
+                left: 50%;
+                right: -50%;
+            }
+            
+            .tracking-label {
+                font-size: 0.65rem;
             }
             
             .order-actions {
@@ -494,6 +597,65 @@ unset($order); // Break reference
             
             .action-btn {
                 width: 100%;
+                text-align: center;
+                padding: 0.75rem 1rem;
+            }
+            
+            .order-summary {
+                padding: 0.75rem;
+            }
+            
+            .summary-row {
+                font-size: 0.85rem;
+            }
+            
+            .summary-row.total {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .container {
+                padding: 0 0.75rem;
+            }
+            
+            .order-card-header {
+                padding: 0.75rem;
+            }
+            
+            .order-card-body {
+                padding: 0.75rem;
+            }
+            
+            .item-icon {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .item-name {
+                font-size: 0.95rem;
+            }
+            
+            .item-name-ar {
+                font-size: 0.8rem;
+            }
+            
+            .item-quantity {
+                font-size: 0.8rem;
+            }
+            
+            .tracking-step {
+                flex: 0 0 33.33%;
+            }
+            
+            .tracking-icon {
+                width: 24px;
+                height: 24px;
+                font-size: 0.65rem;
+            }
+            
+            .tracking-label {
+                font-size: 0.6rem;
             }
         }
         

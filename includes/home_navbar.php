@@ -83,7 +83,7 @@ if (strpos($current_path, '/pages/') !== false) {
                     <a href="<?= htmlspecialchars(getPageUrl('rewards')) ?>" class="nav-icon-ramadan d-none d-md-inline" title="<?= t('points_wallet') ?>">
                         <i class="fas fa-award"></i>
                     </a>
-                    <a href="<?= $base_path ?>pages/shop/cart.php" class="nav-icon-ramadan position-relative">
+                    <a href="<?= htmlspecialchars(getPageUrl('cart')) ?>" class="nav-icon-ramadan position-relative">
                         <i class="fas fa-shopping-cart"></i>
                         <?php if ($cart_count > 0): ?>
                             <span class="cart-badge"><?= $cart_count ?></span>
@@ -134,7 +134,7 @@ if (strpos($current_path, '/pages/') !== false) {
             <span><?= t('shop') ?></span>
         </a>
         <?php if ($is_logged_in): ?>
-            <a href="<?= $base_path ?>pages/shop/cart.php" class="mobile-menu-link">
+            <a href="<?= htmlspecialchars(getPageUrl('cart')) ?>" class="mobile-menu-link">
                 <i class="fas fa-shopping-cart"></i>
                 <span><?= $current_lang === 'ar' ? 'السلة' : 'Cart' ?> <?php if ($cart_count > 0): ?><span class="mobile-cart-count"><?= $cart_count ?></span><?php endif; ?></span>
             </a>
@@ -193,7 +193,7 @@ function toggleMobileMenu() {
     </a>
     
     <?php if ($is_logged_in): ?>
-    <a href="<?= $base_path ?>pages/shop/cart.php" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'cart.php' ? 'active' : '' ?>">
+    <a href="<?= htmlspecialchars(getPageUrl('cart')) ?>" class="bottom-nav-item <?= basename($_SERVER['PHP_SELF']) === 'cart.php' ? 'active' : '' ?>">
         <i class="fas fa-shopping-cart"></i>
         <?php if ($cart_count > 0): ?>
             <span class="bottom-nav-badge"><?= $cart_count > 9 ? '9+' : $cart_count ?></span>
