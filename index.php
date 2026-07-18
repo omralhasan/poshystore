@@ -65,7 +65,7 @@ if (
     $decoded_path !== '' &&
     $decoded_path !== '/' &&
     preg_match('#^/([a-z0-9]+(?:-[a-z0-9]+)*)$#', $decoded_path, $m) &&
-    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar|category|rewards|my-orders|cart)#i', $decoded_path)
+    !preg_match('#^/(index|product|signin|signup|welcome|start|status|pages|api|images|includes|vendor|css|js|fonts|ar|category|rewards|my-orders|cart)(/|$)#i', $decoded_path)
 ) {
     $_GET['slug'] = $m[1];
     require __DIR__ . '/product.php';
